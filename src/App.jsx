@@ -518,39 +518,22 @@ export default function App() {
     <div style={{ minHeight: "100vh", background: "#0c0905", backgroundImage: "radial-gradient(ellipse at 15% 15%, rgba(110,55,8,0.18) 0%, transparent 55%), radial-gradient(ellipse at 85% 85%, rgba(50,25,3,0.25) 0%, transparent 55%)", fontFamily: "'DM Sans', sans-serif", color: "#f0e6d3" }}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
 
-      {/* Header */}
-      <div style={{ borderBottom: "1px solid rgba(200,137,58,0.13)", padding: "18px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "rgba(12,9,5,0.93)", backdropFilter: "blur(14px)", zIndex: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <div onClick={() => { setView("beans"); setTab("beans"); }} style={{ cursor: "pointer" }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "21px", letterSpacing: "0.02em" }}>Bean & Brew</div>
-            <div style={{ fontSize: "9px", color: "#5a4030", letterSpacing: "0.18em", textTransform: "uppercase" }}>Coffee Journal</div>
-          </div>
-          <div style={{ display: "flex", gap: "5px" }}>
-            <button onClick={() => setShowTransfer("export")}
-              style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#6a5040", cursor: "pointer", padding: "4px 9px", fontSize: "11px", letterSpacing: "0.04em" }}
-              title="Export data">↑ Export</button>
-            <button onClick={() => setShowTransfer("import")}
-              style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#6a5040", cursor: "pointer", padding: "4px 9px", fontSize: "11px", letterSpacing: "0.04em" }}
-              title="Import data">↓ Import</button>
-          </div>
+      {/* Header — tabs only */}
+      <div style={{ borderBottom: "1px solid rgba(200,137,58,0.13)", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "rgba(12,9,5,0.93)", backdropFilter: "blur(14px)", zIndex: 10 }}>
+        <div style={{ display: "flex" }}>
+          {view === "beans" && ["Beans", "Recipes", "Brews"].map(t => (
+            <button key={t} onClick={() => setTab(t.toLowerCase())}
+              style={{ padding: "14px 20px", background: "none", border: "none", borderBottom: `2px solid ${tab === t.toLowerCase() ? "#c8893a" : "transparent"}`, color: tab === t.toLowerCase() ? "#c8a060" : "#5a4a3a", cursor: "pointer", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s", marginBottom: "-1px" }}>
+              {t}
+            </button>
+          ))}
+          {view !== "beans" && (
+            <div style={{ display: "flex", alignItems: "center", padding: "0 4px" }}>
+              <button onClick={() => setView("beans")} style={{ background: "none", border: "none", color: "#9a7a5a", cursor: "pointer", fontSize: "13px", padding: "14px 8px" }}>← Back</button>
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          {view === "beans" && tab === "beans" && (
-            <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Search beans…"
-              style={inp({ width: "130px", fontSize: "13px", padding: "7px 11px" })} onFocus={onFoc} onBlur={onBlr} />
-          )}
-          {view === "beans" && tab === "beans" && (
-            <button onClick={() => { setEditBean({ ...defaultBean }); setView("beanForm"); }}
-              style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
-              + New Bean
-            </button>
-          )}
-          {view === "beans" && tab === "recipes" && (
-            <button onClick={() => setEditRecipe({ ...defaultRecipe })}
-              style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
-              + New Recipe
-            </button>
-          )}
           {view === "beanDetail" && liveBean && (
             <button onClick={() => { setBrewForm({ ...defaultBrew, date: new Date().toISOString().split("T")[0] }); setView("brewForm"); }}
               style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -562,21 +545,33 @@ export default function App() {
 
       <div style={{ maxWidth: "680px", margin: "0 auto", padding: "22px 16px" }}>
 
-        {/* ── TAB BAR ── */}
-        {view === "beans" && (
-          <div style={{ display: "flex", gap: "0", marginBottom: "24px", borderBottom: "1px solid rgba(200,137,58,0.15)" }}>
-            {[{ id: "beans", label: "Beans" }, { id: "recipes", label: "Recipes" }, { id: "brews", label: "Brews" }].map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                style={{ padding: "10px 20px", background: "none", border: "none", borderBottom: `2px solid ${tab === t.id ? "#c8893a" : "transparent"}`, color: tab === t.id ? "#c8a060" : "#5a4a3a", cursor: "pointer", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s", marginBottom: "-1px" }}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* ── BEANS LIST ── */}
         {view === "beans" && tab === "beans" && (
           <div>
+            {/* Title */}
+            <div style={{ marginBottom: "22px" }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", letterSpacing: "0.02em", marginBottom: "4px" }}>Bean & Brew</div>
+              <div style={{ fontSize: "10px", color: "#5a4030", letterSpacing: "0.18em", textTransform: "uppercase" }}>Coffee Journal</div>
+            </div>
+
+            {/* Action row */}
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
+              <button onClick={() => setShowTransfer("export")}
+                style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#6a5040", cursor: "pointer", padding: "7px 12px", fontSize: "12px" }}>
+                ↑ Export
+              </button>
+              <button onClick={() => setShowTransfer("import")}
+                style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#6a5040", cursor: "pointer", padding: "7px 12px", fontSize: "12px" }}>
+                ↓ Import
+              </button>
+              <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Search beans…"
+                style={{ ...inp(), flex: 1, minWidth: "120px", fontSize: "13px", padding: "7px 11px" }} onFocus={onFoc} onBlur={onBlr} />
+              <button onClick={() => { setEditBean({ ...defaultBean }); setView("beanForm"); }}
+                style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
+                + New Bean
+              </button>
+            </div>
+
             {beans.length === 0 ? (
               <div style={{ textAlign: "center", marginTop: "80px" }}>
                 <div style={{ fontSize: "44px", marginBottom: "14px", opacity: 0.2 }}>☕</div>
@@ -673,6 +668,18 @@ export default function App() {
         {/* ── RECIPES TAB ── */}
         {view === "beans" && tab === "recipes" && (
           <div>
+            {!editRecipe && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
+                <div>
+                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", marginBottom: "4px" }}>Recipes</div>
+                  <div style={{ fontSize: "10px", color: "#5a4030", letterSpacing: "0.18em", textTransform: "uppercase" }}>Saved brew recipes</div>
+                </div>
+                <button onClick={() => setEditRecipe({ ...defaultRecipe })}
+                  style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
+                  + New Recipe
+                </button>
+              </div>
+            )}
             {editRecipe ? (
               // Recipe form
               <div>
@@ -848,6 +855,12 @@ export default function App() {
 
           return (
             <div>
+              {/* Title */}
+              <div style={{ marginBottom: "22px" }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", marginBottom: "4px" }}>Brews</div>
+                <div style={{ fontSize: "10px", color: "#5a4030", letterSpacing: "0.18em", textTransform: "uppercase" }}>All brew sessions</div>
+              </div>
+
               {/* Filter bar */}
               {allBrews.length > 0 && (
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginBottom: "16px" }}>
