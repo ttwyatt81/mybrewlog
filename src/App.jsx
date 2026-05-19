@@ -594,8 +594,7 @@ export default function App() {
 
   const liveBean = activeBean ? beans.find(b => b.id === activeBean.id) || activeBean : null;
 
-  return (
-    if (authState === "login" || authState === "verify") {
+  if (authState === "login" || authState === "verify") {
       return (
         <div style={{ minHeight: "100vh", background: "#0c0905", backgroundImage: "radial-gradient(ellipse at 15% 15%, rgba(110,55,8,0.18) 0%, transparent 55%)", fontFamily: "'DM Sans', sans-serif", color: "#f0e6d3", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
           <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
@@ -1747,6 +1746,5 @@ export default function App() {
         />
       )}
     </div>
-    );
-  }
+  );
 }
