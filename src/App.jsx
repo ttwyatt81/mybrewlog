@@ -3,36 +3,61 @@ import { useState, useEffect } from "react";
 const SUPABASE_URL = "https://jgmvlrxeglotnpdenuvn.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnbXZscnhlZ2xvdG5wZGVudXZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMjE3MDYsImV4cCI6MjA5Mzg5NzcwNn0.YBc_DI-yfa1_488YxD-AM70B1QvLcaHznlmdFR2Gulg";
 
-async function sbGet(table) {
+function authHeaders(token) {
+  return {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${token || SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+  };
+}
+
+async function sbGetUser(token) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
+  });
+  return res.ok ? res.json() : null;
+}
+
+async function sbSignInWithOtp(email) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, create_user: true })
+  });
+  return res.ok;
+}
+
+async function sbVerifyOtp(email, token) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "email", email, token })
+  });
+  const data = await res.json();
+  return data.access_token ? data : null;
+}
+
+async function sbSignOut(token) {
+  await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
+  });
+}
+
+async function sbGet(table, token) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    headers: authHeaders(token)
   });
   return res.ok ? res.json() : [];
 }
 
-async function sbUpsert(table, id, data) {
+async function sbUpsert(table, token, rowId, data) {
   await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
     method: "POST",
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "resolution=merge-duplicates"
-    },
-    body: JSON.stringify({ id, data: JSON.stringify(data) })
+    headers: { ...authHeaders(token), Prefer: "resolution=merge-duplicates" },
+    body: JSON.stringify({ id: rowId, data: JSON.stringify(data) })
   });
 }
-
-async function sbDelete(table, id) {
-  await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
-    method: "DELETE",
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-  });
-}
-
-// Unique device/user row IDs
-const BEANS_ROW_ID = 1;
-const RECIPES_ROW_ID = 1;
 
 const defaultRecipe = {
   id: null, name: "", method: "Pour Over", brewer: "", filterPaper: "",
@@ -331,6 +356,13 @@ Suggest an optimised V60 pour over recipe. Respond ONLY with a valid JSON object
 
 export default function App() {
   const [beans, setBeans] = useState([]);
+  const [session, setSession] = useState(null);
+  const [authState, setAuthState] = useState("login"); // login | verify | app
+  const [authEmail, setAuthEmail] = useState("");
+  const [authCode, setAuthCode] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [view, setView] = useState("beans");
   const [editBean, setEditBean] = useState(null);
   const [activeBean, setActiveBean] = useState(null);
@@ -354,48 +386,93 @@ export default function App() {
   const [brewSort, setBrewSort] = useState("date");
 
   useEffect(() => {
-    async function load() {
+    // Check for stored session
+    const stored = localStorage.getItem("sb_session");
+    if (stored) {
       try {
-        const rows = await sbGet("beans");
-        if (rows && rows.length > 0 && rows[0].data) {
-          setBeans(JSON.parse(rows[0].data));
-        } else {
-          // Seed with existing data on first load
-          const seed = [{"id":1777975585677,"name":"Eli Espinoza Geisha","roaster":"Kaffeelix","origin":"Peru","region":"Las Pirias, Chirinos","process":"Washed","roastLevel":"","varietal":"Geisha","altitude":"","type":"Filter","roastDate":"2026-04-08","notes":"candied orange, floral, bergamot, chocolate, spicy notes, silky","brews":[]},{"id":1777975356960,"name":"Peru Aurora Huaman","roaster":"Unity Coffee","origin":"Peru","region":"Cajamarca","process":"Washed","roastLevel":"","varietal":"Bourbon and Caturra","altitude":"1889m","type":"Filter","roastDate":"2026-04-01","notes":"Raspberry, hibiscus, and lime","brews":[]},{"id":1777974648055,"name":"Competition Finca Sidra Las Flores","roaster":"Nomad","origin":"Colombia","region":"Acevedo, Huila","process":"Natural","roastLevel":"","varietal":"Sidra Bourbon","altitude":"1750","type":"Filter","notes":"Cocoa nibs, Lychee, Pineapple","brews":[{"id":1777974821637,"date":"2026-05-05","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"255","temperature":"96","grindSize":"Mediu","bloomWater":"45","bloomTime":"40","numPours":"2","totalTime":"1:50","pourStructure":"Bloom 45g → Pour to 255g at 0:40","rating":5,"tastingNotes":"Lychee and pineapple","recipeSource":"Manual","recipeName":""}],"roastDate":"2026-03-03"},{"id":1777972918886,"name":"Filter Etiopia Hambela","roaster":"Nomad","origin":"Etiopia","region":"Haro Sorsa, Guji zone","process":"Natural","roastLevel":"Light","varietal":"Heirloom","altitude":"2200-2400m","type":"Filter","notes":"Cocoa nibs, cherry, blueberries","brews":[{"id":1777973176701,"date":"2026-05-05","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"16","water":"240","temperature":"93","grindSize":"95 clicks","bloomWater":"60","bloomTime":"30","numPours":"3","totalTime":"2:25","pourStructure":"Bloom 60gr -> pour until 180gr at 30s -> pour until 240gr at 1:15s ","rating":4,"tastingNotes":"nothing special to mention"}],"roastDate":"2026-03-11"},{"id":1777972626145,"name":"Filter Burundi Gahahe","roaster":"Nomad","origin":"Burundi","region":"Kayanza, Ga,ahe","process":"Washed","roastLevel":"Light","varietal":"Red Bourbon","altitude":"1800m","type":"Filter","notes":"Floral, Tangerine, Grilled pineapple","brews":[],"roastDate":"2026-03-11"}];
-          setBeans(seed);
-          await sbUpsert("beans", BEANS_ROW_ID, seed);
-        }
-      } catch (e) {
-        console.log("Error loading beans:", e);
-      }
-      try {
-        const rows = await sbGet("recipes");
-        if (rows && rows.length > 0 && rows[0].data) {
-          setRecipes(JSON.parse(rows[0].data));
-        }
-      } catch (e) {
-        console.log("Error loading recipes:", e);
-      }
+        const session = JSON.parse(stored);
+        setSession(session);
+        setAuthState("app");
+        loadData(session.access_token);
+      } catch { localStorage.removeItem("sb_session"); }
     }
-    load();
   }, []);
+
+  async function loadData(token) {
+    setLoading(true);
+    try {
+      const rows = await sbGet("beans", token);
+      if (rows && rows.length > 0 && rows[0].data) {
+        setBeans(JSON.parse(rows[0].data));
+      } else {
+        // Seed with exported data on first login
+        const seed = [{"id":1779027338180,"name":"Assemblage - Blend Kawa","roaster":"Tanat","origin":"Brazil, Guatemala, Peru","region":"Multiple","process":"Other","roastLevel":"Dark","varietal":"Catuai Jaune, Caturra, Mundo Novo, Typica","altitude":"Mixed","type":"Espresso","roastDate":"0026-03-10","notes":"Chocolate, Hazelnut","brews":[{"id":1779027483514,"date":"2026-05-17","method":"Espresso","brewer":"","filterPaper":"","dose":"15","water":"30","temperature":"93","grindSize":"28","bloomWater":"","bloomTime":"","numPours":"","totalTime":"","pourStructure":"","rating":2,"tastingNotes":"bit sour, maybe longer pre-infusion","recipeSource":"Manual","recipeName":"","machine":"Flaire 58+ 2","grinder":"Kingrinder K6","preHeat":"Medium","brewTime":"30"}]},{"id":1778836851983,"name":"Hacienda Misiones colombia","roaster":"Replica","origin":"Colombia","region":"Cundinamarca","process":"Natural","roastLevel":"","varietal":"Sudan Rume","altitude":"1600-1800m","type":"Filter","roastDate":"2026-03-26","notes":"Chamomile, orange blossom, apricot ","brews":[{"id":1778850135629,"date":"2026-05-15","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"250","temperature":"93","grindSize":"95","bloomWater":"49","bloomTime":"45","numPours":"3","totalTime":"2:30","pourStructure":"Bloom 45g → Pour to 100g at 0:45s → Pour to 170g at 1:25s → Final pour to 250g at 2:00s","rating":0,"tastingNotes":"","recipeSource":"Last Brew","recipeName":""},{"id":1778836980839,"date":"2026-05-15","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"233","temperature":"93","grindSize":"95","bloomWater":"45","bloomTime":"50","numPours":"3","totalTime":"2:30","pourStructure":"Bloom 45g 0:50s) → Pour to 93g at 0:50 → Pour to 163g at 1:20 → Final pour to 233g at 1:50","rating":3,"tastingNotes":"Funky flavors, maybe dilute more or go more coarse grind.","recipeSource":"Manual","recipeName":""}]},{"id":1777975585677,"name":"Eli Espinoza Geisha","roaster":"Kaffeelix","origin":"Peru","region":"Las Pirias, Chirinos","process":"Washed","roastLevel":"","varietal":"Geisha","altitude":"","type":"Filter","roastDate":"2026-04-08","notes":"candied orange, floral, bergamot, chocolate, spicy notes, silky","brews":[]},{"id":1777975356960,"name":"Peru Aurora Huaman","roaster":"Unity Coffee","origin":"Peru","region":"Cajamarca","process":"Washed","roastLevel":"","varietal":"Bourbon and Caturra","altitude":"1889m","type":"Filter","roastDate":"2026-04-01","notes":"Raspberry, hibiscus, and lime","brews":[{"id":1778661820490,"date":"2026-05-13","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"250","temperature":"93","grindSize":"92 clicks","bloomWater":"45","bloomTime":"40","numPours":"3","totalTime":"2:50","pourStructure":"Bloom 45g (0:00–0:40s) → Pour to 120g → Pour to 190g at 1:15 → Final pour to 250g at 1:45","rating":3,"tastingNotes":"Too fine ground","recipeSource":"Last Brew","recipeName":""},{"id":1778594812061,"date":"2026-05-12","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"250","temperature":"93","grindSize":"93 clicks","bloomWater":"45","bloomTime":"40","numPours":"3","totalTime":"2:55","pourStructure":"Bloom 45g (0:00–0:40s) → Pour to 120g → Pour to 190g at 1:15 → Final pour to 250g at 1:50","rating":4,"tastingNotes":"Very fruity, best brew until now","recipeSource":"Last Brew","recipeName":""},{"id":1778403549543,"date":"2026-05-10","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"250","temperature":"93","grindSize":"94 clicks","bloomWater":"45","bloomTime":"40","numPours":"3","totalTime":"2:30","pourStructure":"Bloom 45g (0:00–0:40s) → Pour to 120g → Pour to 190g at 1:15 → Final pour to 250g at 1:50","rating":3,"tastingNotes":"not so fruity","recipeSource":"Last Brew","recipeName":""},{"id":1778341507761,"date":"2026-05-09","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"250","temperature":"93","grindSize":"95 clicks","bloomWater":"45","bloomTime":"35","numPours":"3","totalTime":"2:25","pourStructure":"Bloom 45g (0:00–0:35s) → Pour to 96g at 0:45 → Pour to 190g at 1:20 → Final pour to 240g at 1:50","rating":2,"tastingNotes":"Got the pours a bit wrong ","recipeSource":"Manual","recipeName":""},{"id":1778341078874,"date":"2026-05-09","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"18","water":"300","temperature":"93","grindSize":"100 click","bloomWater":"40","bloomTime":"40","numPours":"3","totalTime":"2:30","pourStructure":"Bloom 40g (0:00–0:40s) → Pour to 140g at 0:45 → Pour to 230 g at 1:20 → Final pour to 300g at 1:50","rating":2,"tastingNotes":"A bit blend and made it with chemex recipe.","recipeSource":"Manual","recipeName":""}]},{"id":1777974648055,"name":"Competition Finca Sidra Las Flores","roaster":"Nomad","origin":"Colombia","region":"Acevedo, Huila","process":"Natural","roastLevel":"","varietal":"Sidra Bourbon","altitude":"1750","type":"Filter","notes":"Cocoa nibs, Lychee, Pineapple","brews":[{"id":1777974821637,"date":"2026-05-05","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"255","temperature":"96","grindSize":"Mediu","bloomWater":"45","bloomTime":"40","numPours":"2","totalTime":"1:50","pourStructure":"Bloom 45g → Pour to 255g at 0:40","rating":5,"tastingNotes":"Lychee and pineapple","recipeSource":"Manual","recipeName":""}],"roastDate":"2026-03-03"},{"id":1777972918886,"name":"Filter Etiopia Hambela","roaster":"Nomad","origin":"Etiopia","region":"Haro Sorsa, Guji zone","process":"Natural","roastLevel":"Light","varietal":"Heirloom","altitude":"2200-2400m","type":"Filter","notes":"Cocoa nibs, cherry, blueberries","brews":[{"id":1778764729518,"date":"2026-05-14","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"16","water":"240","temperature":"93","grindSize":"93 clicks","bloomWater":"60","bloomTime":"40","numPours":"3","totalTime":"2:25","pourStructure":"Bloom 60gr -> pour until 180gr at 40s -> pour until 240gr at 1:20s ","rating":5,"tastingNotes":"Blueberry nice","recipeSource":"Last Brew","recipeName":""},{"id":1778489965456,"date":"2026-05-11","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"16","water":"240","temperature":"93","grindSize":"94 clicks","bloomWater":"60","bloomTime":"30","numPours":"3","totalTime":"2:25","pourStructure":"Bloom 60gr -> pour until 180gr at 30s -> pour until 240gr at 1:15s ","rating":4,"tastingNotes":"Good mouth feel, maybe try to get fruit flavor more prominent ","recipeSource":"Last Brew","recipeName":""},{"id":1777973176701,"date":"2026-05-05","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"16","water":"240","temperature":"93","grindSize":"95 clicks","bloomWater":"60","bloomTime":"30","numPours":"3","totalTime":"2:25","pourStructure":"Bloom 60gr -> pour until 180gr at 30s -> pour until 240gr at 1:15s ","rating":4,"tastingNotes":"nothing special to mention"}],"roastDate":"2026-03-11"},{"id":1777972626145,"name":"Filter Burundi Gahahe","roaster":"Nomad","origin":"Burundi","region":"Kayanza, Ga,ahe","process":"Washed","roastLevel":"Light","varietal":"Red Bourbon","altitude":"1800m","type":"Filter","notes":"Floral, Tangerine, Grilled pineapple","brews":[{"id":1778677268126,"date":"2026-05-13","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"240","temperature":"96","grindSize":"94 clicks","bloomWater":"60","bloomTime":"40","numPours":"3","totalTime":"2:18","pourStructure":"Bloom 45g (0:00–0:40s) → Pour to 160g at 0:45 → Pour to 240g at 1:10","rating":2,"tastingNotes":"Very earthy, grind less fine next time","recipeSource":"Last Brew","recipeName":""},{"id":1778595162194,"date":"2026-05-12","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"240","temperature":"96","grindSize":"96","bloomWater":"60","bloomTime":"40","numPours":"3","totalTime":"2:45","pourStructure":"Bloom 45g (0:00–0:40s) → Pour to 160g at 0:45 → Pour to 249g at 1:15","rating":3,"tastingNotes":"Maybe not enough fruit","recipeSource":"Manual","recipeName":""}],"roastDate":"2026-03-11"}];
+        setBeans(seed);
+        await sbUpsert("beans", token, crypto.randomUUID(), seed);
+      }
+    } catch (e) { console.error("Load beans error:", e); }
+    try {
+      const rows = await sbGet("recipes", token);
+      if (rows && rows.length > 0 && rows[0].data) {
+        setRecipes(JSON.parse(rows[0].data));
+      } else {
+        const seed = [{"id":1778344367456,"name":"Standard v60 2 pours","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"240","temperature":"93","grindSize":"95 clicks","bloomWater":"45","bloomTime":"40","numPours":"2","totalTime":"2:25","pourStructure":"Bloom 45s -> pour to 150 -> at 1.15 pour until 240"}];
+        setRecipes(seed);
+        if (seed.length > 0) await sbUpsert("recipes", token, crypto.randomUUID(), seed);
+      }
+    } catch (e) { console.error("Load recipes error:", e); }
+    setLoading(false);
+  }
 
   const persist = async (updated) => {
     setBeans(updated);
     try {
-      await sbUpsert("beans", BEANS_ROW_ID, updated);
-    } catch (e) {
-      console.error("Failed to save beans:", e);
-    }
+      const rows = await sbGet("beans", session?.access_token);
+      const rowId = (rows && rows.length > 0) ? rows[0].id : crypto.randomUUID();
+      await sbUpsert("beans", session?.access_token, rowId, updated);
+    } catch (e) { console.error("Failed to save beans:", e); }
   };
 
   const persistRecipes = async (updated) => {
     setRecipes(updated);
     try {
-      await sbUpsert("recipes", RECIPES_ROW_ID, updated);
-    } catch (e) {
-      console.error("Failed to save recipes:", e);
+      const rows = await sbGet("recipes", session?.access_token);
+      const rowId = (rows && rows.length > 0) ? rows[0].id : crypto.randomUUID();
+      await sbUpsert("recipes", session?.access_token, rowId, updated);
+    } catch (e) { console.error("Failed to save recipes:", e); }
+  };
+
+  const handleSendCode = async () => {
+    if (!authEmail.trim()) return;
+    setAuthLoading(true); setAuthError("");
+    const ok = await sbSignInWithOtp(authEmail.trim());
+    if (ok) { setAuthState("verify"); }
+    else { setAuthError("Could not send code. Check your email address."); }
+    setAuthLoading(false);
+  };
+
+  const handleVerifyCode = async () => {
+    if (!authCode.trim()) return;
+    setAuthLoading(true); setAuthError("");
+    const data = await sbVerifyOtp(authEmail.trim(), authCode.trim());
+    if (data) {
+      const sess = { access_token: data.access_token, email: authEmail.trim() };
+      setSession(sess);
+      localStorage.setItem("sb_session", JSON.stringify(sess));
+      setAuthState("app");
+      loadData(data.access_token);
+    } else {
+      setAuthError("Invalid code. Please try again.");
     }
+    setAuthLoading(false);
+  };
+
+  const handleSignOut = async () => {
+    if (session) await sbSignOut(session.access_token);
+    localStorage.removeItem("sb_session");
+    setSession(null);
+    setBeans([]); setRecipes([]);
+    setAuthState("login"); setAuthEmail(""); setAuthCode("");
   };
 
   const saveRecipe = () => {
@@ -518,6 +595,72 @@ export default function App() {
   const liveBean = activeBean ? beans.find(b => b.id === activeBean.id) || activeBean : null;
 
   return (
+    if (authState === "login" || authState === "verify") {
+      return (
+        <div style={{ minHeight: "100vh", background: "#0c0905", backgroundImage: "radial-gradient(ellipse at 15% 15%, rgba(110,55,8,0.18) 0%, transparent 55%)", fontFamily: "'DM Sans', sans-serif", color: "#f0e6d3", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
+          <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
+          <div style={{ width: "100%", maxWidth: "380px" }}>
+            <div style={{ textAlign: "center", marginBottom: "40px" }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "32px", marginBottom: "6px" }}>Bean & Brew</div>
+              <div style={{ fontSize: "10px", color: "#5a4030", letterSpacing: "0.2em", textTransform: "uppercase" }}>Coffee Journal</div>
+            </div>
+
+            {authState === "login" && (
+              <div>
+                <div style={{ fontSize: "14px", color: "#7a6050", marginBottom: "20px", textAlign: "center" }}>
+                  Enter your email to sign in or create an account
+                </div>
+                <input value={authEmail} onChange={e => setAuthEmail(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleSendCode()}
+                  placeholder="your@email.com" type="email"
+                  style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(200,137,58,0.3)", borderRadius: "9px", color: "#f0e6d3", padding: "13px 16px", fontSize: "15px", outline: "none", fontFamily: "inherit", boxSizing: "border-box", marginBottom: "12px" }} />
+                {authError && <div style={{ color: "#c87060", fontSize: "13px", marginBottom: "10px" }}>{authError}</div>}
+                <button onClick={handleSendCode} disabled={authLoading || !authEmail.trim()}
+                  style={{ width: "100%", background: authEmail.trim() ? "linear-gradient(135deg,#c8893a,#a06828)" : "rgba(200,137,58,0.2)", border: "none", borderRadius: "9px", color: authEmail.trim() ? "#fff" : "#5a4030", padding: "13px", fontSize: "15px", fontWeight: "500", cursor: authEmail.trim() ? "pointer" : "not-allowed" }}>
+                  {authLoading ? "Sending…" : "Send Login Code"}
+                </button>
+              </div>
+            )}
+
+            {authState === "verify" && (
+              <div>
+                <div style={{ fontSize: "14px", color: "#7a6050", marginBottom: "6px", textAlign: "center" }}>
+                  We sent a 6-digit code to
+                </div>
+                <div style={{ fontSize: "14px", color: "#c8a060", marginBottom: "24px", textAlign: "center", fontWeight: "500" }}>{authEmail}</div>
+                <input value={authCode} onChange={e => setAuthCode(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && handleVerifyCode()}
+                  placeholder="123456" type="text" maxLength={6}
+                  style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(200,137,58,0.3)", borderRadius: "9px", color: "#f0e6d3", padding: "13px 16px", fontSize: "22px", outline: "none", fontFamily: "monospace", boxSizing: "border-box", marginBottom: "12px", letterSpacing: "0.3em", textAlign: "center" }} />
+                {authError && <div style={{ color: "#c87060", fontSize: "13px", marginBottom: "10px" }}>{authError}</div>}
+                <button onClick={handleVerifyCode} disabled={authLoading || authCode.length < 6}
+                  style={{ width: "100%", background: authCode.length >= 6 ? "linear-gradient(135deg,#c8893a,#a06828)" : "rgba(200,137,58,0.2)", border: "none", borderRadius: "9px", color: authCode.length >= 6 ? "#fff" : "#5a4030", padding: "13px", fontSize: "15px", fontWeight: "500", cursor: authCode.length >= 6 ? "pointer" : "not-allowed", marginBottom: "12px" }}>
+                  {authLoading ? "Verifying…" : "Sign In"}
+                </button>
+                <button onClick={() => { setAuthState("login"); setAuthCode(""); setAuthError(""); }}
+                  style={{ width: "100%", background: "none", border: "none", color: "#5a4030", cursor: "pointer", fontSize: "13px", padding: "8px" }}>
+                  ← Use a different email
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (loading) {
+      return (
+        <div style={{ minHeight: "100vh", background: "#0c0905", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", color: "#6a5040" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "32px", marginBottom: "12px", animation: "spin 1.4s linear infinite", display: "inline-block" }}>⟳</div>
+            <div style={{ fontSize: "13px" }}>Loading your brews…</div>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        </div>
+      );
+    }
+
+    return (
     <div style={{ minHeight: "100vh", background: "#0c0905", backgroundImage: "radial-gradient(ellipse at 15% 15%, rgba(110,55,8,0.18) 0%, transparent 55%), radial-gradient(ellipse at 85% 85%, rgba(50,25,3,0.25) 0%, transparent 55%)", fontFamily: "'DM Sans', sans-serif", color: "#f0e6d3" }}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
 
@@ -543,6 +686,10 @@ export default function App() {
               + Log Brew
             </button>
           )}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "1px" }}>
+            <div style={{ fontSize: "10px", color: "#4a3a2a", letterSpacing: "0.03em", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session?.email}</div>
+            <button onClick={handleSignOut} style={{ background: "none", border: "none", color: "#5a4030", cursor: "pointer", fontSize: "10px", padding: 0, letterSpacing: "0.05em" }}>Sign out</button>
+          </div>
         </div>
       </div>
 
@@ -1600,5 +1747,6 @@ export default function App() {
         />
       )}
     </div>
-  );
+    );
+  }
 }
