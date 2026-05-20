@@ -19,12 +19,16 @@ async function sbGetUser(token) {
 }
 
 async function sbSignInWithMagicLink(email) {
-  const redirectTo = window.location.origin + window.location.pathname;
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/magiclink`, {
+  const redirectTo = "https://mybrewlog.vercel.app";
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
     method: "POST",
     headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
     body: JSON.stringify({ email, create_user: true, options: { emailRedirectTo: redirectTo } })
   });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    console.error("Magic link error:", err);
+  }
   return res.ok;
 }
 
