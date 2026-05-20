@@ -617,7 +617,7 @@ export default function App() {
             {authState === "login" && (
               <div>
                 <div style={{ fontSize: "14px", color: "#7a6050", marginBottom: "20px", textAlign: "center" }}>
-                  Enter your email — we'll send you a 6-digit code
+                  Enter your email — we'll send you a 8-digit code
                 </div>
                 <input value={authEmail} onChange={e => setAuthEmail(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleSendOtp()}
