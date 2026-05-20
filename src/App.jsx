@@ -18,23 +18,25 @@ async function sbGetUser(token) {
   return res.ok ? res.json() : null;
 }
 
-async function sbSignInWithMagicLink(email) {
-  const redirectTo = "https://mybrewlog.vercel.app";
+async function sbSendOtp(email) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
     method: "POST",
     headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ email, create_user: true, options: { emailRedirectTo: redirectTo } })
+    body: JSON.stringify({ email, create_user: true })
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    console.error("Magic link error:", err);
-  }
-  return res.ok;
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) console.error("OTP error:", body);
+  return { ok: res.ok, error: body.message || body.msg || null };
 }
 
-async function sbExchangeToken(accessToken, refreshToken) {
-  // Used when returning from magic link
-  return { access_token: accessToken, refresh_token: refreshToken };
+async function sbVerifyOtp(email, token) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ type: "email", email, token })
+  });
+  const data = await res.json().catch(() => ({}));
+  return data.access_token ? data : null;
 }
 
 async function sbSignOut(token) {
@@ -398,36 +400,7 @@ export default function App() {
   const [brewSort, setBrewSort] = useState("date");
 
   useEffect(() => {
-    // Check for magic link token in URL hash (#access_token=...&refresh_token=...)
-    const hash = window.location.hash;
-    if (hash && hash.includes("access_token")) {
-      const params = new URLSearchParams(hash.replace("#", ""));
-      const accessToken = params.get("access_token");
-      const email = params.get("email") || "";
-      if (accessToken) {
-        // Get user email from token
-        fetch(`${SUPABASE_URL}/auth/v1/user`, {
-          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${accessToken}` }
-        }).then(r => r.json()).then(user => {
-          const sess = { access_token: accessToken, email: user.email || email };
-          setSession(sess);
-          localStorage.setItem("sb_session", JSON.stringify(sess));
-          setAuthState("app");
-          loadData(accessToken);
-          // Clean URL
-          window.history.replaceState({}, document.title, window.location.pathname);
-        }).catch(() => {
-          const sess = { access_token: accessToken, email };
-          setSession(sess);
-          localStorage.setItem("sb_session", JSON.stringify(sess));
-          setAuthState("app");
-          loadData(accessToken);
-          window.history.replaceState({}, document.title, window.location.pathname);
-        });
-        return;
-      }
-    }
-    // Check for stored session
+    // Restore saved session — stays logged in permanently
     const stored = localStorage.getItem("sb_session");
     if (stored) {
       try {
@@ -479,27 +452,27 @@ export default function App() {
     } catch (e) { console.error("Failed to save recipes:", e); }
   };
 
-  const handleSendMagicLink = async () => {
+  const handleSendOtp = async () => {
     if (!authEmail.trim()) return;
     setAuthLoading(true); setAuthError("");
-    try {
-      const redirectTo = "https://mybrewlog.vercel.app";
-      const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
-        method: "POST",
-        headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ email: authEmail.trim(), create_user: true, options: { emailRedirectTo: redirectTo } })
-      });
-      const body = await res.json().catch(() => ({}));
-      console.log("Auth response status:", res.status);
-      console.log("Auth response body:", JSON.stringify(body));
-      if (res.ok) {
-        setAuthState("verify");
-      } else {
-        setAuthError(`Error ${res.status}: ${body.message || body.msg || JSON.stringify(body)}`);
-      }
-    } catch (e) {
-      console.error("Network error:", e);
-      setAuthError("Network error: " + e.message);
+    const { ok, error } = await sbSendOtp(authEmail.trim());
+    if (ok) { setAuthState("verify"); }
+    else { setAuthError(error || "Could not send code. Check your email address."); }
+    setAuthLoading(false);
+  };
+
+  const handleVerifyOtp = async () => {
+    if (authCode.length < 6) return;
+    setAuthLoading(true); setAuthError("");
+    const data = await sbVerifyOtp(authEmail.trim(), authCode.trim());
+    if (data) {
+      const sess = { access_token: data.access_token, email: authEmail.trim() };
+      setSession(sess);
+      localStorage.setItem("sb_session", JSON.stringify(sess));
+      setAuthState("app");
+      loadData(data.access_token);
+    } else {
+      setAuthError("Invalid code. Please try again.");
     }
     setAuthLoading(false);
   };
@@ -644,31 +617,37 @@ export default function App() {
             {authState === "login" && (
               <div>
                 <div style={{ fontSize: "14px", color: "#7a6050", marginBottom: "20px", textAlign: "center" }}>
-                  Enter your email — we'll send you a login link
+                  Enter your email — we'll send you a 6-digit code
                 </div>
                 <input value={authEmail} onChange={e => setAuthEmail(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleSendMagicLink()}
+                  onKeyDown={e => e.key === "Enter" && handleSendOtp()}
                   placeholder="your@email.com" type="email"
                   style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(200,137,58,0.3)", borderRadius: "9px", color: "#f0e6d3", padding: "13px 16px", fontSize: "15px", outline: "none", fontFamily: "inherit", boxSizing: "border-box", marginBottom: "12px" }} />
                 {authError && <div style={{ color: "#c87060", fontSize: "13px", marginBottom: "10px" }}>{authError}</div>}
-                <button onClick={handleSendMagicLink} disabled={authLoading || !authEmail.trim()}
+                <button onClick={handleSendOtp} disabled={authLoading || !authEmail.trim()}
                   style={{ width: "100%", background: authEmail.trim() ? "linear-gradient(135deg,#c8893a,#a06828)" : "rgba(200,137,58,0.2)", border: "none", borderRadius: "9px", color: authEmail.trim() ? "#fff" : "#5a4030", padding: "13px", fontSize: "15px", fontWeight: "500", cursor: authEmail.trim() ? "pointer" : "not-allowed" }}>
-                  {authLoading ? "Sending…" : "Send Login Link"}
+                  {authLoading ? "Sending…" : "Send Code"}
                 </button>
               </div>
             )}
 
             {authState === "verify" && (
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "36px", marginBottom: "16px" }}>📬</div>
-                <div style={{ fontSize: "16px", color: "#c8a060", marginBottom: "8px", fontFamily: "'Playfair Display', serif" }}>Check your email</div>
-                <div style={{ fontSize: "14px", color: "#7a6050", marginBottom: "6px" }}>We sent a login link to</div>
-                <div style={{ fontSize: "14px", color: "#c8a060", marginBottom: "24px", fontWeight: "500" }}>{authEmail}</div>
-                <div style={{ fontSize: "13px", color: "#5a4030", lineHeight: 1.6, marginBottom: "24px" }}>
-                  Click the link in the email to sign in.<br />You can close this tab if you're opening it on another device.
+              <div>
+                <div style={{ fontSize: "14px", color: "#7a6050", marginBottom: "6px", textAlign: "center" }}>
+                  We sent a 6-digit code to
                 </div>
-                <button onClick={() => { setAuthState("login"); setAuthEmail(""); setAuthError(""); }}
-                  style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "9px", color: "#6a5040", cursor: "pointer", fontSize: "13px", padding: "9px 20px" }}>
+                <div style={{ fontSize: "14px", color: "#c8a060", marginBottom: "24px", textAlign: "center", fontWeight: "500" }}>{authEmail}</div>
+                <input value={authCode} onChange={e => setAuthCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  onKeyDown={e => e.key === "Enter" && handleVerifyOtp()}
+                  placeholder="123456" type="text" maxLength={6}
+                  style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(200,137,58,0.3)", borderRadius: "9px", color: "#f0e6d3", padding: "13px 16px", fontSize: "28px", outline: "none", fontFamily: "monospace", boxSizing: "border-box", marginBottom: "12px", letterSpacing: "0.4em", textAlign: "center" }} />
+                {authError && <div style={{ color: "#c87060", fontSize: "13px", marginBottom: "10px", textAlign: "center" }}>{authError}</div>}
+                <button onClick={handleVerifyOtp} disabled={authLoading || authCode.length < 6}
+                  style={{ width: "100%", background: authCode.length >= 6 ? "linear-gradient(135deg,#c8893a,#a06828)" : "rgba(200,137,58,0.2)", border: "none", borderRadius: "9px", color: authCode.length >= 6 ? "#fff" : "#5a4030", padding: "13px", fontSize: "15px", fontWeight: "500", cursor: authCode.length >= 6 ? "pointer" : "not-allowed", marginBottom: "12px" }}>
+                  {authLoading ? "Verifying…" : "Sign In"}
+                </button>
+                <button onClick={() => { setAuthState("login"); setAuthCode(""); setAuthError(""); }}
+                  style={{ width: "100%", background: "none", border: "none", color: "#5a4030", cursor: "pointer", fontSize: "13px", padding: "8px" }}>
                   ← Use a different email
                 </button>
               </div>
