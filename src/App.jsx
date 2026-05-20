@@ -634,7 +634,7 @@ export default function App() {
             {authState === "verify" && (
               <div>
                 <div style={{ fontSize: "14px", color: "#7a6050", marginBottom: "6px", textAlign: "center" }}>
-                  We sent a 6-digit code to
+                  We sent a 8-digit code to
                 </div>
                 <div style={{ fontSize: "14px", color: "#c8a060", marginBottom: "24px", textAlign: "center", fontWeight: "500" }}>{authEmail}</div>
                 <input value={authCode} onChange={e => setAuthCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
