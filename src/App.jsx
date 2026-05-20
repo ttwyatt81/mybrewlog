@@ -41,18 +41,30 @@ async function sbSignOut(token) {
 }
 
 async function sbGet(table, token) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*&order=updated_at.desc&limit=1`, {
     headers: authHeaders(token)
   });
   return res.ok ? res.json() : [];
 }
 
 async function sbUpsert(table, token, rowId, data) {
-  await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-    method: "POST",
-    headers: { ...authHeaders(token), Prefer: "resolution=merge-duplicates" },
-    body: JSON.stringify({ id: rowId, data: JSON.stringify(data) })
-  });
+  // First check if a row exists for this user
+  const existing = await sbGet(table, token);
+  if (existing && existing.length > 0) {
+    // Update existing row
+    await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${existing[0].id}`, {
+      method: "PATCH",
+      headers: authHeaders(token),
+      body: JSON.stringify({ data: JSON.stringify(data), updated_at: new Date().toISOString() })
+    });
+  } else {
+    // Insert new row (user_id set automatically via RLS + auth.uid())
+    await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: "POST",
+      headers: { ...authHeaders(token), Prefer: "return=minimal" },
+      body: JSON.stringify({ id: rowId, data: JSON.stringify(data) })
+    });
+  }
 }
 
 const defaultRecipe = {
@@ -452,18 +464,14 @@ export default function App() {
   const persist = async (updated) => {
     setBeans(updated);
     try {
-      const rows = await sbGet("beans", session?.access_token);
-      const rowId = (rows && rows.length > 0) ? rows[0].id : crypto.randomUUID();
-      await sbUpsert("beans", session?.access_token, rowId, updated);
+      await sbUpsert("beans", session?.access_token, crypto.randomUUID(), updated);
     } catch (e) { console.error("Failed to save beans:", e); }
   };
 
   const persistRecipes = async (updated) => {
     setRecipes(updated);
     try {
-      const rows = await sbGet("recipes", session?.access_token);
-      const rowId = (rows && rows.length > 0) ? rows[0].id : crypto.randomUUID();
-      await sbUpsert("recipes", session?.access_token, rowId, updated);
+      await sbUpsert("recipes", session?.access_token, crypto.randomUUID(), updated);
     } catch (e) { console.error("Failed to save recipes:", e); }
   };
 
