@@ -462,7 +462,7 @@ export default function App() {
   };
 
   const handleVerifyOtp = async () => {
-    if (authCode.length < 6) return;
+    if (authCode.length < 6) return; // allow 6-8 digits
     setAuthLoading(true); setAuthError("");
     const data = await sbVerifyOtp(authEmail.trim(), authCode.trim());
     if (data) {
@@ -637,9 +637,9 @@ export default function App() {
                   We sent a 6-digit code to
                 </div>
                 <div style={{ fontSize: "14px", color: "#c8a060", marginBottom: "24px", textAlign: "center", fontWeight: "500" }}>{authEmail}</div>
-                <input value={authCode} onChange={e => setAuthCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                <input value={authCode} onChange={e => setAuthCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
                   onKeyDown={e => e.key === "Enter" && handleVerifyOtp()}
-                  placeholder="123456" type="text" maxLength={6}
+                  placeholder="12345678" type="text" maxLength={8}
                   style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(200,137,58,0.3)", borderRadius: "9px", color: "#f0e6d3", padding: "13px 16px", fontSize: "28px", outline: "none", fontFamily: "monospace", boxSizing: "border-box", marginBottom: "12px", letterSpacing: "0.4em", textAlign: "center" }} />
                 {authError && <div style={{ color: "#c87060", fontSize: "13px", marginBottom: "10px", textAlign: "center" }}>{authError}</div>}
                 <button onClick={handleVerifyOtp} disabled={authLoading || authCode.length < 6}
