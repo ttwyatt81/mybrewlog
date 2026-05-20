@@ -482,9 +482,25 @@ export default function App() {
   const handleSendMagicLink = async () => {
     if (!authEmail.trim()) return;
     setAuthLoading(true); setAuthError("");
-    const ok = await sbSignInWithMagicLink(authEmail.trim());
-    if (ok) { setAuthState("verify"); }
-    else { setAuthError("Could not send link. Check your email address."); }
+    try {
+      const redirectTo = "https://mybrewlog.vercel.app";
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
+        method: "POST",
+        headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ email: authEmail.trim(), create_user: true, options: { emailRedirectTo: redirectTo } })
+      });
+      const body = await res.json().catch(() => ({}));
+      console.log("Auth response status:", res.status);
+      console.log("Auth response body:", JSON.stringify(body));
+      if (res.ok) {
+        setAuthState("verify");
+      } else {
+        setAuthError(`Error ${res.status}: ${body.message || body.msg || JSON.stringify(body)}`);
+      }
+    } catch (e) {
+      console.error("Network error:", e);
+      setAuthError("Network error: " + e.message);
+    }
     setAuthLoading(false);
   };
 
