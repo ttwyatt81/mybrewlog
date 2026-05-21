@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 const SUPABASE_URL = "https://jgmvlrxeglotnpdenuvn.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnbXZscnhlZ2xvdG5wZGVudXZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMjE3MDYsImV4cCI6MjA5Mzg5NzcwNn0.YBc_DI-yfa1_488YxD-AM70B1QvLcaHznlmdFR2Gulg";
 
+// Cache row IDs per table so we always update the same row
+const rowIdCache = {};
+
 function authHeaders(token) {
   return {
     apikey: SUPABASE_KEY,
@@ -54,21 +57,41 @@ async function sbGet(table, token) {
 }
 
 async function sbUpsert(table, token, rowId, data) {
-  // First check if a row exists for this user
+  // Use cached row ID if we have one
+  if (rowIdCache[table]) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${rowIdCache[table]}`, {
+      method: "PATCH",
+      headers: authHeaders(token),
+      body: JSON.stringify({ data: JSON.stringify(data), updated_at: new Date().toISOString() })
+    });
+    if (res.ok) return;
+    // If patch failed, fall through to insert
+    delete rowIdCache[table];
+  }
+
+  // Check if a row already exists for this user
   const existing = await sbGet(table, token);
   if (existing && existing.length > 0) {
-    // Update existing row
+    rowIdCache[table] = existing[0].id;
     await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${existing[0].id}`, {
       method: "PATCH",
       headers: authHeaders(token),
       body: JSON.stringify({ data: JSON.stringify(data), updated_at: new Date().toISOString() })
     });
   } else {
-    // Insert new row (user_id set automatically via RLS + auth.uid())
+    // Get user_id from token for new insert
+    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
+    });
+    const user = await userRes.json();
+    const userId = user?.id;
+    if (!userId) { console.error("No user ID found"); return; }
+    const newId = rowId || crypto.randomUUID();
+    rowIdCache[table] = newId;
     await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
       method: "POST",
       headers: { ...authHeaders(token), Prefer: "return=minimal" },
-      body: JSON.stringify({ id: rowId, data: JSON.stringify(data) })
+      body: JSON.stringify({ id: newId, user_id: userId, data: JSON.stringify(data) })
     });
   }
 }
@@ -417,28 +440,21 @@ export default function App() {
     try {
       const rows = await sbGet("beans", token);
       if (rows && rows.length > 0 && rows[0].data) {
+        rowIdCache["beans"] = rows[0].id; // cache row ID for fast saves
         setBeans(JSON.parse(rows[0].data));
-      } else {
-        // Seed with exported data on first login
-        const seed = [{"id":1779027338180,"name":"Assemblage - Blend Kawa","roaster":"Tanat","origin":"Brazil, Guatemala, Peru","region":"Multiple","process":"Other","roastLevel":"Dark","varietal":"Catuai Jaune, Caturra, Mundo Novo, Typica","altitude":"Mixed","type":"Espresso","roastDate":"0026-03-10","notes":"Chocolate, Hazelnut","brews":[{"id":1779027483514,"date":"2026-05-17","method":"Espresso","brewer":"","filterPaper":"","dose":"15","water":"30","temperature":"93","grindSize":"28","bloomWater":"","bloomTime":"","numPours":"","totalTime":"","pourStructure":"","rating":2,"tastingNotes":"bit sour, maybe longer pre-infusion","recipeSource":"Manual","recipeName":"","machine":"Flaire 58+ 2","grinder":"Kingrinder K6","preHeat":"Medium","brewTime":"30"}]},{"id":1778836851983,"name":"Hacienda Misiones colombia","roaster":"Replica","origin":"Colombia","region":"Cundinamarca","process":"Natural","roastLevel":"","varietal":"Sudan Rume","altitude":"1600-1800m","type":"Filter","roastDate":"2026-03-26","notes":"Chamomile, orange blossom, apricot ","brews":[{"id":1778850135629,"date":"2026-05-15","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"250","temperature":"93","grindSize":"95","bloomWater":"49","bloomTime":"45","numPours":"3","totalTime":"2:30","pourStructure":"Bloom 45g → Pour to 100g at 0:45s → Pour to 170g at 1:25s → Final pour to 250g at 2:00s","rating":0,"tastingNotes":"","recipeSource":"Last Brew","recipeName":""},{"id":1778836980839,"date":"2026-05-15","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"233","temperature":"93","grindSize":"95","bloomWater":"45","bloomTime":"50","numPours":"3","totalTime":"2:30","pourStructure":"Bloom 45g 0:50s) → Pour to 93g at 0:50 → Pour to 163g at 1:20 → Final pour to 233g at 1:50","rating":3,"tastingNotes":"Funky flavors, maybe dilute more or go more coarse grind.","recipeSource":"Manual","recipeName":""}]},{"id":1777975585677,"name":"Eli Espinoza Geisha","roaster":"Kaffeelix","origin":"Peru","region":"Las Pirias, Chirinos","process":"Washed","roastLevel":"","varietal":"Geisha","altitude":"","type":"Filter","roastDate":"2026-04-08","notes":"candied orange, floral, bergamot, chocolate, spicy notes, silky","brews":[]},{"id":1777975356960,"name":"Peru Aurora Huaman","roaster":"Unity Coffee","origin":"Peru","region":"Cajamarca","process":"Washed","roastLevel":"","varietal":"Bourbon and Caturra","altitude":"1889m","type":"Filter","roastDate":"2026-04-01","notes":"Raspberry, hibiscus, and lime","brews":[{"id":1778661820490,"date":"2026-05-13","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"250","temperature":"93","grindSize":"92 clicks","bloomWater":"45","bloomTime":"40","numPours":"3","totalTime":"2:50","pourStructure":"Bloom 45g (0:00–0:40s) → Pour to 120g → Pour to 190g at 1:15 → Final pour to 250g at 1:45","rating":3,"tastingNotes":"Too fine ground","recipeSource":"Last Brew","recipeName":""},{"id":1778594812061,"date":"2026-05-12","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"250","temperature":"93","grindSize":"93 clicks","bloomWater":"45","bloomTime":"40","numPours":"3","totalTime":"2:55","pourStructure":"Bloom 45g (0:00–0:40s) → Pour to 120g → Pour to 190g at 1:15 → Final pour to 250g at 1:50","rating":4,"tastingNotes":"Very fruity, best brew until now","recipeSource":"Last Brew","recipeName":""},{"id":1778403549543,"date":"2026-05-10","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"250","temperature":"93","grindSize":"94 clicks","bloomWater":"45","bloomTime":"40","numPours":"3","totalTime":"2:30","pourStructure":"Bloom 45g (0:00–0:40s) → Pour to 120g → Pour to 190g at 1:15 → Final pour to 250g at 1:50","rating":3,"tastingNotes":"not so fruity","recipeSource":"Last Brew","recipeName":""},{"id":1778341507761,"date":"2026-05-09","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"250","temperature":"93","grindSize":"95 clicks","bloomWater":"45","bloomTime":"35","numPours":"3","totalTime":"2:25","pourStructure":"Bloom 45g (0:00–0:35s) → Pour to 96g at 0:45 → Pour to 190g at 1:20 → Final pour to 240g at 1:50","rating":2,"tastingNotes":"Got the pours a bit wrong ","recipeSource":"Manual","recipeName":""},{"id":1778341078874,"date":"2026-05-09","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"18","water":"300","temperature":"93","grindSize":"100 click","bloomWater":"40","bloomTime":"40","numPours":"3","totalTime":"2:30","pourStructure":"Bloom 40g (0:00–0:40s) → Pour to 140g at 0:45 → Pour to 230 g at 1:20 → Final pour to 300g at 1:50","rating":2,"tastingNotes":"A bit blend and made it with chemex recipe.","recipeSource":"Manual","recipeName":""}]},{"id":1777974648055,"name":"Competition Finca Sidra Las Flores","roaster":"Nomad","origin":"Colombia","region":"Acevedo, Huila","process":"Natural","roastLevel":"","varietal":"Sidra Bourbon","altitude":"1750","type":"Filter","notes":"Cocoa nibs, Lychee, Pineapple","brews":[{"id":1777974821637,"date":"2026-05-05","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"255","temperature":"96","grindSize":"Mediu","bloomWater":"45","bloomTime":"40","numPours":"2","totalTime":"1:50","pourStructure":"Bloom 45g → Pour to 255g at 0:40","rating":5,"tastingNotes":"Lychee and pineapple","recipeSource":"Manual","recipeName":""}],"roastDate":"2026-03-03"},{"id":1777972918886,"name":"Filter Etiopia Hambela","roaster":"Nomad","origin":"Etiopia","region":"Haro Sorsa, Guji zone","process":"Natural","roastLevel":"Light","varietal":"Heirloom","altitude":"2200-2400m","type":"Filter","notes":"Cocoa nibs, cherry, blueberries","brews":[{"id":1778764729518,"date":"2026-05-14","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"16","water":"240","temperature":"93","grindSize":"93 clicks","bloomWater":"60","bloomTime":"40","numPours":"3","totalTime":"2:25","pourStructure":"Bloom 60gr -> pour until 180gr at 40s -> pour until 240gr at 1:20s ","rating":5,"tastingNotes":"Blueberry nice","recipeSource":"Last Brew","recipeName":""},{"id":1778489965456,"date":"2026-05-11","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"16","water":"240","temperature":"93","grindSize":"94 clicks","bloomWater":"60","bloomTime":"30","numPours":"3","totalTime":"2:25","pourStructure":"Bloom 60gr -> pour until 180gr at 30s -> pour until 240gr at 1:15s ","rating":4,"tastingNotes":"Good mouth feel, maybe try to get fruit flavor more prominent ","recipeSource":"Last Brew","recipeName":""},{"id":1777973176701,"date":"2026-05-05","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"16","water":"240","temperature":"93","grindSize":"95 clicks","bloomWater":"60","bloomTime":"30","numPours":"3","totalTime":"2:25","pourStructure":"Bloom 60gr -> pour until 180gr at 30s -> pour until 240gr at 1:15s ","rating":4,"tastingNotes":"nothing special to mention"}],"roastDate":"2026-03-11"},{"id":1777972626145,"name":"Filter Burundi Gahahe","roaster":"Nomad","origin":"Burundi","region":"Kayanza, Ga,ahe","process":"Washed","roastLevel":"Light","varietal":"Red Bourbon","altitude":"1800m","type":"Filter","notes":"Floral, Tangerine, Grilled pineapple","brews":[{"id":1778677268126,"date":"2026-05-13","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"240","temperature":"96","grindSize":"94 clicks","bloomWater":"60","bloomTime":"40","numPours":"3","totalTime":"2:18","pourStructure":"Bloom 45g (0:00–0:40s) → Pour to 160g at 0:45 → Pour to 240g at 1:10","rating":2,"tastingNotes":"Very earthy, grind less fine next time","recipeSource":"Last Brew","recipeName":""},{"id":1778595162194,"date":"2026-05-12","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"240","temperature":"96","grindSize":"96","bloomWater":"60","bloomTime":"40","numPours":"3","totalTime":"2:45","pourStructure":"Bloom 45g (0:00–0:40s) → Pour to 160g at 0:45 → Pour to 249g at 1:15","rating":3,"tastingNotes":"Maybe not enough fruit","recipeSource":"Manual","recipeName":""}],"roastDate":"2026-03-11"}];
-        setBeans(seed);
-        await sbUpsert("beans", token, crypto.randomUUID(), seed);
       }
     } catch (e) { console.error("Load beans error:", e); }
     try {
       const rows = await sbGet("recipes", token);
       if (rows && rows.length > 0 && rows[0].data) {
+        rowIdCache["recipes"] = rows[0].id; // cache row ID for fast saves
         setRecipes(JSON.parse(rows[0].data));
-      } else {
-        const seed = [{"id":1778344367456,"name":"Standard v60 2 pours","method":"Pour Over","brewer":"V60","filterPaper":"Unbleached","dose":"15","water":"240","temperature":"93","grindSize":"95 clicks","bloomWater":"45","bloomTime":"40","numPours":"2","totalTime":"2:25","pourStructure":"Bloom 45s -> pour to 150 -> at 1.15 pour until 240"}];
-        setRecipes(seed);
-        if (seed.length > 0) await sbUpsert("recipes", token, crypto.randomUUID(), seed);
       }
     } catch (e) { console.error("Load recipes error:", e); }
     setLoading(false);
   }
 
-  const persist = async (updated) => {
+    const persist = async (updated) => {
     setBeans(updated);
     try {
       await sbUpsert("beans", session?.access_token, crypto.randomUUID(), updated);
@@ -617,7 +633,7 @@ export default function App() {
             {authState === "login" && (
               <div>
                 <div style={{ fontSize: "14px", color: "#7a6050", marginBottom: "20px", textAlign: "center" }}>
-                  Enter your email — we'll send you a 8-digit code
+                  Enter your email — we'll send you a 6-digit code
                 </div>
                 <input value={authEmail} onChange={e => setAuthEmail(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleSendOtp()}
@@ -634,7 +650,7 @@ export default function App() {
             {authState === "verify" && (
               <div>
                 <div style={{ fontSize: "14px", color: "#7a6050", marginBottom: "6px", textAlign: "center" }}>
-                  We sent a 8-digit code to
+                  We sent a 6-digit code to
                 </div>
                 <div style={{ fontSize: "14px", color: "#c8a060", marginBottom: "24px", textAlign: "center", fontWeight: "500" }}>{authEmail}</div>
                 <input value={authCode} onChange={e => setAuthCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
