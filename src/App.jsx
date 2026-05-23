@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
-const SUPABASE_URL = "https://jgmvlrxeglotnpdenuvn.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnbXZscnhlZ2xvdG5wZGVudXZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzMjE3MDYsImV4cCI6MjA5Mzg5NzcwNn0.YBc_DI-yfa1_488YxD-AM70B1QvLcaHznlmdFR2Gulg";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Cache row IDs per table so we always update the same row
 const rowIdCache = {};
