@@ -1443,7 +1443,7 @@ export default function App() {
                   <SectionHead>Technique</SectionHead>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
                     <Field label="Bloom Water (g)">
-                      <input style={inp()} type="number" value={brewForm.bloomWater} onChange={e => setBr("bloomWater", e.target.value)} placeholder="e.g. 45" onFocus={onFoc} onBlur={onBlur} />
+                      <input style={inp()} type="number" value={brewForm.bloomWater} onChange={e => setBr("bloomWater", e.target.value)} placeholder="e.g. 45" onFocus={onFoc} onBlur={onBlr} />
                     </Field>
                     <Field label="Bloom Time (s)">
                       <input style={inp()} type="number" value={brewForm.bloomTime} onChange={e => setBr("bloomTime", e.target.value)} placeholder="e.g. 45" onFocus={onFoc} onBlur={onBlr} />
