@@ -559,6 +559,7 @@ export default function App() {
 
     if (loading) {
       return (
+        <ErrorBoundary>
         <div style={{ minHeight: "100vh", background: "#0c0905", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", color: "#6a5040" }}>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: "32px", marginBottom: "12px", animation: "spin 1.4s linear infinite", display: "inline-block" }}>⟳</div>
@@ -999,7 +1000,6 @@ export default function App() {
         {view === "beans" && tab === "brews" && selectedBrew && (() => {
           const { brew, bean } = selectedBrew;
           return (
-            <ErrorBoundary>
             <div>
               <button onClick={() => setSelectedBrew(null)}
                 style={{ background: "none", border: "none", color: "#9a7a5a", cursor: "pointer", fontSize: "13px", marginBottom: "20px", padding: 0 }}>
