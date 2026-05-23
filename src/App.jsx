@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import AIModal from "./components/AIModal";
 import BeanCard from "./components/BeanCard";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
