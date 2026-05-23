@@ -1,9 +1,12 @@
 export default function BeanCard({
   bean,
+  bestBrew,
   setActiveBean,
   setView,
   Tag
 }) {
+  const best = bestBrew(bean);
+
   return (
     <div
       onClick={() => {
@@ -13,7 +16,7 @@ export default function BeanCard({
       style={{
         background: "rgba(255,255,255,0.02)",
         border: "1px solid rgba(200,137,58,0.18)",
-        borderRadius: "14px",
+        borderRadius: "12px",
         padding: "16px 18px",
         cursor: "pointer",
         transition: "all 0.18s"
@@ -27,17 +30,15 @@ export default function BeanCard({
         e.currentTarget.style.borderColor = "rgba(200,137,58,0.18)";
       }}
     >
-      {/* Header */}
       <div style={{
         display: "flex",
         justifyContent: "space-between",
-        alignItems: "flex-start",
-        marginBottom: "10px"
+        alignItems: "flex-start"
       }}>
         <div>
           <div style={{
             fontFamily: "'Playfair Display', serif",
-            fontSize: "18px",
+            fontSize: "17px",
             marginBottom: "3px"
           }}>
             {bean.name}
@@ -45,65 +46,67 @@ export default function BeanCard({
 
           <div style={{
             fontSize: "12px",
-            color: "#6a5040"
+            color: "#7a6050"
           }}>
-            {[bean.roaster, bean.origin].filter(Boolean).join(" · ")}
+            {[bean.roaster, bean.origin, bean.region]
+              .filter(Boolean)
+              .join(" · ")}
           </div>
         </div>
 
-        {bean.type && (
-          <Tag>{bean.type}</Tag>
-        )}
-      </div>
-
-      {/* Meta tags */}
-      <div style={{
-        display: "flex",
-        gap: "6px",
-        flexWrap: "wrap",
-        marginBottom: "10px"
-      }}>
-        {bean.process && <Tag>{bean.process}</Tag>}
-        {bean.roastLevel && <Tag>{bean.roastLevel}</Tag>}
-        {bean.varietal && <Tag>{bean.varietal}</Tag>}
-      </div>
-
-      {/* Notes */}
-      {bean.notes && (
         <div style={{
-          fontSize: "12px",
-          color: "#7a6050",
-          lineHeight: 1.6,
-          fontStyle: "italic",
-          marginBottom: "10px"
+          textAlign: "right",
+          flexShrink: 0,
+          marginLeft: "12px"
         }}>
-          "{bean.notes.slice(0, 120)}
-          {bean.notes.length > 120 ? "…" : ""}"
-        </div>
-      )}
+          {best?.rating > 0 && (
+            <div style={{
+              fontSize: "12px",
+              color: "#c8893a"
+            }}>
+              {"★".repeat(best.rating)}
+            </div>
+          )}
 
-      {/* Footer */}
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginTop: "10px"
-      }}>
-        <div style={{
-          fontSize: "11px",
-          color: "#4a3a2a"
-        }}>
-          {bean.brews?.length || 0} brew
-          {(bean.brews?.length || 0) !== 1 ? "s" : ""}
-        </div>
-
-        {bean.roastDate && (
           <div style={{
             fontSize: "11px",
-            color: "#5a4030"
+            color: "#4a3a2a",
+            marginTop: "3px"
           }}>
-            Roasted {bean.roastDate}
+            {bean.brews.length} brew
+            {bean.brews.length !== 1 ? "s" : ""}
           </div>
+        </div>
+      </div>
+
+      <div style={{
+        marginTop: "10px",
+        display: "flex",
+        gap: "7px",
+        flexWrap: "wrap"
+      }}>
+        {bean.type && <Tag>{bean.type}</Tag>}
+        {bean.roastLevel && <Tag>{bean.roastLevel}</Tag>}
+        {bean.process && <Tag>{bean.process}</Tag>}
+        {bean.varietal && <Tag>{bean.varietal}</Tag>}
+        {bean.altitude && <Tag>{bean.altitude}</Tag>}
+
+        {bean.roastDate && (
+          <span style={{
+            fontSize: "11px",
+            color: "#6a5040",
+            marginLeft: "2px"
+          }}>
+            Roasted{" "}
+            {new Date(bean.roastDate).toLocaleDateString(
+              "en-GB",
+              {
+                day: "numeric",
+                month: "short",
+                year: "numeric"
+              }
+            )}
+          </span>
         )}
       </div>
     </div>
