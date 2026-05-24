@@ -691,7 +691,7 @@ export default function App() {
     setView={setView}
     Tag={Tag}
   />
-))}})}
+))}
               </div>
             )}
           </div>
