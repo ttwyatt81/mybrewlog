@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import AIModal from "./components/AIModal";
 import BeanCard from "./components/BeanCard";
+import { BrewCard, BrewDetail } from "./components/BrewCard";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -941,46 +942,14 @@ export default function App() {
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {sortedBrews.map(({ brew, bean }) => (
-                    <div key={`${bean.id}-${brew.id}`}
+                  {{sortedBrews.map(({ brew, bean }) => (
+                    <BrewCard
+                      key={`${bean.id}-${brew.id}`}
+                      brew={brew}
+                      bean={bean}
                       onClick={() => setSelectedBrew({ brew, bean })}
-                      style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(200,137,58,0.18)", borderRadius: "12px", padding: "15px 18px", cursor: "pointer", transition: "all 0.18s" }}
-                      onMouseEnter={e => { e.currentTarget.style.background = "rgba(200,137,58,0.06)"; e.currentTarget.style.borderColor = "rgba(200,137,58,0.4)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor = "rgba(200,137,58,0.18)"; }}>
-                      {/* Bean info */}
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                        <div>
-                          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", marginBottom: "2px" }}>{bean.name}</div>
-                          <div style={{ fontSize: "11px", color: "#6a5040" }}>{[bean.roaster, bean.origin].filter(Boolean).join(" · ")}</div>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <StarRating value={brew.rating} size={13} />
-                          <div style={{ fontSize: "11px", color: "#4a3a2a", marginTop: "3px" }}>{brew.date}</div>
-                        </div>
-                      </div>
-                      {/* Tags */}
-                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "8px" }}>
-                        {brew.method && <Tag>{brew.method}</Tag>}
-                        {brew.brewer && <Tag>{brew.brewer}</Tag>}
-                        {brew.recipeSource && brew.recipeSource !== "Manual" && (
-                          <span style={{ fontSize: "11px", color: "#7a9a7a", background: "rgba(100,160,100,0.08)", padding: "3px 9px", borderRadius: "20px" }}>
-                            {brew.recipeSource}{brew.recipeName ? `: ${brew.recipeName}` : ""}
-                          </span>
-                        )}
-                      </div>
-                      {/* Key params */}
-                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                        {brew.dose && brew.water && <Tag>1:{calcRatio(brew.dose, brew.water)}</Tag>}
-                        {brew.temperature && <Tag>{brew.temperature}°C</Tag>}
-                        {brew.totalTime && <Tag>{brew.totalTime}</Tag>}
-                      </div>
-                      {brew.tastingNotes && (
-                        <div style={{ marginTop: "8px", fontSize: "12px", color: "#6a5a40", fontStyle: "italic", lineHeight: 1.5 }}>
-                          "{brew.tastingNotes.slice(0, 80)}{brew.tastingNotes.length > 80 ? "…" : ""}"
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    />
+                  ))}}
                 </div>
               )}
             </div>
@@ -988,95 +957,21 @@ export default function App() {
         })()}
 
         {/* ── BREW DETAIL (standalone) ── */}
-        {view === "beans" && tab === "brews" && selectedBrew && (() => {
-          const { brew, bean } = selectedBrew;
-          return (
-            <div>
-              <button onClick={() => setSelectedBrew(null)}
-                style={{ background: "none", border: "none", color: "#9a7a5a", cursor: "pointer", fontSize: "13px", marginBottom: "20px", padding: 0 }}>
-                ← All Brews
-              </button>
-
-              {/* Bean reference */}
-              <div style={{ background: "rgba(200,137,58,0.05)", border: "1px solid rgba(200,137,58,0.15)", borderRadius: "10px", padding: "12px 16px", marginBottom: "20px", cursor: "pointer" }}
-                onClick={() => { setActiveBean(bean); setSelectedBrew(null); setTab("beans"); setView("beanDetail"); }}>
-                <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#6a5040", textTransform: "uppercase", marginBottom: "4px" }}>Bean</div>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", marginBottom: "2px" }}>{bean.name}</div>
-                <div style={{ fontSize: "12px", color: "#7a6050" }}>{[bean.roaster, bean.origin, bean.roastLevel].filter(Boolean).join(" · ")}</div>
-              </div>
-
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                <div>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "22px", marginBottom: "4px" }}>Brew Session</div>
-                  <div style={{ fontSize: "12px", color: "#6a5040" }}>{brew.date}</div>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
-                  <StarRating value={brew.rating} size={18} />
-                  <div style={{ display: "flex", gap: "6px" }}>
-                    <button onClick={() => editBrew(brew, bean)}
-                      style={{ background: "none", border: "1px solid rgba(200,137,58,0.25)", borderRadius: "7px", color: "#9a7a5a", cursor: "pointer", fontSize: "12px", padding: "5px 11px" }}>
-                      Edit Brew
-                    </button>
-                    <button onClick={() => copyBrewToRecipe(brew)}
-                      style={{ background: "none", border: "1px solid rgba(200,137,58,0.25)", borderRadius: "7px", color: "#9a7a5a", cursor: "pointer", fontSize: "12px", padding: "5px 11px" }}>
-                      → Save as Recipe
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "18px" }}>
-                {brew.method && <Tag>{brew.method}</Tag>}
-                {brew.brewer && <Tag>{brew.brewer}</Tag>}
-                {brew.filterPaper && <Tag>{brew.filterPaper}</Tag>}
-                {brew.recipeSource && (
-                  <span style={{ fontSize: "11px", color: brew.recipeSource === "Manual" ? "#9a7a5a" : "#7a9a7a", background: brew.recipeSource === "Manual" ? "rgba(200,137,58,0.08)" : "rgba(100,160,100,0.08)", padding: "3px 9px", borderRadius: "20px" }}>
-                    {brew.recipeSource}{brew.recipeName ? `: ${brew.recipeName}` : ""}
-                  </span>
-                )}
-              </div>
-
-              {/* Stats */}
-              {brew.method === "Pour Over" && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "18px" }}>
-                  {[
-                    { l: "Dose", v: brew.dose ? `${brew.dose}g` : null },
-                    { l: "Water", v: brew.water ? `${brew.water}g` : null },
-                    { l: "Ratio", v: calcRatio(brew.dose, brew.water) ? `1:${calcRatio(brew.dose, brew.water)}` : null },
-                    { l: "Temp", v: brew.temperature ? `${brew.temperature}°C` : null },
-                    { l: "Grind", v: brew.grindSize || null },
-                    { l: "Time", v: brew.totalTime || null },
-                    { l: "Bloom", v: brew.bloomWater ? `${brew.bloomWater}g` : null },
-                    { l: "Bloom ×", v: bloomRatio(brew.bloomWater, brew.dose) ? `×${bloomRatio(brew.bloomWater, brew.dose)}` : null },
-                    { l: "# Pours", v: brew.numPours || null },
-                  ].filter(x => x.v).map(x => (
-                    <div key={x.l} style={{ background: "rgba(200,137,58,0.05)", border: "1px solid rgba(200,137,58,0.1)", borderRadius: "9px", padding: "11px 8px", textAlign: "center" }}>
-                      <div style={{ fontSize: "16px", color: "#f0e6d3", fontFamily: "'Playfair Display', serif" }}>{x.v}</div>
-                      <div style={{ fontSize: "9px", color: "#6a5040", letterSpacing: "0.07em", textTransform: "uppercase", marginTop: "3px" }}>{x.l}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {brew.pourStructure && (
-                <div style={{ marginBottom: "18px" }}>
-                  <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase", marginBottom: "8px" }}>Pour Structure</div>
-                  <div style={{ fontSize: "13px", color: "#c8a878", lineHeight: 1.7, background: "rgba(200,137,58,0.05)", padding: "12px", borderRadius: "8px", borderLeft: "2px solid rgba(200,137,58,0.35)" }}>
-                    {brew.pourStructure}
-                  </div>
-                </div>
-              )}
-
-              {brew.tastingNotes && (
-                <div style={{ marginBottom: "18px" }}>
-                  <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase", marginBottom: "8px" }}>Tasting Notes</div>
-                  <div style={{ fontSize: "14px", color: "#c8a878", lineHeight: 1.7, fontStyle: "italic" }}>"{brew.tastingNotes}"</div>
-                </div>
-              )}
-            </div>
-          );
-        })()}
+        {view === "beans" && tab === "brews" && selectedBrew && (
+          <BrewDetail
+            brew={selectedBrew.brew}
+            bean={selectedBrew.bean}
+            onBack={() => setSelectedBrew(null)}
+            onEdit={() => editBrew(selectedBrew.brew, selectedBrew.bean)}
+            onCopyToRecipe={() => copyBrewToRecipe(selectedBrew.brew)}
+            onGoToBean={() => {
+              setActiveBean(selectedBrew.bean);
+              setSelectedBrew(null);
+              setTab("beans");
+              setView("beanDetail");
+            }}
+          />
+        )}
 
         {/* ── BEAN FORM ── */}
         {view === "beanForm" && editBean && (
