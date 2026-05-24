@@ -16,13 +16,6 @@ function authHeaders(token) {
   };
 }
 
-async function sbGetUser(token) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
-  });
-  return res.ok ? res.json() : null;
-}
-
 async function sbSendOtp(email) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
     method: "POST",
