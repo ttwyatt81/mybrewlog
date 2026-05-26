@@ -18,6 +18,7 @@ import {
 } from "./lib/constants";
 import {
   authHeaders,
+  rowIdCache,
   sbSendOtp,
   sbVerifyOtp,
   sbSignOut,
@@ -26,7 +27,6 @@ import {
 } from "./lib/supabase";
 
 // Cache row IDs per table so we always update the same row
-const rowIdCache = {};
 
 function calcRatio(dose, water) {
   if (!dose || !water || isNaN(dose) || isNaN(water)) return null;
