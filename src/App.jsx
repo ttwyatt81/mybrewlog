@@ -17,7 +17,6 @@ import {
   defaultBrew
 } from "./lib/constants";
 import {
-  rowIdCache,
   sbSendOtp,
   sbVerifyOtp,
   sbSignOut,
@@ -217,14 +216,12 @@ export default function App() {
     try {
       const rows = await sbGet("beans", token);
       if (rows && rows.length > 0 && rows[0].data) {
-        rowIdCache["beans"] = rows[0].id; // cache row ID for fast saves
         setBeans(JSON.parse(rows[0].data));
       }
     } catch (e) { console.error("Load beans error:", e); }
     try {
       const rows = await sbGet("recipes", token);
       if (rows && rows.length > 0 && rows[0].data) {
-        rowIdCache["recipes"] = rows[0].id; // cache row ID for fast saves
         setRecipes(JSON.parse(rows[0].data));
       }
     } catch (e) { console.error("Load recipes error:", e); }
