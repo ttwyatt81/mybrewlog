@@ -24,9 +24,6 @@ import {
   sbUpsert
 } from "./lib/supabase";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
 // Cache row IDs per table so we always update the same row
 const rowIdCache = {};
 
