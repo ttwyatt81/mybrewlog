@@ -43,7 +43,13 @@ export async function sbGet(table, token) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*&order=updated_at.desc&limit=1`, {
     headers: authHeaders(token)
   });
-  return res.ok ? res.json() : [];
+  const rows = res.ok ? await res.json() : [];
+
+  // Cache row ID internally
+  if (rows?.length > 0) {
+    rowIdCache[table] = rows[0].id;
+  }
+  return rows;
 }
 
 export async function sbUpsert(table, token, rowId, data) {
