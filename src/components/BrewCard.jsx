@@ -134,3 +134,31 @@ export function BrewDetail({ brew, bean, onBack, onEdit, onCopyToRecipe, onGoToB
             { l: "Time", v: brew.totalTime || null },
             { l: "Bloom", v: brew.bloomWater ? `${brew.bloomWater}g` : null },
             { l: "Bloom ×", v: bloomRatio(brew.bloomWater, brew.dose) ? `×${bloomRatio(brew.bloomWater, brew.dose)}` : null },
+            { l: "# Pours", v: brew.numPours || null },
+          ].filter(x => x.v).map(x => (
+            <div key={x.l} style={{ background: "rgba(200,137,58,0.05)", border: "1px solid rgba(200,137,58,0.1)", borderRadius: "9px", padding: "11px 8px", textAlign: "center" }}>
+              <div style={{ fontSize: "16px", color: "#f0e6d3", fontFamily: "'Playfair Display', serif" }}>{x.v}</div>
+              <div style={{ fontSize: "9px", color: "#6a5040", letterSpacing: "0.07em", textTransform: "uppercase", marginTop: "3px" }}>{x.l}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {brew.pourStructure && (
+        <div style={{ marginBottom: "18px" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase", marginBottom: "8px" }}>Pour Structure</div>
+          <div style={{ fontSize: "13px", color: "#c8a878", lineHeight: 1.7, background: "rgba(200,137,58,0.05)", padding: "12px", borderRadius: "8px", borderLeft: "2px solid rgba(200,137,58,0.35)" }}>
+            {brew.pourStructure}
+          </div>
+        </div>
+      )}
+
+      {brew.tastingNotes && (
+        <div style={{ marginBottom: "18px" }}>
+          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase", marginBottom: "8px" }}>Tasting Notes</div>
+          <div style={{ fontSize: "14px", color: "#c8a878", lineHeight: 1.7, fontStyle: "italic" }}>"{brew.tastingNotes}"</div>
+        </div>
+      )}
+    </div>
+  );
+}          
