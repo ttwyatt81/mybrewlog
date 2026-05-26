@@ -17,7 +17,6 @@ import {
   defaultBrew
 } from "./lib/constants";
 import {
-  authHeaders,
   rowIdCache,
   sbSendOtp,
   sbVerifyOtp,
