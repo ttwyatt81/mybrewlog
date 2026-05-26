@@ -921,14 +921,14 @@ export default function App() {
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {{sortedBrews.map(({ brew, bean }) => (
+                  {sortedBrews.map(({ brew, bean }) => (
                     <BrewCard
                       key={`${bean.id}-${brew.id}`}
                       brew={brew}
                       bean={bean}
                       onClick={() => setSelectedBrew({ brew, bean })}
                     />
-                  ))}}
+                  ))}
                 </div>
               )}
             </div>
