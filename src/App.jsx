@@ -2,6 +2,20 @@ import { useState, useEffect } from "react";
 import AIModal from "./components/AIModal";
 import BeanCard from "./components/BeanCard";
 import { BrewCard, BrewDetail } from "./components/BrewCard";
+import {
+  defaultRecipe,
+  processOptions,
+  roastLevels,
+  varietalOptions,
+  beanTypes,
+  altitudeOptions,
+  defaultBean,
+  brewMethods,
+  preHeatOptions,
+  pourOverBrewers,
+  filterPapers,
+  defaultBrew
+} from "./lib/constants";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -91,41 +105,6 @@ async function sbUpsert(table, token, rowId, data) {
     });
   }
 }
-
-const defaultRecipe = {
-  id: null, name: "", method: "Pour Over", brewer: "", filterPaper: "",
-  dose: "", water: "", temperature: "", grindSize: "",
-  bloomWater: "", bloomTime: "", numPours: "", totalTime: "",
-  pourStructure: "",
-};
-
-const processOptions = ["Natural", "Washed", "Honey", "Anaerobic", "Co-fermented", "Wet-hulled", "Other"];
-const roastLevels = ["Light", "Medium-Light", "Medium", "Medium-Dark", "Dark"];
-const varietalOptions = ["Sidra", "Gesha/Geisha", "Bourbon", "Typica", "Caturra", "SL28", "SL34", "Pacamara", "Catuai", "Heirloom", "Unknown/Blend"];
-const beanTypes = ["Filter", "Espresso"];
-const altitudeOptions = ["<1200m", "1200–1500m", "1500–1800m", "1800–2100m", ">2100m"];
-
-const defaultBean = {
-  id: null, name: "", roaster: "", origin: "", region: "",
-  process: "", roastLevel: "", varietal: "", altitude: "", type: "", roastDate: "", notes: "",
-  brews: [],
-};
-
-const brewMethods = ["Pour Over", "Espresso", "Moka", "French Press"];
-const preHeatOptions = ["None", "Low", "Medium", "Hot"];
-const pourOverBrewers = ["V60", "Chemex", "Kalita Wave", "Origami", "Aeropress", "Clever Dripper", "Other"];
-const filterPapers = ["Hario Tabbed (white)", "Hario Tabbed (natural)", "Hario Untabbed", "Chemex Bonded", "Kalita Wave", "Bleached", "Unbleached", "Metal filter", "Cloth filter", "Other"];
-
-const defaultBrew = {
-  id: null, date: new Date().toISOString().split("T")[0],
-  method: "Pour Over", brewer: "", filterPaper: "",
-  dose: "", water: "", temperature: "", grindSize: "",
-  bloomWater: "", bloomTime: "", numPours: "", totalTime: "",
-  pourStructure: "", rating: 0, tastingNotes: "",
-  recipeSource: "Manual", recipeName: "",
-  // Espresso fields
-  machine: "", grinder: "", preHeat: "", brewTime: "",
-};
 
 function calcRatio(dose, water) {
   if (!dose || !water || isNaN(dose) || isNaN(water)) return null;
