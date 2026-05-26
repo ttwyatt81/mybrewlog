@@ -1,3 +1,5 @@
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export async function sbSendOtp(email) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
