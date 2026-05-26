@@ -1,6 +1,14 @@
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+export function authHeaders(token) {
+  return {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${token || SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+  };
+}
+
 export async function sbSendOtp(email) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
     method: "POST",
