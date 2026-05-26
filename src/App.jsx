@@ -24,17 +24,6 @@ import {
   sbUpsert
 } from "./lib/supabase";
 
-// Cache row IDs per table so we always update the same row
-const rowIdCache = {};
-
-function authHeaders(token) {
-  return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${token || SUPABASE_KEY}`,
-    "Content-Type": "application/json",
-  };
-}
-
 function calcRatio(dose, water) {
   if (!dose || !water || isNaN(dose) || isNaN(water)) return null;
   return (parseFloat(water) / parseFloat(dose)).toFixed(1);
