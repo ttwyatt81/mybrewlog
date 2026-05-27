@@ -23,7 +23,7 @@ import {
   sbGet,
   sbUpsert
 } from "./lib/supabase";
-import Tag from "./components/ui/Tag"
+import Tag from "./components/ui/Tag";
   
 // Cache row IDs per table so we always update the same row
 
