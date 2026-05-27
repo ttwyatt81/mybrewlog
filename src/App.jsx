@@ -23,7 +23,8 @@ import {
   sbGet,
   sbUpsert
 } from "./lib/supabase";
-
+import Tag from './componenets/ui/Tag"
+  
 // Cache row IDs per table so we always update the same row
 
 function calcRatio(dose, water) {
@@ -47,14 +48,6 @@ function StarRating({ value, onChange, size = 20 }) {
           style={{ fontSize: size, cursor: onChange ? "pointer" : "default", color: s <= (hover || value) ? "#c8893a" : "#2e2318", transition: "color 0.15s", userSelect: "none" }}>★</span>
       ))}
     </div>
-  );
-}
-
-function Tag({ children }) {
-  return (
-    <span style={{ fontSize: "11px", color: "#9a7a5a", background: "rgba(200,137,58,0.08)", padding: "3px 9px", borderRadius: "20px", letterSpacing: "0.03em", whiteSpace: "nowrap" }}>
-      {children}
-    </span>
   );
 }
 
