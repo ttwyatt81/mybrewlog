@@ -24,7 +24,8 @@ import {
   sbUpsert
 } from "./lib/supabase";
 import Tag from "./components/ui/Tag";
-  
+import Field from "./components/ui/Field";
+
 // Cache row IDs per table so we always update the same row
 
 function calcRatio(dose, water) {
@@ -55,16 +56,6 @@ function SectionHead({ children }) {
   return (
     <div style={{ fontSize: "10px", letterSpacing: "0.14em", color: "#c8893a", textTransform: "uppercase", marginBottom: "14px", borderBottom: "1px solid rgba(200,137,58,0.15)", paddingBottom: "6px" }}>
       {children}
-    </div>
-  );
-}
-
-function Field({ label, hint, children }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-      <label style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase" }}>{label}</label>
-      {children}
-      {hint && <span style={{ fontSize: "10px", color: "#4a3a2a" }}>{hint}</span>}
     </div>
   );
 }
