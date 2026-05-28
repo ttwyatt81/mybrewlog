@@ -5,7 +5,8 @@ export default function BeanCard({
   setView,
   Tag
 }) {
-  const best = bestBrew(bean);
+  const best = Array.isArray(bean.brews) ? bestBrew(bean) : null;
+  const brewCount = Array.isArray(bean.brews) ? bean.brews.length : 0;
 
   return (
     <div
@@ -73,8 +74,7 @@ export default function BeanCard({
             color: "#4a3a2a",
             marginTop: "3px"
           }}>
-            {bean.brews.length} brew
-            {bean.brews.length !== 1 ? "s" : ""}
+            {brewCount} brew{brewCount !== 1 ? "s" : ""}
           </div>
         </div>
       </div>

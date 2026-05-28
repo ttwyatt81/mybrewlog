@@ -1,9 +1,14 @@
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const rowIdCache = {};
+function ensureSupabaseConfig() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    throw new Error("Missing Supabase configuration: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are required.");
+  }
+}
 
-export function authHeaders(token) {
+function authHeaders(token) {
+  ensureSupabaseConfig();
   return {
     apikey: SUPABASE_KEY,
     Authorization: `Bearer ${token || SUPABASE_KEY}`,
@@ -11,84 +16,128 @@ export function authHeaders(token) {
   };
 }
 
+async function fetchJson(url, options = {}) {
+  const res = await fetch(url, options);
+  const body = await res.text().catch(() => "");
+  let data;
+  try {
+    data = body ? JSON.parse(body) : null;
+  } catch {
+    data = body;
+  }
+  return { ok: res.ok, status: res.status, data };
+}
+
 export async function sbSendOtp(email) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
-    method: "POST",
-    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ email, create_user: true })
-  });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) console.error("OTP error:", body);
-  return { ok: res.ok, error: body.message || body.msg || null };
+  if (!email?.trim()) return { ok: false, error: "Email is required." };
+  ensureSupabaseConfig();
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim(), create_user: true })
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) console.error("OTP error:", body);
+    return { ok: res.ok, error: body.message || body.msg || null };
+  } catch (error) {
+    console.error("OTP request failed:", error);
+    return { ok: false, error: error?.message || "Unable to send OTP." };
+  }
 }
 
 export async function sbVerifyOtp(email, token) {
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
-    method: "POST",
-    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ type: "email", email, token })
-  });
-  const data = await res.json().catch(() => ({}));
-  return data.access_token ? data : null;
+  if (!email?.trim() || !token?.trim()) return null;
+  ensureSupabaseConfig();
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "email", email: email.trim(), token: token.trim() })
+    });
+    const data = await res.json().catch(() => ({}));
+    return data.access_token ? data : null;
+  } catch (error) {
+    console.error("OTP verify request failed:", error);
+    return null;
+  }
 }
 
 export async function sbSignOut(token) {
-  await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
-    method: "POST",
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
-  });
-}
+  if (!token) return;
+  ensureSupabaseConfig();
 
-export async function sbGet(table, token) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*&order=updated_at.desc&limit=1`, {
-    headers: authHeaders(token)
-  });
-  const rows = res.ok ? await res.json() : [];
-
-  // Cache row ID internally
-  if (rows?.length > 0) {
-    rowIdCache[table] = rows[0].id;
-  }
-  return rows;
-}
-
-export async function sbUpsert(table, token, rowId, data) {
-  // Use cached row ID if we have one
-  if (rowIdCache[table]) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${rowIdCache[table]}`, {
-      method: "PATCH",
-      headers: authHeaders(token),
-      body: JSON.stringify({ data: JSON.stringify(data), updated_at: new Date().toISOString() })
-    });
-    if (res.ok) return;
-    // If patch failed, fall through to insert
-    delete rowIdCache[table];
-  }
-
-  // Check if a row already exists for this user
-  const existing = await sbGet(table, token);
-  if (existing && existing.length > 0) {
-    rowIdCache[table] = existing[0].id;
-    await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${existing[0].id}`, {
-      method: "PATCH",
-      headers: authHeaders(token),
-      body: JSON.stringify({ data: JSON.stringify(data), updated_at: new Date().toISOString() })
-    });
-  } else {
-    // Get user_id from token for new insert
-    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+  try {
+    await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+      method: "POST",
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
     });
-    const user = await userRes.json();
-    const userId = user?.id;
-    if (!userId) { console.error("No user ID found"); return; }
-    const newId = rowId || crypto.randomUUID();
-    rowIdCache[table] = newId;
-    await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-      method: "POST",
-      headers: { ...authHeaders(token), Prefer: "return=minimal" },
-      body: JSON.stringify({ id: newId, user_id: userId, data: JSON.stringify(data) })
-    });
+  } catch (error) {
+    console.error("Sign out failed:", error);
   }
+}
+
+export async function sbGet(table, token, query = "select=*") {
+  ensureSupabaseConfig();
+  const url = `${SUPABASE_URL}/rest/v1/${table}?${query}`;
+  const res = await fetchJson(url, { headers: authHeaders(token) });
+  if (!res.ok) {
+    console.error(`Failed to fetch ${table}:`, res.status, res.data);
+    return [];
+  }
+  return Array.isArray(res.data) ? res.data : [];
+}
+
+export async function sbInsert(table, token, payload) {
+  ensureSupabaseConfig();
+  const url = `${SUPABASE_URL}/rest/v1/${table}`;
+  const res = await fetchJson(url, {
+    method: "POST",
+    headers: { ...authHeaders(token), Prefer: "return=representation" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    console.error(`Failed to insert into ${table}:`, res.status, res.data);
+    return null;
+  }
+  return Array.isArray(res.data) ? res.data[0] : res.data;
+}
+
+export async function sbUpdate(table, token, rowId, payload) {
+  if (!rowId) return null;
+  ensureSupabaseConfig();
+  const url = `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(rowId)}`;
+  const res = await fetchJson(url, {
+    method: "PATCH",
+    headers: { ...authHeaders(token), Prefer: "return=representation" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    console.error(`Failed to update ${table} row ${rowId}:`, res.status, res.data);
+    return null;
+  }
+  return Array.isArray(res.data) ? res.data[0] : res.data;
+}
+
+export async function sbDelete(table, token, rowId) {
+  if (!rowId) return false;
+  ensureSupabaseConfig();
+  const url = `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(rowId)}`;
+  const res = await fetchJson(url, {
+    method: "DELETE",
+    headers: authHeaders(token)
+  });
+  if (!res.ok) {
+    console.error(`Failed to delete ${table} row ${rowId}:`, res.status, res.data);
+    return false;
+  }
+  return true;
+}
+
+export async function sbDeleteAll(table, token) {
+  const rows = await sbGet(table, token, "select=id");
+  await Promise.all(rows.map(row => sbDelete(table, token, row.id)));
 }
 

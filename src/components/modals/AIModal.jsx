@@ -157,7 +157,7 @@ export default function AIModal({ bean, onClose, onApply }) {
 
   useEffect(() => {
     fetchSuggestion();
-  }, []);
+  }, [bean]);
 
   function fetchSuggestion() {
     setLoading(true);

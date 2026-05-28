@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import AIModal from "./components/AIModal";
+import AIModal from "./components/modals/AIModal";
 import BeanCard from "./components/BeanCard";
 import { BrewCard, BrewDetail } from "./components/BrewCard";
 import {
@@ -21,10 +21,17 @@ import {
   sbVerifyOtp,
   sbSignOut,
   sbGet,
-  sbUpsert
+  sbInsert,
+  sbUpdate,
+  sbDelete,
+  sbDeleteAll
 } from "./lib/supabase";
 import Tag from "./components/ui/Tag";
 import Field from "./components/ui/Field";
+import SectionHead from "./components/ui/SectionHead";
+import StatBox from "./components/ui/StatBox";
+import { IS, inp, onFoc, onBlr } from "./components/ui/formStyles";
+import TransferModal from "./components/modals/TransferModal";
 
 // Cache row IDs per table so we always update the same row
 
@@ -51,33 +58,6 @@ function StarRating({ value, onChange, size = 20 }) {
     </div>
   );
 }
-
-function SectionHead({ children }) {
-  return (
-    <div style={{ fontSize: "10px", letterSpacing: "0.14em", color: "#c8893a", textTransform: "uppercase", marginBottom: "14px", borderBottom: "1px solid rgba(200,137,58,0.15)", paddingBottom: "6px" }}>
-      {children}
-    </div>
-  );
-}
-
-const IS = {
-  background: "rgba(255,255,255,0.04)", border: "1px solid rgba(200,137,58,0.2)",
-  borderRadius: "7px", color: "#f0e6d3", padding: "9px 12px", fontSize: "14px",
-  outline: "none", fontFamily: "inherit", width: "100%", boxSizing: "border-box", transition: "border-color 0.2s",
-};
-function inp(extra = {}) { return { ...IS, ...extra }; }
-function onFoc(e) { e.target.style.borderColor = "rgba(200,137,58,0.65)"; }
-function onBlr(e) { e.target.style.borderColor = "rgba(200,137,58,0.2)"; }
-
-function StatBox({ label, value }) {
-  return (
-    <div style={{ background: "rgba(200,137,58,0.05)", border: "1px solid rgba(200,137,58,0.12)", borderRadius: "9px", padding: "11px 8px", textAlign: "center" }}>
-      <div style={{ fontSize: "15px", color: "#f0e6d3", marginBottom: "3px", fontFamily: "'Playfair Display', serif" }}>{value || "—"}</div>
-      <div style={{ fontSize: "9px", color: "#6a5040", letterSpacing: "0.07em", textTransform: "uppercase" }}>{label}</div>
-    </div>
-  );
-}
-
 
 // ── Recipe Generator ─────────────────────────────────────────────────────────
 function generateRecipe(bean) {
@@ -195,35 +175,193 @@ export default function App() {
     }
   }, []);
 
+  const normalizeBeanRow = (row) => ({
+    id: row.id,
+    name: row.name || "",
+    roaster: row.roaster || "",
+    origin: row.origin || "",
+    region: row.region || "",
+    roastLevel: row.roast_level || "",
+    process: row.process || "",
+    varietal: row.varietal || "",
+    altitude: row.altitude || "",
+    type: row.type || "",
+    roastDate: row.roast_date || "",
+    notes: row.notes || "",
+    brews: []
+  });
+
+  const normalizeBrewRow = (row) => ({
+    id: row.id,
+    bean_id: row.bean_id,
+    date: row.date || "",
+    method: row.method || "",
+    brewer: row.brewer || "",
+    filterPaper: row.filter_paper || "",
+    dose: row.dose ?? "",
+    water: row.water ?? "",
+    temperature: row.temperature ?? "",
+    grindSize: row.grind_size || "",
+    bloomWater: row.bloom_water ?? "",
+    bloomTime: row.bloom_time ?? "",
+    numPours: row.num_pours ?? "",
+    totalTime: row.total_time || "",
+    pourStructure: row.pour_structure || "",
+    rating: row.rating ?? 0,
+    tastingNotes: row.tasting_notes || "",
+    recipeSource: row.recipe_source || "Manual",
+    recipeName: row.recipe_name || "",
+    machine: row.machine || "",
+    grinder: row.grinder || "",
+    preHeat: row.pre_heat || "",
+    brewTime: row.brew_time ?? ""
+  });
+
+  const normalizeRecipeRow = (row) => ({
+    id: row.id,
+    name: row.name || "",
+    method: row.method || "Pour Over",
+    brewer: row.brewer || "",
+    filterPaper: row.filter_paper || "",
+    dose: row.dose ?? "",
+    water: row.water ?? "",
+    temperature: row.temperature ?? "",
+    grindSize: row.grind_size || "",
+    bloomWater: row.bloom_water ?? "",
+    bloomTime: row.bloom_time ?? "",
+    numPours: row.num_pours ?? "",
+    totalTime: row.total_time || "",
+    pourStructure: row.pour_structure || ""
+  });
+
+  const beanPayload = (bean) => ({
+    name: bean.name,
+    roaster: bean.roaster,
+    origin: bean.origin,
+    region: bean.region,
+    roast_level: bean.roastLevel || null,
+    process: bean.process || null,
+    varietal: bean.varietal || null,
+    altitude: bean.altitude || null,
+    type: bean.type || null,
+    roast_date: bean.roastDate || null,
+    notes: bean.notes || null
+  });
+
+  const brewPayload = (brew) => ({
+    bean_id: brew.bean_id,
+    date: brew.date || null,
+    method: brew.method,
+    brewer: brew.brewer || null,
+    filter_paper: brew.filterPaper || null,
+    dose: brew.dose ? Number(brew.dose) : null,
+    water: brew.water ? Number(brew.water) : null,
+    temperature: brew.temperature ? Number(brew.temperature) : null,
+    grind_size: brew.grindSize || null,
+    bloom_water: brew.bloomWater ? Number(brew.bloomWater) : null,
+    bloom_time: brew.bloomTime ? Number(brew.bloomTime) : null,
+    num_pours: brew.numPours ? Number(brew.numPours) : null,
+    total_time: brew.totalTime || null,
+    pour_structure: brew.pourStructure || null,
+    rating: brew.rating ?? null,
+    tasting_notes: brew.tastingNotes || null,
+    recipe_source: brew.recipeSource || "Manual",
+    recipe_name: brew.recipeName || null,
+    machine: brew.machine || null,
+    grinder: brew.grinder || null,
+    pre_heat: brew.preHeat || null,
+    brew_time: brew.brewTime ? Number(brew.brewTime) : null
+  });
+
+  const recipePayload = (recipe) => ({
+    name: recipe.name,
+    method: recipe.method,
+    brewer: recipe.brewer || null,
+    filter_paper: recipe.filterPaper || null,
+    dose: recipe.dose ? Number(recipe.dose) : null,
+    water: recipe.water ? Number(recipe.water) : null,
+    temperature: recipe.temperature ? Number(recipe.temperature) : null,
+    grind_size: recipe.grindSize || null,
+    bloom_water: recipe.bloomWater ? Number(recipe.bloomWater) : null,
+    bloom_time: recipe.bloomTime ? Number(recipe.bloomTime) : null,
+    num_pours: recipe.numPours ? Number(recipe.numPours) : null,
+    total_time: recipe.totalTime || null,
+    pour_structure: recipe.pourStructure || null
+  });
+
+  const combineBeansAndBrews = (beanRows, brewRows) => {
+    const lookup = (beanRows || []).reduce((acc, row) => {
+      const bean = normalizeBeanRow(row);
+      acc[bean.id] = bean;
+      return acc;
+    }, {});
+
+    (brewRows || []).forEach((row) => {
+      const brew = normalizeBrewRow(row);
+      if (brew.bean_id && lookup[brew.bean_id]) {
+        lookup[brew.bean_id].brews.push(brew);
+      }
+    });
+
+    return Object.values(lookup);
+  };
+
   async function loadData(token) {
     setLoading(true);
     try {
-      const rows = await sbGet("beans", token);
-      if (rows && rows.length > 0 && rows[0].data) {
-        setBeans(JSON.parse(rows[0].data));
-      }
-    } catch (e) { console.error("Load beans error:", e); }
-    try {
-      const rows = await sbGet("recipes", token);
-      if (rows && rows.length > 0 && rows[0].data) {
-        setRecipes(JSON.parse(rows[0].data));
-      }
-    } catch (e) { console.error("Load recipes error:", e); }
+      const [beanRows, brewRows, recipeRows] = await Promise.all([
+        sbGet("beans", token, "select=*&order=name.asc"),
+        sbGet("brews", token, "select=*&order=date.desc"),
+        sbGet("recipes", token, "select=*&order=updated_at.desc")
+      ]);
+      setBeans(combineBeansAndBrews(beanRows, brewRows));
+      setRecipes((recipeRows || []).map(normalizeRecipeRow));
+    } catch (e) {
+      console.error("Load data error:", e);
+    }
     setLoading(false);
   }
 
-    const persist = async (updated) => {
-    setBeans(updated);
-    try {
-      await sbUpsert("beans", session?.access_token, crypto.randomUUID(), updated);
-    } catch (e) { console.error("Failed to save beans:", e); }
+  const saveBeanRow = async (bean) => {
+    if (!session) return bean;
+    const payload = beanPayload(bean);
+    const saved = bean.id
+      ? await sbUpdate("beans", session.access_token, bean.id, payload)
+      : await sbInsert("beans", session.access_token, payload);
+    return saved ? { ...normalizeBeanRow(saved), brews: bean.brews || [] } : bean;
   };
 
-  const persistRecipes = async (updated) => {
-    setRecipes(updated);
-    try {
-      await sbUpsert("recipes", session?.access_token, crypto.randomUUID(), updated);
-    } catch (e) { console.error("Failed to save recipes:", e); }
+  const deleteBeanRow = async (id) => {
+    if (!session) return false;
+    return sbDelete("beans", session.access_token, id);
+  };
+
+  const saveRecipeRow = async (recipe) => {
+    if (!session) return recipe;
+    const payload = recipePayload(recipe);
+    const saved = recipe.id
+      ? await sbUpdate("recipes", session.access_token, recipe.id, payload)
+      : await sbInsert("recipes", session.access_token, payload);
+    return saved ? normalizeRecipeRow(saved) : recipe;
+  };
+
+  const deleteRecipeRow = async (id) => {
+    if (!session) return false;
+    return sbDelete("recipes", session.access_token, id);
+  };
+
+  const saveBrewRow = async (brew) => {
+    if (!session) return brew;
+    const payload = brewPayload(brew);
+    const saved = brew.id
+      ? await sbUpdate("brews", session.access_token, brew.id, payload)
+      : await sbInsert("brews", session.access_token, payload);
+    return saved ? normalizeBrewRow(saved) : brew;
+  };
+
+  const deleteBrewRow = async (id) => {
+    if (!session) return false;
+    return sbDelete("brews", session.access_token, id);
   };
 
   const handleSendOtp = async () => {
@@ -259,71 +397,127 @@ export default function App() {
     setAuthState("login"); setAuthEmail(""); setAuthCode("");
   };
 
-  const saveRecipe = () => {
-    if (!editRecipe.name) return;
-    const updated = editRecipe.id
-      ? recipes.map(r => r.id === editRecipe.id ? editRecipe : r)
-      : [{ ...editRecipe, id: Date.now() }, ...recipes];
-    persistRecipes(updated);
+  const saveRecipe = async () => {
+    if (!editRecipe?.name) return;
+    const saved = await saveRecipeRow(editRecipe);
+    if (!saved) return;
+    setRecipes(editRecipe.id
+      ? recipes.map(r => r.id === saved.id ? saved : r)
+      : [saved, ...recipes]
+    );
     setEditRecipe(null);
   };
 
-  const deleteRecipe = (id) => persistRecipes(recipes.filter(r => r.id !== id));
+  const deleteRecipe = async (id) => {
+    const deleted = await deleteRecipeRow(id);
+    if (deleted) {
+      setRecipes(recipes.filter(r => r.id !== id));
+    }
+  };
 
   const exportData = () => {
-    const payload = { beans, recipes, exportedAt: new Date().toISOString() };
+    const allBrews = beans.flatMap(bean =>
+      (bean.brews || []).map(brew => ({ ...brew, bean_id: bean.id }))
+    );
+    const exportedBeans = beans.map(({ brews, ...bean }) => bean);
+    const payload = { beans: exportedBeans, brews: allBrews, recipes, exportedAt: new Date().toISOString() };
     return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
   };
 
   const importData = async () => {
+    if (!session) return;
     try {
+      setLoading(true);
       const decoded = decodeURIComponent(escape(atob(importText.trim())));
       const payload = JSON.parse(decoded);
       if (!payload.beans || !Array.isArray(payload.beans)) throw new Error("Invalid data");
-      await persist(payload.beans);
-      if (payload.recipes) await persistRecipes(payload.recipes);
+
+      await sbDeleteAll("brews", session.access_token);
+      await sbDeleteAll("recipes", session.access_token);
+      await sbDeleteAll("beans", session.access_token);
+
+      const insertedBeans = [];
+      for (const rawBean of payload.beans) {
+        const record = await sbInsert("beans", session.access_token, { ...beanPayload(rawBean), id: rawBean.id });
+        insertedBeans.push({ ...normalizeBeanRow(record), brews: [] });
+      }
+
+      const importedBrews = Array.isArray(payload.brews)
+        ? payload.brews
+        : payload.beans.flatMap(bean => (bean.brews || []).map(brew => ({ ...brew, bean_id: bean.id })));
+
+      for (const rawBrew of importedBrews) {
+        const record = await sbInsert("brews", session.access_token, { ...brewPayload(rawBrew), id: rawBrew.id });
+        const brew = normalizeBrewRow(record);
+        const bean = insertedBeans.find(b => b.id === brew.bean_id);
+        if (bean) bean.brews.push(brew);
+      }
+
+      const importedRecipes = [];
+      if (Array.isArray(payload.recipes)) {
+        for (const rawRecipe of payload.recipes) {
+          const record = await sbInsert("recipes", session.access_token, { ...recipePayload(rawRecipe), id: rawRecipe.id });
+          importedRecipes.push(normalizeRecipeRow(record));
+        }
+      }
+
+      setBeans(insertedBeans);
+      setRecipes(importedRecipes);
       setImportStatus("success");
       setTimeout(() => { setShowTransfer(null); setImportText(""); setImportStatus(""); }, 1500);
     } catch (e) {
       console.error("Import error:", e);
       setImportStatus("error");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const saveBean = () => {
-    if (!editBean.name) return;
-    const updated = editBean.id
-      ? beans.map(b => b.id === editBean.id ? editBean : b)
-      : [{ ...editBean, id: Date.now(), brews: [] }, ...beans];
-    persist(updated);
+  const saveBean = async () => {
+    if (!editBean?.name) return;
+    const saved = await saveBeanRow(editBean);
+    if (!saved) return;
+    setBeans(editBean.id
+      ? beans.map(b => b.id === saved.id ? saved : b)
+      : [{ ...saved, brews: editBean.brews || [] }, ...beans]
+    );
     setView("beans");
   };
 
-  const deleteBean = (id) => { persist(beans.filter(b => b.id !== id)); setView("beans"); };
-
-  const saveBrew = () => {
-    if (!activeBean) return;
-    let updated;
-    const finalMethod = brewForm.method_confirmed || brewForm.method;
-    const brewToSave = { ...brewForm, method: finalMethod, method_confirmed: undefined };
-    if (editingBrewId) {
-      updated = beans.map(b => b.id === activeBean.id
-        ? { ...b, brews: b.brews.map(br => br.id === editingBrewId ? { ...brewToSave, id: editingBrewId } : br) }
-        : b
-      );
-    } else {
-      const brew = { ...brewToSave, id: Date.now() };
-      updated = beans.map(b => b.id === activeBean.id ? { ...b, brews: [brew, ...b.brews] } : b);
+  const deleteBean = async (id) => {
+    const deleted = await deleteBeanRow(id);
+    if (deleted) {
+      setBeans(beans.filter(b => b.id !== id));
+      setView("beans");
     }
-    persist(updated);
+  };
+
+  const saveBrew = async () => {
+    if (!activeBean) return;
+    const finalMethod = brewForm.method_confirmed || brewForm.method;
+    const brewToSave = { ...brewForm, method: finalMethod, method_confirmed: undefined, bean_id: activeBean.id };
+    const saved = await saveBrewRow(brewToSave);
+    if (!saved) return;
+
+    const updated = beans.map(b => {
+      if (b.id !== activeBean.id) return b;
+      const brews = editingBrewId
+        ? b.brews.map(br => br.id === editingBrewId ? saved : br)
+        : [saved, ...b.brews];
+      return { ...b, brews };
+    });
+
+    setBeans(updated);
     setActiveBean(updated.find(b => b.id === activeBean.id));
     setEditingBrewId(null);
     setView("beanDetail");
   };
 
-  const deleteBrew = (brewId) => {
+  const deleteBrew = async (brewId) => {
+    const deleted = await deleteBrewRow(brewId);
+    if (!deleted) return;
     const updated = beans.map(b => b.id === activeBean.id ? { ...b, brews: b.brews.filter(br => br.id !== brewId) } : b);
-    persist(updated);
+    setBeans(updated);
     setActiveBean(updated.find(b => b.id === activeBean.id));
   };
 
@@ -391,7 +585,7 @@ export default function App() {
             {authState === "login" && (
               <div>
                 <div style={{ fontSize: "14px", color: "#7a6050", marginBottom: "20px", textAlign: "center" }}>
-                  Enter your email — we'll send you a 6-digit code
+                  Enter your email — we'll send you a 8-digit code
                 </div>
                 <input value={authEmail} onChange={e => setAuthEmail(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleSendOtp()}
@@ -408,7 +602,7 @@ export default function App() {
             {authState === "verify" && (
               <div>
                 <div style={{ fontSize: "14px", color: "#7a6050", marginBottom: "6px", textAlign: "center" }}>
-                  We sent a 6-digit code to
+                  We sent a 8-digit code to
                 </div>
                 <div style={{ fontSize: "14px", color: "#c8a060", marginBottom: "24px", textAlign: "center", fontWeight: "500" }}>{authEmail}</div>
                 <input value={authCode} onChange={e => setAuthCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
@@ -1317,67 +1511,20 @@ export default function App() {
         )}
       </div>
 
-      {/* Transfer Modal */}
+      {/* Tranfer Modal */}
       {showTransfer && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.82)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div style={{ background: "#141008", border: "1px solid rgba(200,137,58,0.3)", borderRadius: "16px", width: "100%", maxWidth: "480px", padding: "28px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px" }}>
-                {showTransfer === "export" ? "Export Data" : "Import Data"}
-              </div>
-              <button onClick={() => { setShowTransfer(null); setImportText(""); setImportStatus(""); }}
-                style={{ background: "none", border: "none", color: "#6a5040", cursor: "pointer", fontSize: "20px" }}>✕</button>
-            </div>
-
-            {showTransfer === "export" && (() => {
-              const code = exportData();
-              return (
-                <div>
-                  <p style={{ fontSize: "13px", color: "#7a6050", lineHeight: 1.6, marginBottom: "16px" }}>
-                    Copy this code and paste it into the Import screen on your other device. It contains all your beans, brews and recipes.
-                  </p>
-                  <textarea readOnly value={code}
-                    style={{ ...IS, resize: "none", height: "140px", fontSize: "11px", fontFamily: "monospace", lineHeight: 1.5, color: "#c8a878" }}
-                    onFocus={e => e.target.select()} />
-                  <button
-                    onClick={() => { navigator.clipboard.writeText(code).catch(() => {}); }}
-                    style={{ width: "100%", marginTop: "12px", background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "9px", color: "#fff", padding: "12px", fontSize: "14px", fontWeight: "500", cursor: "pointer" }}>
-                    Copy to Clipboard
-                  </button>
-                  <div style={{ marginTop: "10px", fontSize: "11px", color: "#4a3a2a", textAlign: "center" }}>
-                    {beans.length} bean{beans.length !== 1 ? "s" : ""} · {beans.reduce((a, b) => a + b.brews.length, 0)} brew{beans.reduce((a, b) => a + b.brews.length, 0) !== 1 ? "s" : ""} · {recipes.length} recipe{recipes.length !== 1 ? "s" : ""} included
-                  </div>
-                </div>
-              );
-            })()}
-
-            {showTransfer === "import" && (
-              <div>
-                <p style={{ fontSize: "13px", color: "#7a6050", lineHeight: 1.6, marginBottom: "16px" }}>
-                  Paste the export code from your other device below. This will replace all current data on this device.
-                </p>
-                <textarea
-                  value={importText}
-                  onChange={e => { setImportText(e.target.value); setImportStatus(""); }}
-                  placeholder="Paste your export code here…"
-                  style={{ ...IS, resize: "none", height: "140px", fontSize: "11px", fontFamily: "monospace", lineHeight: 1.5 }} />
-                {importStatus === "error" && (
-                  <div style={{ marginTop: "8px", fontSize: "12px", color: "#c87060" }}>Invalid code — make sure you copied the full export text.</div>
-                )}
-                {importStatus === "success" && (
-                  <div style={{ marginTop: "8px", fontSize: "12px", color: "#60c880" }}>✓ Data imported successfully!</div>
-                )}
-                <button onClick={importData} disabled={!importText.trim()}
-                  style={{ width: "100%", marginTop: "12px", background: importText.trim() ? "linear-gradient(135deg,#c8893a,#a06828)" : "rgba(200,137,58,0.15)", border: "none", borderRadius: "9px", color: importText.trim() ? "#fff" : "#4a3020", padding: "12px", fontSize: "14px", fontWeight: "500", cursor: importText.trim() ? "pointer" : "not-allowed" }}>
-                  Import Data
-                </button>
-                <div style={{ marginTop: "10px", fontSize: "11px", color: "#4a3a2a", textAlign: "center" }}>
-                  ⚠ This will overwrite existing data on this device
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <TransferModal
+          showTransfer={showTransfer}
+          setShowTransfer={setShowTransfer}
+          importText={importText}
+          setImportText={setImportText}
+          importStatus={importStatus}
+          setImportStatus={setImportStatus}
+          exportData={exportData}
+          importData={importData}
+          beans={beans}
+          recipes={recipes}
+        />
       )}
 
       {/* AI Modal */}
