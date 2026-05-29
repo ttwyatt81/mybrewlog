@@ -90,13 +90,28 @@ export async function sbGet(table, token, query = "select=*") {
   return Array.isArray(res.data) ? res.data : [];
 }
 
+export async function sbGetUser(token) {
+  if (!token) return null;
+  ensureSupabaseConfig();
+  const url = `${SUPABASE_URL}/auth/v1/user`;
+  const res = await fetchJson(url, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
+  });
+  return res.ok ? res.data : null;
+}
+
 export async function sbInsert(table, token, payload) {
   ensureSupabaseConfig();
+  const user = await sbGetUser(token);
+  if (!user?.id) {
+    console.error(`sbInsert failed: unable to resolve authenticated user for ${table}`);
+    return null;
+  }
   const url = `${SUPABASE_URL}/rest/v1/${table}`;
   const res = await fetchJson(url, {
     method: "POST",
     headers: { ...authHeaders(token), Prefer: "return=representation" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({ ...payload, user_id: user.id })
   });
   if (!res.ok) {
     console.error(`Failed to insert into ${table}:`, res.status, res.data);
@@ -108,11 +123,16 @@ export async function sbInsert(table, token, payload) {
 export async function sbUpdate(table, token, rowId, payload) {
   if (!rowId) return null;
   ensureSupabaseConfig();
+  const user = await sbGetUser(token);
+  if (!user?.id) {
+    console.error(`sbUpdate failed: unable to resolve authenticated user for ${table}`);
+    return null;
+  }
   const url = `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(rowId)}`;
   const res = await fetchJson(url, {
     method: "PATCH",
     headers: { ...authHeaders(token), Prefer: "return=representation" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({ ...payload, user_id: user.id })
   });
   if (!res.ok) {
     console.error(`Failed to update ${table} row ${rowId}:`, res.status, res.data);

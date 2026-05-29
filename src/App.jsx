@@ -948,7 +948,7 @@ export default function App() {
           // Filter
           const filteredBrews = allBrews.filter(({ brew, bean }) => {
             if (brewFilterMethod && brew.method !== brewFilterMethod) return false;
-            if (brewFilterBean && bean.id !== parseInt(brewFilterBean)) return false;
+            if (brewFilterBean && bean.id !== brewFilterBean) return false;
             return true;
           });
 
