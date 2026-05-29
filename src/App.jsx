@@ -175,6 +175,16 @@ export default function App() {
     }
   }, []);
 
+  // Sync when app regains focus (multi-device sync)
+  useEffect(() => {
+    if (!session) return;
+    const handleFocus = () => {
+      loadData(session.access_token);
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [session]);
+
   const normalizeBeanRow = (row) => ({
     id: row.id,
     name: row.name || "",
@@ -665,7 +675,10 @@ export default function App() {
           )}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "1px" }}>
             <div style={{ fontSize: "10px", color: "#4a3a2a", letterSpacing: "0.03em", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session?.email}</div>
-            <button onClick={handleSignOut} style={{ background: "none", border: "none", color: "#5a4030", cursor: "pointer", fontSize: "10px", padding: 0, letterSpacing: "0.05em" }}>Sign out</button>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button onClick={() => loadData(session?.access_token)} disabled={loading} style={{ background: "none", border: "none", color: loading ? "#bbb" : "#5a4030", cursor: loading ? "not-allowed" : "pointer", fontSize: "10px", padding: 0, letterSpacing: "0.05em", textDecoration: "underline" }}>Sync</button>
+              <button onClick={handleSignOut} style={{ background: "none", border: "none", color: "#5a4030", cursor: "pointer", fontSize: "10px", padding: 0, letterSpacing: "0.05em" }}>Sign out</button>
+            </div>
           </div>
         </div>
       </div>
