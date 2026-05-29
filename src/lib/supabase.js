@@ -111,7 +111,9 @@ export async function sbInsert(table, token, payload) {
   const res = await fetchJson(url, {
     method: "POST",
     headers: { ...authHeaders(token), Prefer: "return=representation" },
-    body: JSON.stringify({ ...payload, user_id: user.id })
+    // Let the database set `user_id` via DEFAULT auth.uid() instead of
+    // the frontend injecting it. This avoids mismatched ownership.
+    body: JSON.stringify(payload)
   });
   if (!res.ok) {
     console.error(`Failed to insert into ${table}:`, res.status, res.data);
@@ -132,7 +134,8 @@ export async function sbUpsert(table, token, payload, conflictKeys = ["id"]) {
   const res = await fetchJson(url, {
     method: "POST",
     headers: { ...authHeaders(token), Prefer: "return=representation,resolution=merge-duplicates" },
-    body: JSON.stringify({ ...payload, user_id: user.id })
+    // Do not include user_id; DB default auth.uid() will set ownership.
+    body: JSON.stringify(payload)
   });
   if (!res.ok) {
     console.error(`Failed to upsert into ${table}:`, res.status, res.data);
@@ -153,7 +156,8 @@ export async function sbUpdate(table, token, rowId, payload) {
   const res = await fetchJson(url, {
     method: "PATCH",
     headers: { ...authHeaders(token), Prefer: "return=representation" },
-    body: JSON.stringify({ ...payload, user_id: user.id })
+    // Avoid changing/setting user_id from the client. Let RLS/auth manage ownership.
+    body: JSON.stringify(payload)
   });
   if (!res.ok) {
     console.error(`Failed to update ${table} row ${rowId}:`, res.status, res.data);

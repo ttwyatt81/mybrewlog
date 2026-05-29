@@ -158,6 +158,7 @@ export default function App() {
   const [importText, setImportText] = useState("");
   const [importStatus, setImportStatus] = useState("");
   const [filterRoaster, setFilterRoaster] = useState("");
+  const [saveError, setSaveError] = useState("");
   const [brewFilterMethod, setBrewFilterMethod] = useState("");
   const [brewFilterBean, setBrewFilterBean] = useState("");
   const [brewSort, setBrewSort] = useState("date");
@@ -333,12 +334,12 @@ export default function App() {
   }
 
   const saveBeanRow = async (bean) => {
-    if (!session) return bean;
+    if (!session) return null;
     const payload = beanPayload(bean);
     const saved = bean.id
       ? await sbUpdate("beans", session.access_token, bean.id, payload)
       : await sbInsert("beans", session.access_token, payload);
-    return saved ? { ...normalizeBeanRow(saved), brews: bean.brews || [] } : bean;
+    return saved ? { ...normalizeBeanRow(saved), brews: bean.brews || [] } : null;
   };
 
   const deleteBeanRow = async (id) => {
@@ -347,12 +348,12 @@ export default function App() {
   };
 
   const saveRecipeRow = async (recipe) => {
-    if (!session) return recipe;
+    if (!session) return null;
     const payload = recipePayload(recipe);
     const saved = recipe.id
       ? await sbUpdate("recipes", session.access_token, recipe.id, payload)
       : await sbInsert("recipes", session.access_token, payload);
-    return saved ? normalizeRecipeRow(saved) : recipe;
+    return saved ? normalizeRecipeRow(saved) : null;
   };
 
   const deleteRecipeRow = async (id) => {
@@ -361,12 +362,12 @@ export default function App() {
   };
 
   const saveBrewRow = async (brew) => {
-    if (!session) return brew;
+    if (!session) return null;
     const payload = brewPayload(brew);
     const saved = brew.id
       ? await sbUpdate("brews", session.access_token, brew.id, payload)
       : await sbInsert("brews", session.access_token, payload);
-    return saved ? normalizeBrewRow(saved) : brew;
+    return saved ? normalizeBrewRow(saved) : null;
   };
 
   const deleteBrewRow = async (id) => {
@@ -409,8 +410,12 @@ export default function App() {
 
   const saveRecipe = async () => {
     if (!editRecipe?.name) return;
+    setSaveError("");
     const saved = await saveRecipeRow(editRecipe);
-    if (!saved) return;
+    if (!saved) {
+      setSaveError("Failed to save recipe. Check your connection and try again.");
+      return;
+    }
     setRecipes(editRecipe.id
       ? recipes.map(r => r.id === saved.id ? saved : r)
       : [saved, ...recipes]
@@ -426,11 +431,34 @@ export default function App() {
   };
 
   const exportData = () => {
+    // Export beans with their brews nested for clarity (even though import flattens them)
+    const exportedBeans = beans.map(bean => ({
+      id: bean.id,
+      name: bean.name,
+      roaster: bean.roaster,
+      origin: bean.origin,
+      region: bean.region,
+      roastLevel: bean.roastLevel,
+      process: bean.process,
+      varietal: bean.varietal,
+      altitude: bean.altitude,
+      type: bean.type,
+      roastDate: bean.roastDate,
+      notes: bean.notes,
+      brews: bean.brews || [] // Keep brews nested so structure is clear
+    }));
+    
+    // Flatten brews for easier importing
     const allBrews = beans.flatMap(bean =>
       (bean.brews || []).map(brew => ({ ...brew, bean_id: bean.id }))
     );
-    const exportedBeans = beans.map(({ brews, ...bean }) => bean);
-    const payload = { beans: exportedBeans, brews: allBrews, recipes, exportedAt: new Date().toISOString() };
+    
+    const payload = {
+      beans: exportedBeans,
+      brews: allBrews,
+      recipes: recipes.map(r => ({ ...r })),
+      exportedAt: new Date().toISOString()
+    };
     return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
   };
 
@@ -438,35 +466,64 @@ export default function App() {
     if (!session) return;
     try {
       setLoading(true);
+      setSaveError("");
       const decoded = decodeURIComponent(escape(atob(importText.trim())));
       const payload = JSON.parse(decoded);
-      if (!payload.beans || !Array.isArray(payload.beans)) throw new Error("Invalid data");
+      
+      // Validate required structure
+      if (!payload.beans || !Array.isArray(payload.beans)) {
+        throw new Error("Invalid export file: missing beans array");
+      }
+      if (!Array.isArray(payload.brews) && !payload.beans.some(b => Array.isArray(b.brews))) {
+        throw new Error("Invalid export file: missing brews data");
+      }
+      if (!Array.isArray(payload.recipes)) {
+        throw new Error("Invalid export file: missing recipes array");
+      }
 
-      const insertedBeans = [];
+      // Track mapping of old IDs to new IDs for brews (since they reference bean_id)
+      const beanIdMap = {};
+
+      // Import beans: omit ID to create new records (merge, don't overwrite)
       for (const rawBean of payload.beans) {
-        const record = await sbUpsert("beans", session.access_token, { ...beanPayload(rawBean), id: rawBean.id });
-        if (record) insertedBeans.push({ ...normalizeBeanRow(record), brews: [] });
-      }
-
-      const importedBrews = Array.isArray(payload.brews)
-        ? payload.brews
-        : payload.beans.flatMap(bean => (bean.brews || []).map(brew => ({ ...brew, bean_id: bean.id })));
-
-      for (const rawBrew of importedBrews) {
-        await sbUpsert("brews", session.access_token, { ...brewPayload(rawBrew), id: rawBrew.id });
-      }
-
-      if (Array.isArray(payload.recipes)) {
-        for (const rawRecipe of payload.recipes) {
-          await sbUpsert("recipes", session.access_token, { ...recipePayload(rawRecipe), id: rawRecipe.id });
+        const beanPayloadToInsert = beanPayload(rawBean);
+        // Don't include the exported ID; let Supabase generate a new one
+        const record = await sbInsert("beans", session.access_token, beanPayloadToInsert);
+        if (record) {
+          // Map old ID to new ID for brew imports
+          beanIdMap[rawBean.id] = record.id;
         }
       }
 
+      // Import brews: use flattened brews array if available, else extract from beans.brews
+      const brewsToImport = Array.isArray(payload.brews)
+        ? payload.brews
+        : payload.beans.flatMap(bean => (bean.brews || []).map(brew => ({ ...brew, bean_id: bean.id })));
+
+      for (const rawBrew of brewsToImport) {
+        if (rawBrew.bean_id && beanIdMap[rawBrew.bean_id]) {
+          // Use new bean ID from the map
+          const brewPayloadToInsert = brewPayload(rawBrew);
+          brewPayloadToInsert.bean_id = beanIdMap[rawBrew.bean_id];
+          // Don't include the exported brew ID; let Supabase generate a new one
+          await sbInsert("brews", session.access_token, brewPayloadToInsert);
+        }
+      }
+
+      // Import recipes: omit ID to create new records
+      for (const rawRecipe of payload.recipes) {
+        const recipePayloadToInsert = recipePayload(rawRecipe);
+        // Don't include the exported ID; let Supabase generate a new one
+        await sbInsert("recipes", session.access_token, recipePayloadToInsert);
+      }
+
+      // Reload all data from Supabase to ensure consistency
       await loadData(session.access_token);
       setImportStatus("success");
       setTimeout(() => { setShowTransfer(null); setImportText(""); setImportStatus(""); }, 1500);
     } catch (e) {
       console.error("Import error:", e);
+      setSaveError(`Import failed: ${e.message}`);
       setImportStatus("error");
     } finally {
       setLoading(false);
@@ -475,12 +532,17 @@ export default function App() {
 
   const saveBean = async () => {
     if (!editBean?.name) return;
+    setSaveError("");
     const saved = await saveBeanRow(editBean);
-    if (!saved) return;
+    if (!saved) {
+      setSaveError("Failed to save bean. Check your connection and try again.");
+      return;
+    }
     setBeans(editBean.id
       ? beans.map(b => b.id === saved.id ? saved : b)
       : [{ ...saved, brews: editBean.brews || [] }, ...beans]
     );
+    setEditBean(null);
     setView("beans");
   };
 
@@ -494,10 +556,14 @@ export default function App() {
 
   const saveBrew = async () => {
     if (!activeBean) return;
+    setSaveError("");
     const finalMethod = brewForm.method_confirmed || brewForm.method;
     const brewToSave = { ...brewForm, method: finalMethod, method_confirmed: undefined, bean_id: activeBean.id };
     const saved = await saveBrewRow(brewToSave);
-    if (!saved) return;
+    if (!saved) {
+      setSaveError("Failed to save brew. Check your connection and try again.");
+      return;
+    }
 
     const updated = beans.map(b => {
       if (b.id !== activeBean.id) return b;
@@ -684,6 +750,14 @@ export default function App() {
               <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", letterSpacing: "0.02em", marginBottom: "4px" }}>Bean & Brew</div>
               <div style={{ fontSize: "10px", color: "#5a4030", letterSpacing: "0.18em", textTransform: "uppercase" }}>Coffee Journal</div>
             </div>
+
+            {/* Error message */}
+            {saveError && (
+              <div style={{ background: "rgba(200,96,96,0.15)", border: "1px solid rgba(200,96,96,0.3)", borderRadius: "7px", color: "#d89090", fontSize: "13px", padding: "10px 12px", marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span>{saveError}</span>
+                <button onClick={() => setSaveError("")} style={{ background: "none", border: "none", color: "#d89090", cursor: "pointer", fontSize: "16px", padding: "0" }}>✕</button>
+              </div>
+            )}
 
             {/* Action row */}
             <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
