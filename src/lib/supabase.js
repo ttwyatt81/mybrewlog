@@ -120,6 +120,27 @@ export async function sbInsert(table, token, payload) {
   return Array.isArray(res.data) ? res.data[0] : res.data;
 }
 
+export async function sbUpsert(table, token, payload, conflictKeys = ["id"]) {
+  ensureSupabaseConfig();
+  const user = await sbGetUser(token);
+  if (!user?.id) {
+    console.error(`sbUpsert failed: unable to resolve authenticated user for ${table}`);
+    return null;
+  }
+  const query = `?on_conflict=${encodeURIComponent(conflictKeys.join(","))}`;
+  const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
+  const res = await fetchJson(url, {
+    method: "POST",
+    headers: { ...authHeaders(token), Prefer: "return=representation,resolution=merge-duplicates" },
+    body: JSON.stringify({ ...payload, user_id: user.id })
+  });
+  if (!res.ok) {
+    console.error(`Failed to upsert into ${table}:`, res.status, res.data);
+    return null;
+  }
+  return Array.isArray(res.data) ? res.data[0] : res.data;
+}
+
 export async function sbUpdate(table, token, rowId, payload) {
   if (!rowId) return null;
   ensureSupabaseConfig();

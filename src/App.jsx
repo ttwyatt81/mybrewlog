@@ -22,9 +22,9 @@ import {
   sbSignOut,
   sbGet,
   sbInsert,
+  sbUpsert,
   sbUpdate,
-  sbDelete,
-  sbDeleteAll
+  sbDelete
 } from "./lib/supabase";
 import Tag from "./components/ui/Tag";
 import Field from "./components/ui/Field";
@@ -442,14 +442,10 @@ export default function App() {
       const payload = JSON.parse(decoded);
       if (!payload.beans || !Array.isArray(payload.beans)) throw new Error("Invalid data");
 
-      await sbDeleteAll("brews", session.access_token);
-      await sbDeleteAll("recipes", session.access_token);
-      await sbDeleteAll("beans", session.access_token);
-
       const insertedBeans = [];
       for (const rawBean of payload.beans) {
-        const record = await sbInsert("beans", session.access_token, { ...beanPayload(rawBean), id: rawBean.id });
-        insertedBeans.push({ ...normalizeBeanRow(record), brews: [] });
+        const record = await sbUpsert("beans", session.access_token, { ...beanPayload(rawBean), id: rawBean.id });
+        if (record) insertedBeans.push({ ...normalizeBeanRow(record), brews: [] });
       }
 
       const importedBrews = Array.isArray(payload.brews)
@@ -457,22 +453,16 @@ export default function App() {
         : payload.beans.flatMap(bean => (bean.brews || []).map(brew => ({ ...brew, bean_id: bean.id })));
 
       for (const rawBrew of importedBrews) {
-        const record = await sbInsert("brews", session.access_token, { ...brewPayload(rawBrew), id: rawBrew.id });
-        const brew = normalizeBrewRow(record);
-        const bean = insertedBeans.find(b => b.id === brew.bean_id);
-        if (bean) bean.brews.push(brew);
+        await sbUpsert("brews", session.access_token, { ...brewPayload(rawBrew), id: rawBrew.id });
       }
 
-      const importedRecipes = [];
       if (Array.isArray(payload.recipes)) {
         for (const rawRecipe of payload.recipes) {
-          const record = await sbInsert("recipes", session.access_token, { ...recipePayload(rawRecipe), id: rawRecipe.id });
-          importedRecipes.push(normalizeRecipeRow(record));
+          await sbUpsert("recipes", session.access_token, { ...recipePayload(rawRecipe), id: rawRecipe.id });
         }
       }
 
-      setBeans(insertedBeans);
-      setRecipes(importedRecipes);
+      await loadData(session.access_token);
       setImportStatus("success");
       setTimeout(() => { setShowTransfer(null); setImportText(""); setImportStatus(""); }, 1500);
     } catch (e) {
