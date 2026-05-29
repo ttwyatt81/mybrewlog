@@ -526,6 +526,7 @@ export default function App() {
   const deleteBrew = async (brewId) => {
     const deleted = await deleteBrewRow(brewId);
     if (!deleted) return;
+    if (!activeBean) return;
     const updated = beans.map(b => b.id === activeBean.id ? { ...b, brews: b.brews.filter(br => br.id !== brewId) } : b);
     setBeans(updated);
     setActiveBean(updated.find(b => b.id === activeBean.id));
