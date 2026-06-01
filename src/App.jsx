@@ -1394,7 +1394,7 @@ export default function App() {
                         onClick={() => {
                           const last = liveBean.brews.find(b => b.method === method);
                           if (!last) return;
-                          setBrewForm(f => ({ ...f, ...last, id: f.id, date: f.date, recipeSource: "Last Brew", recipeName: "" }));
+                          setBrewForm(f => ({ ...f, ...last, id: f.id, date: f.date, method_confirmed: f.method_confirmed, recipeSource: "Last Brew", recipeName: "" }));
                         }}
                         disabled={!liveBean.brews.some(b => b.method === method)}
                         style={{ flex: 1, background: liveBean.brews.some(b => b.method === method) ? "rgba(200,137,58,0.07)" : "rgba(255,255,255,0.02)", border: `1px solid ${liveBean.brews.some(b => b.method === method) ? "rgba(200,137,58,0.28)" : "rgba(255,255,255,0.06)"}`, borderRadius: "9px", color: liveBean.brews.some(b => b.method === method) ? "#c8a060" : "#3a2a1a", cursor: liveBean.brews.some(b => b.method === method) ? "pointer" : "not-allowed", padding: "10px 8px", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center" }}
@@ -1408,7 +1408,7 @@ export default function App() {
                         <span style={{ fontSize: "10px", color: "#5a4a3a", letterSpacing: "0.08em", textTransform: "uppercase" }}>Recipes:</span>
                         {recipes.filter(r => r.method === method).map(recipe => (
                           <button key={recipe.id}
-                            onClick={() => setBrewForm(f => ({ ...f, ...recipe, id: f.id, date: f.date, recipeSource: "Saved Recipe", recipeName: recipe.name }))}
+                            onClick={() => setBrewForm(f => ({ ...f, ...recipe, id: f.id, date: f.date, method_confirmed: f.method_confirmed, recipeSource: "Saved Recipe", recipeName: recipe.name }))}
                             style={{ padding: "5px 12px", borderRadius: "20px", border: "1px solid rgba(200,137,58,0.28)", background: "rgba(200,137,58,0.07)", color: "#c8a060", cursor: "pointer", fontSize: "12px" }}
                             onMouseEnter={e => e.currentTarget.style.background = "rgba(200,137,58,0.16)"}
                             onMouseLeave={e => e.currentTarget.style.background = "rgba(200,137,58,0.07)"}>
@@ -1611,7 +1611,7 @@ export default function App() {
           bean={liveBean}
           onClose={() => setShowAI(false)}
           onApply={(recipe) => {
-            setBrewForm({
+            setBrewForm(f => ({
               ...defaultBrew,
               date: new Date().toISOString().split("T")[0],
               dose: String(recipe.dose || ""),
@@ -1623,7 +1623,10 @@ export default function App() {
               numPours: String(recipe.numPours || ""),
               totalTime: recipe.totalTime || "",
               pourStructure: recipe.pourStructure || "",
-            });
+              method_confirmed: f.method_confirmed,
+              recipeSource: "AI Generated",
+              recipeName: "",
+            }));
             setShowAI(false);
             setView("brewForm");
           }}
