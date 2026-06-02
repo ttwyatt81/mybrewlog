@@ -24,7 +24,8 @@ import {
   sbInsert,
   sbUpsert,
   sbUpdate,
-  sbDelete
+  sbDelete,
+  sbRefreshSession
 } from "./lib/supabase";
 import Tag from "./components/ui/Tag";
 import Field from "./components/ui/Field";
@@ -163,16 +164,67 @@ export default function App() {
   const [brewFilterBean, setBrewFilterBean] = useState("");
   const [brewSort, setBrewSort] = useState("date");
 
+  const SESSION_KEY = "sb_session";
+
+  const saveSession = (sessionData) => {
+    setSession(sessionData);
+    localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+  };
+
+  const clearSession = () => {
+    localStorage.removeItem(SESSION_KEY);
+    setSession(null);
+    setAuthState("login");
+    setAuthEmail("");
+    setAuthCode("");
+  };
+
+  const refreshSession = async (currentSession) => {
+    if (!currentSession?.refresh_token) return null;
+    const refreshed = await sbRefreshSession(currentSession.refresh_token);
+    if (!refreshed) return null;
+
+    const nextSession = {
+      ...currentSession,
+      ...refreshed,
+      expires_at: Date.now() + (refreshed.expires_in || 0) * 1000
+    };
+
+    saveSession(nextSession);
+    return nextSession;
+  };
+
   useEffect(() => {
-    // Restore saved session — stays logged in permanently
-    const stored = localStorage.getItem("sb_session");
-    if (stored) {
-      try {
-        const session = JSON.parse(stored);
+    const stored = localStorage.getItem(SESSION_KEY);
+    if (!stored) return;
+
+    try {
+      const session = JSON.parse(stored);
+      const validAccess = session?.access_token && session?.expires_at && Date.now() < session.expires_at - 60000;
+
+      if (validAccess) {
         setSession(session);
         setAuthState("app");
         loadData(session.access_token);
-      } catch { localStorage.removeItem("sb_session"); }
+        return;
+      }
+
+      if (session?.refresh_token) {
+        (async () => {
+          const refreshed = await refreshSession(session);
+          if (refreshed) {
+            setAuthState("app");
+            loadData(refreshed.access_token);
+          } else {
+            clearSession();
+          }
+        })();
+        return;
+      }
+
+      clearSession();
+    } catch {
+      clearSession();
     }
   }, []);
 
@@ -389,9 +441,13 @@ export default function App() {
     setAuthLoading(true); setAuthError("");
     const data = await sbVerifyOtp(authEmail.trim(), authCode.trim());
     if (data) {
-      const sess = { access_token: data.access_token, email: authEmail.trim() };
-      setSession(sess);
-      localStorage.setItem("sb_session", JSON.stringify(sess));
+      const sess = {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at: Date.now() + (data.expires_in || 0) * 1000,
+        email: authEmail.trim()
+      };
+      saveSession(sess);
       setAuthState("app");
       loadData(data.access_token);
     } else {
@@ -402,10 +458,8 @@ export default function App() {
 
   const handleSignOut = async () => {
     if (session) await sbSignOut(session.access_token);
-    localStorage.removeItem("sb_session");
-    setSession(null);
+    clearSession();
     setBeans([]); setRecipes([]);
-    setAuthState("login"); setAuthEmail(""); setAuthCode("");
   };
 
   const saveRecipe = async () => {

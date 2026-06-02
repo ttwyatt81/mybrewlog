@@ -65,6 +65,31 @@ export async function sbVerifyOtp(email, token) {
   }
 }
 
+export async function sbRefreshSession(refreshToken) {
+  if (!refreshToken?.trim()) return null;
+  ensureSupabaseConfig();
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_KEY,
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    return data.access_token ? data : null;
+  } catch (error) {
+    console.error("Refresh session request failed:", error);
+    return null;
+  }
+}
+
 export async function sbSignOut(token) {
   if (!token) return;
   ensureSupabaseConfig();
