@@ -194,6 +194,14 @@ export default function App() {
     return nextSession;
   };
 
+  const getValidAccessToken = async () => {
+    if (session?.access_token && session?.expires_at && Date.now() < session.expires_at - 60000) {
+      return session.access_token;
+    }
+    const refreshed = await refreshSession(session);
+    return refreshed?.access_token || null;
+  };
+
   useEffect(() => {
     const stored = localStorage.getItem(SESSION_KEY);
     if (!stored) return;
@@ -231,8 +239,13 @@ export default function App() {
   // Sync when app regains focus (multi-device sync)
   useEffect(() => {
     if (!session) return;
-    const handleFocus = () => {
-      loadData(session.access_token);
+    const handleFocus = async () => {
+      const token = await getValidAccessToken();
+      if (token) {
+        loadData(token);
+      } else {
+        clearSession();
+      }
     };
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
