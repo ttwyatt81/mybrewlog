@@ -45,6 +45,124 @@ function bloomRatio(bloomWater, dose) {
   return (parseFloat(bloomWater) / parseFloat(dose)).toFixed(1);
 }
 
+function splitPourStructure(pourStructure = "") {
+  return pourStructure
+    .split("→")
+    .map((chunk) => chunk.trim())
+    .filter(Boolean);
+}
+
+function normalizePourSteps(pourSteps = [], numPours = "") {
+  const count = Math.max(0, Math.min(10, Number(numPours)) - 1);
+  const steps = Array.isArray(pourSteps)
+    ? pourSteps.map((step) => ({ water: step?.water || "", time: step?.time || "" }))
+    : [];
+  while (steps.length < count) steps.push({ water: "", time: "" });
+  return steps.slice(0, count);
+}
+
+function buildPourStructureFromForm(form) {
+  const steps = normalizePourSteps(form.pours, form.numPours);
+  if (!steps.length) return form.pourStructure || "";
+
+  const bloom = form.bloomWater || form.bloomTime
+    ? `Bloom${form.bloomWater ? ` ${form.bloomWater}g` : ""}${form.bloomTime ? ` at ${parseTimeValue(form.bloomTime)}s` : ""}`
+    : "Bloom";
+
+  const stepLines = steps.map((step) => {
+    const waterPart = step.water ? `Pour to ${step.water}g` : "Pour";
+    const timePart = step.time ? ` at ${parseTimeValue(step.time)}s` : "";
+    return `${waterPart}${timePart}`.trim();
+  });
+
+  return [bloom, ...stepLines].join(" → ");
+}
+
+function parseTimeValue(value) {
+  const text = String(value || "").trim();
+  if (!text) return 0;
+  if (/^\d+:\d{1,2}$/.test(text)) {
+    const [minutes, seconds] = text.split(":").map(Number);
+    return Number.isFinite(minutes) && Number.isFinite(seconds) ? minutes * 60 + seconds : 0;
+  }
+  const digits = Number(text.replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(digits) ? digits : 0;
+}
+
+function formatSecondsToTime(seconds) {
+  const total = Math.max(0, Number(seconds) || 0);
+  if (total < 60) return `${total}s`;
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${mins}:${String(secs).padStart(2, "0")}`;
+}
+
+function getComputedBrewWater(form) {
+  const pours = normalizePourSteps(form.pours, form.numPours);
+  const lastFilled = [...pours].reverse().find((step) => step.water && !isNaN(step.water));
+  if (lastFilled) return Number(lastFilled.water);
+  return Number(form.bloomWater) || 0;
+}
+
+function getComputedTotalTime(form) {
+  const bloom = parseTimeValue(form.bloomTime);
+  const pours = normalizePourSteps(form.pours, form.numPours);
+  const pourTime = pours.reduce((sum, step) => sum + parseTimeValue(step.time), 0);
+  return formatSecondsToTime(bloom + pourTime);
+}
+
+function parsePourStepsFromStructure(pourStructure = "", numPours = "") {
+  const lines = splitPourStructure(pourStructure).slice(1);
+  const count = Math.max(0, Math.min(10, Number(numPours)) - 1);
+  const pours = lines.slice(0, count).map((line) => {
+    const waterMatch = line.match(/(\d+)\s*g/);
+    const timeMatch = line.match(/at\s+([0-9:]+)|([0-9]+)\s*s/);
+    let time = "";
+    if (timeMatch) time = timeMatch[1] || timeMatch[2] || "";
+    if (time.endsWith("s")) time = time.slice(0, -1);
+    return {
+      water: waterMatch ? waterMatch[1] : "",
+      time,
+    };
+  });
+  while (pours.length < count) pours.push({ water: "", time: "" });
+  return pours;
+}
+
+function getTechniqueLinesFromBrew(brew) {
+  const lines = [];
+  const pourCount = brew?.numPours ? `${brew.numPours} pours` : null;
+  const pourWater = brew?.numPours ? `${getComputedBrewWater(brew)}g` : null;
+  const totalTime = getComputedTotalTime(brew || {});
+
+  if (pourCount) {
+    lines.push({ text: `${pourCount}${pourWater ? ` · ${pourWater}` : ""}${totalTime ? ` · ${totalTime}` : ""}` });
+  }
+
+  if (brew?.bloomWater || brew?.bloomTime) {
+    const bloomText = `Bloom${brew.bloomWater ? ` ${brew.bloomWater}g` : ""}`;
+    const bloomTimeText = brew.bloomTime ? `${brew.bloomTime}s` : "";
+    lines.push({ text: `${bloomText}${bloomTimeText ? ` · ${bloomTimeText}` : ""}` });
+  }
+
+  const steps = normalizePourSteps(brew?.pours, brew?.numPours);
+  let currentStart = parseTimeValue(brew?.bloomTime);
+  steps.forEach((step, index) => {
+    const pourTime = parseTimeValue(step.time);
+    const endTime = currentStart + pourTime;
+    if (step.water || step.time) {
+      lines.push({
+        text: `Pour ${index + 2} · ${step.water ? `${step.water}g` : "?g"} · ${formatSecondsToTime(currentStart)} -> ${formatSecondsToTime(endTime)}`
+      });
+    }
+    currentStart = endTime;
+  });
+
+  return lines;
+
+  return lines;
+}
+
 function StarRating({ value, onChange, size = 20 }) {
   const [hover, setHover] = useState(0);
   return (
@@ -282,6 +400,7 @@ export default function App() {
     bloomTime: row.bloom_time ?? "",
     numPours: row.num_pours ?? "",
     totalTime: row.total_time || "",
+    pours: row.pours || [],
     pourStructure: row.pour_structure || "",
     rating: row.rating ?? 0,
     tastingNotes: row.tasting_notes || "",
@@ -512,12 +631,12 @@ export default function App() {
       type: bean.type,
       roastDate: bean.roastDate,
       notes: bean.notes,
-      brews: bean.brews || [] // Keep brews nested so structure is clear
+      brews: (bean.brews || []).map(brew => ({ ...brew, pours: brew.pours || [] }))
     }));
     
     // Flatten brews for easier importing
     const allBrews = beans.flatMap(bean =>
-      (bean.brews || []).map(brew => ({ ...brew, bean_id: bean.id }))
+      (bean.brews || []).map(brew => ({ ...brew, bean_id: bean.id, pours: brew.pours || [] }))
     );
     
     const payload = {
@@ -550,6 +669,7 @@ export default function App() {
 
       // Track mapping of old IDs to new IDs for brews (since they reference bean_id)
       const beanIdMap = {};
+      const brewPoursMap = {};
 
       // Import beans: omit ID to create new records (merge, don't overwrite)
       for (const rawBean of payload.beans) {
@@ -573,7 +693,10 @@ export default function App() {
           const brewPayloadToInsert = brewPayload(rawBrew);
           brewPayloadToInsert.bean_id = beanIdMap[rawBrew.bean_id];
           // Don't include the exported brew ID; let Supabase generate a new one
-          await sbInsert("brews", session.access_token, brewPayloadToInsert);
+          const insertedBrew = await sbInsert("brews", session.access_token, brewPayloadToInsert);
+          if (insertedBrew && rawBrew.pours) {
+            brewPoursMap[insertedBrew.id] = rawBrew.pours;
+          }
         }
       }
 
@@ -586,6 +709,12 @@ export default function App() {
 
       // Reload all data from Supabase to ensure consistency
       await loadData(session.access_token);
+      if (Object.keys(brewPoursMap).length > 0) {
+        setBeans(currentBeans => currentBeans.map(bean => ({
+          ...bean,
+          brews: (bean.brews || []).map(brew => brewPoursMap[brew.id] ? { ...brew, pours: brewPoursMap[brew.id] } : brew)
+        })));
+      }
       setImportStatus("success");
       setTimeout(() => { setShowTransfer(null); setImportText(""); setImportStatus(""); }, 1500);
     } catch (e) {
@@ -625,18 +754,27 @@ export default function App() {
     if (!activeBean) return;
     setSaveError("");
     const finalMethod = brewForm.method_confirmed || brewForm.method;
-    const brewToSave = { ...brewForm, method: finalMethod, method_confirmed: undefined, bean_id: activeBean.id };
+    const brewToSave = {
+      ...brewForm,
+      method: finalMethod,
+      method_confirmed: undefined,
+      bean_id: activeBean.id,
+      water: getComputedBrewWater(brewForm),
+      totalTime: getComputedTotalTime(brewForm),
+      pourStructure: buildPourStructureFromForm(brewForm),
+    };
     const saved = await saveBrewRow(brewToSave);
     if (!saved) {
       setSaveError("Failed to save brew. Check your connection and try again.");
       return;
     }
 
+    const savedWithPours = saved ? { ...saved, pours: brewForm.pours || [] } : saved;
     const updated = beans.map(b => {
       if (b.id !== activeBean.id) return b;
       const brews = editingBrewId
-        ? b.brews.map(br => br.id === editingBrewId ? saved : br)
-        : [saved, ...b.brews];
+        ? b.brews.map(br => br.id === editingBrewId ? savedWithPours : br)
+        : [savedWithPours, ...b.brews];
       return { ...b, brews };
     });
 
@@ -657,7 +795,10 @@ export default function App() {
 
   const editBrew = (brew, bean) => {
     setActiveBean(bean);
-    setBrewForm({ ...brew });
+    setBrewForm({
+      ...brew,
+      pours: parsePourStepsFromStructure(brew.pourStructure, brew.numPours),
+    });
     setEditingBrewId(brew.id);
     setSelectedBrew(null);
     setView("brewForm");
@@ -686,6 +827,11 @@ export default function App() {
 
   const setB = (k, v) => setEditBean(f => ({ ...f, [k]: v }));
   const setBr = (k, v) => setBrewForm(f => ({ ...f, [k]: v }));
+  const setPourStep = (index, key, value) => setBrewForm((f) => {
+    const pours = normalizePourSteps(f.pours, f.numPours);
+    pours[index] = { ...pours[index], [key]: value };
+    return { ...f, pours };
+  });
 
   const allOrigins = [...new Set(beans.map(b => b.origin).filter(Boolean))].sort();
   const allVarietals = [...new Set(beans.map(b => b.varietal).filter(Boolean))].sort();
@@ -1523,7 +1669,7 @@ export default function App() {
                       <input style={inp()} type="number" value={brewForm.dose} onChange={e => setBr("dose", e.target.value)} placeholder="e.g. 15" onFocus={onFoc} onBlur={onBlr} />
                     </Field>
                     <Field label="Water (g)">
-                      <input style={inp()} type="number" value={brewForm.water} onChange={e => setBr("water", e.target.value)} placeholder="e.g. 250" onFocus={onFoc} onBlur={onBlr} />
+                      <input style={inp({ background: "#f0f0f0", color: "#333" })} value={getComputedBrewWater(brewForm) || ""} readOnly />
                     </Field>
                     <Field label="Temperature (°C)">
                       <input style={inp()} type="number" value={brewForm.temperature} onChange={e => setBr("temperature", e.target.value)} placeholder="e.g. 96" onFocus={onFoc} onBlur={onBlr} />
@@ -1532,27 +1678,40 @@ export default function App() {
                       <input style={inp()} value={brewForm.grindSize} onChange={e => setBr("grindSize", e.target.value)} placeholder="e.g. 3.2 / medium-fine" onFocus={onFoc} onBlur={onBlr} />
                     </Field>
                   </div>
-                  {brewForm.dose && brewForm.water && (
+                  {brewForm.dose && getComputedBrewWater(brewForm) && (
                     <div style={{ marginTop: "9px", padding: "9px 13px", background: "rgba(200,137,58,0.07)", borderRadius: "7px", fontSize: "13px", color: "#c8893a" }}>
-                      Brew ratio: 1:{calcRatio(brewForm.dose, brewForm.water)}
+                      Brew ratio: 1:{calcRatio(brewForm.dose, getComputedBrewWater(brewForm))}
                     </div>
                   )}
                 </section>
                 <section>
                   <SectionHead>Technique</SectionHead>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+                    <Field label="Number of Pours">
+                      <input style={inp()} type="number" min="1" max="10" value={brewForm.numPours} onChange={e => {
+                        const value = e.target.value;
+                        setBr("numPours", value ? String(Math.min(10, Number(value))) : "");
+                      }} placeholder="e.g. 3" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Total Time (mm:ss)">
+                      <input style={inp({ background: "#f0f0f0", color: "#333" })} value={getComputedTotalTime(brewForm) || ""} readOnly />
+                    </Field>
                     <Field label="Bloom Water (g)">
                       <input style={inp()} type="number" value={brewForm.bloomWater} onChange={e => setBr("bloomWater", e.target.value)} placeholder="e.g. 45" onFocus={onFoc} onBlur={onBlr} />
                     </Field>
                     <Field label="Bloom Time (s)">
-                      <input style={inp()} type="number" value={brewForm.bloomTime} onChange={e => setBr("bloomTime", e.target.value)} placeholder="e.g. 45" onFocus={onFoc} onBlur={onBlr} />
+                      <input style={inp()} type="number" value={brewForm.bloomTime} onChange={e => setBr("bloomTime", e.target.value)} placeholder="e.g. 45" onFocus={onFoc} onBlr={onBlr} />
                     </Field>
-                    <Field label="Number of Pours">
-                      <input style={inp()} type="number" value={brewForm.numPours} onChange={e => setBr("numPours", e.target.value)} placeholder="e.g. 3" onFocus={onFoc} onBlur={onBlr} />
-                    </Field>
-                    <Field label="Total Time (mm:ss)">
-                      <input style={inp()} value={brewForm.totalTime} onChange={e => setBr("totalTime", e.target.value)} placeholder="e.g. 2:30" onFocus={onFoc} onBlur={onBlr} />
-                    </Field>
+                    {Number(brewForm.numPours) > 1 && normalizePourSteps(brewForm.pours, brewForm.numPours).map((step, index) => (
+                      <div key={index} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px", width: "100%" }}>
+                        <Field label={`Pour ${index + 2} water until (g)`}>
+                          <input style={inp()} type="number" value={step.water} onChange={e => setPourStep(index, "water", e.target.value)} placeholder="e.g. 150" onFocus={onFoc} onBlur={onBlr} />
+                        </Field>
+                        <Field label={`Pour ${index + 2} Time (s)`}>
+                          <input style={inp()} type="number" value={step.time} onChange={e => setPourStep(index, "time", e.target.value)} placeholder="e.g. 45" onFocus={onFoc} onBlur={onBlr} />
+                        </Field>
+                      </div>
+                    ))}
                     <Field label="Date">
                       <input style={inp()} type="date" value={brewForm.date} onChange={e => setBr("date", e.target.value)} onFocus={onFoc} onBlur={onBlr} />
                     </Field>
@@ -1562,12 +1721,18 @@ export default function App() {
                       Bloom ratio: ×{bloomRatio(brewForm.bloomWater, brewForm.dose)} dose
                     </div>
                   )}
-                  <div style={{ marginTop: "11px" }}>
-                    <Field label="Pour Structure">
-                      <textarea style={inp({ resize: "vertical", minHeight: "68px", lineHeight: 1.6 })}
-                        value={brewForm.pourStructure} onChange={e => setBr("pourStructure", e.target.value)}
-                        placeholder="e.g. Bloom 45g → 150g at 0:45 → 250g at 1:30" onFocus={onFoc} onBlur={onBlr} />
-                    </Field>
+
+                  <div style={{ marginTop: "18px", padding: "14px", background: "rgba(200,137,58,0.05)", borderRadius: "10px", borderLeft: "2px solid rgba(200,137,58,0.35)" }}>
+                    <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase", marginBottom: "8px" }}>Pour structure</div>
+                    {getTechniqueLinesFromBrew(brewForm).length > 0 ? (
+                      getTechniqueLinesFromBrew(brewForm).map((line, index) => (
+                        <div key={index} style={{ fontSize: index === 0 ? "14px" : "13px", color: "#c8a878", lineHeight: 1.5, fontWeight: index === 0 ? 600 : 400 }}>
+                          {line.text}
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ fontSize: "13px", color: "#8a6f4c" }}>Enter bloom and pours to see the technique preview here.</div>
+                    )}
                   </div>
                 </section>
               </>)}

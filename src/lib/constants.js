@@ -27,7 +27,7 @@ export const defaultBrew = {
   method: "Pour Over", brewer: "", filterPaper: "",
   dose: "", water: "", temperature: "", grindSize: "",
   bloomWater: "", bloomTime: "", numPours: "", totalTime: "",
-  pourStructure: "", rating: 0, tastingNotes: "",
+  pours: [], pourStructure: "", rating: 0, tastingNotes: "",
   recipeSource: "Manual", recipeName: "",
   // Espresso fields
   machine: "", grinder: "", preHeat: "", brewTime: "",

@@ -10,6 +10,43 @@ function bloomRatio(bloomWater, dose) {
   return (parseFloat(bloomWater) / parseFloat(dose)).toFixed(1);
 }
 
+function splitPourStructure(pourStructure = "") {
+  return pourStructure
+    .split("→")
+    .map((chunk) => chunk.trim())
+    .filter(Boolean);
+}
+
+function getTechniqueLines(brew) {
+  const lines = [];
+  const pours = brew.numPours ? `${brew.numPours} pours` : null;
+  const totalTime = brew.totalTime ? brew.totalTime : null;
+
+  if (pours || totalTime) {
+    lines.push({ text: `${pours || "? pours"}${totalTime ? ` · ${totalTime}` : ""}` });
+  }
+
+  if (brew.bloomWater || brew.bloomTime) {
+    const bloomText = brew.bloomWater ? `${brew.bloomWater}g bloom` : "Bloom";
+    const bloomTimeText = brew.bloomTime ? `${brew.bloomTime}s` : "";
+    lines.push({ text: `${bloomText}${bloomTimeText ? ` · ${bloomTimeText}` : ""}` });
+  }
+
+  const structureLines = splitPourStructure(brew.pourStructure || "");
+  if (structureLines.length > 1) {
+    const rest = structureLines.slice(1);
+    rest.forEach((line, index) => {
+      if (line.startsWith("Pour ") && index >= 0) {
+        lines.push({ text: line.replace(/^Pour\s+1\s+/i, "Pour 2 ") });
+      } else {
+        lines.push({ text: line });
+      }
+    });
+  }
+
+  return lines;
+}
+
 function StarRating({ value, size = 20 }) {
   return (
     <div style={{ display: "flex", gap: "3px" }}>
@@ -144,11 +181,15 @@ export function BrewDetail({ brew, bean, onBack, onEdit, onCopyToRecipe, onGoToB
         </div>
       )}
 
-      {brew.pourStructure && (
+      {brew.method === "Pour Over" && (
         <div style={{ marginBottom: "18px" }}>
-          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase", marginBottom: "8px" }}>Pour Structure</div>
-          <div style={{ fontSize: "13px", color: "#c8a878", lineHeight: 1.7, background: "rgba(200,137,58,0.05)", padding: "12px", borderRadius: "8px", borderLeft: "2px solid rgba(200,137,58,0.35)" }}>
-            {brew.pourStructure}
+          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase", marginBottom: "8px" }}>Technique</div>
+          <div style={{ display: "grid", gap: "10px", background: "rgba(200,137,58,0.05)", padding: "14px", borderRadius: "10px", borderLeft: "2px solid rgba(200,137,58,0.35)" }}>
+            {getTechniqueLines(brew).map((line, index) => (
+              <div key={index} style={{ fontSize: index === 0 ? "14px" : "13px", color: "#c8a878", lineHeight: 1.5, fontWeight: index === 0 ? 600 : 400 }}>
+                {line.text}
+              </div>
+            ))}
           </div>
         </div>
       )}
