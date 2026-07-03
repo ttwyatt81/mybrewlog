@@ -13,7 +13,6 @@ export default function BrewFormView({
   setView,
   setEditingBrewId,
   getComputedBrewWater,
-  getComputedTotalTime,
   normalizePourSteps,
   buildPourStructureFromForm,
   parseTimeValue,
@@ -137,37 +136,45 @@ export default function BrewFormView({
                       <input style={inp()} type="number" value={brewForm.numPours} onChange={(e) => setBr("numPours", e.target.value)} placeholder="e.g. 3" onFocus={onFoc} onBlur={onBlr} />
                     </Field>
                     <Field label="Total Time (mm:ss)">
-                      <input style={inp()} value={getComputedTotalTime(brewForm)} readOnly />
-                    </Field>
-                  </div>
-                  <div style={{ marginTop: "11px" }}>
-                    <Field label="Pour Structure Preview">
-                      <textarea style={inp({ resize: "vertical", minHeight: "68px", lineHeight: 1.6 })} value={buildPourStructureFromForm(brewForm)} readOnly />
+                      <input style={inp()} value={brewForm.totalTime} onChange={(e) => setBr("totalTime", e.target.value)} placeholder="e.g. 2:45" onFocus={onFoc} onBlur={onBlr} />
                     </Field>
                   </div>
                   <div style={{ marginTop: "11px" }}>
                     <Field label="Pour Steps">
                       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                         {normalizePourSteps(brewForm.pours, brewForm.numPours).map((step, index) => (
-                          <div key={`${index}-${step.water}-${step.time}`} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "8px", alignItems: "center" }}>
-                            <input style={inp()} type="number" value={step.water} onChange={(e) => setPourStep(index, "water", e.target.value)} placeholder={`Pour ${index + 2} water (g)`} onFocus={onFoc} onBlur={onBlr} />
-                            <input style={inp()} type="number" value={step.time} onChange={(e) => setPourStep(index, "time", e.target.value)} placeholder={`Pour ${index + 2} time (s)`} onFocus={onFoc} onBlur={onBlr} />
-                            <div style={{ fontSize: "12px", color: "#7a6050" }}>{index + 2}</div>
+                          <div key={`pour-step-${index}`} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto", gap: "8px", alignItems: "end" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                              <label style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase" }}>{`Pour ${index + 2} water (g)`}</label>
+                              <input style={inp()} type="number" value={step.water ?? ""} onChange={(e) => setPourStep(index, "water", e.target.value)} placeholder={`Pour ${index + 2} water (g)`} onFocus={onFoc} onBlur={onBlr} />
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                              <label style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase" }}>{`Pour ${index + 2} start time (MM:SS)`}</label>
+                              <input style={inp()} type="text" value={step.startTime ?? ""} onChange={(e) => setPourStep(index, "startTime", e.target.value)} placeholder="e.g. 0:45" onFocus={onFoc} onBlur={onBlr} />
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                              <label style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase" }}>{`Pour ${index + 2} duration (S)`}</label>
+                              <input style={inp()} type="number" value={step.duration ?? ""} onChange={(e) => setPourStep(index, "duration", e.target.value)} placeholder="e.g. 30" onFocus={onFoc} onBlur={onBlr} />
+                            </div>
+                            <div style={{ fontSize: "12px", color: "#7a6050", paddingBottom: "8px" }}>{index + 2}</div>
                           </div>
                         ))}
                       </div>
                     </Field>
                   </div>
-                  <div style={{ marginTop: "12px", padding: "10px 12px", background: "rgba(200,137,58,0.06)", borderRadius: "8px" }}>
-                    {getTechniqueLinesFromBrew(brewForm).length > 0 ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        {getTechniqueLinesFromBrew(brewForm).map((line, idx) => (
-                          <div key={`${line.text}-${idx}`} style={{ fontSize: "12px", color: "#8a7050", lineHeight: 1.6 }}>{line.text}</div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: "13px", color: "#8a6f4c" }}>Enter bloom and pours to see the technique preview here.</div>
-                    )}
+                  <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "5px" }}>
+                    <label style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase" }}>Pour technique</label>
+                    <div style={inp({ minHeight: "80px", lineHeight: 1.6, whiteSpace: "pre-wrap" })}>
+                      {getTechniqueLinesFromBrew(brewForm).length > 0 ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                          {getTechniqueLinesFromBrew(brewForm).map((line, idx) => (
+                            <div key={`${line.text}-${idx}`} style={{ fontSize: "12px", color: "#f0e6d3", lineHeight: 1.6 }}>{line.text}</div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: "13px", color: "#8a6f4c" }}>Enter bloom and pours to see the technique preview here.</div>
+                      )}
+                    </div>
                   </div>
                 </section>
               </>

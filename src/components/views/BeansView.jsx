@@ -1,4 +1,5 @@
 import BeanCard from "../BeanCard";
+import { defaultBean } from "../../lib/constants";
 
 export default function BeansView({
   beans,

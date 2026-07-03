@@ -15,9 +15,13 @@ export function splitPourStructure(pourStructure = "") {
 export function normalizePourSteps(pourSteps = [], numPours = "") {
   const count = Math.max(0, Math.min(10, Number(numPours)) - 1);
   const steps = Array.isArray(pourSteps)
-    ? pourSteps.map((step) => ({ water: step?.water || "", time: step?.time || "" }))
+    ? pourSteps.map((step) => ({
+        water: step?.water || "",
+        startTime: step?.startTime || "",
+        duration: step?.duration || step?.time || "",
+      }))
     : [];
-  while (steps.length < count) steps.push({ water: "", time: "" });
+  while (steps.length < count) steps.push({ water: "", startTime: "", duration: "" });
   return steps.slice(0, count);
 }
 
@@ -31,7 +35,8 @@ export function buildPourStructureFromForm(form) {
 
   const stepLines = steps.map((step) => {
     const waterPart = step.water ? `Pour to ${step.water}g` : "Pour";
-    const timePart = step.time ? ` at ${parseTimeValue(step.time)}s` : "";
+    const duration = step.duration || step.time || "";
+    const timePart = duration ? ` at ${parseTimeValue(duration)}s` : "";
     return `${waterPart}${timePart}`.trim();
   });
 
@@ -67,7 +72,7 @@ export function getComputedBrewWater(form) {
 export function getComputedTotalTime(form) {
   const bloom = parseTimeValue(form.bloomTime);
   const pours = normalizePourSteps(form.pours, form.numPours);
-  const pourTime = pours.reduce((sum, step) => sum + parseTimeValue(step.time), 0);
+  const pourTime = pours.reduce((sum, step) => sum + parseTimeValue(step.duration || step.time || ""), 0);
   return formatSecondsToTime(bloom + pourTime);
 }
 
@@ -153,7 +158,7 @@ export function getTechniqueLinesFromBrew(brew) {
   const lines = [];
   const pourCount = brew?.numPours ? `${brew.numPours} pours` : null;
   const pourWater = brew?.numPours ? `${getComputedBrewWater(brew)}g` : null;
-  const totalTime = getComputedTotalTime(brew || {});
+  const totalTime = brew?.totalTime || "";
 
   if (pourCount) {
     lines.push({ text: `${pourCount}${pourWater ? ` · ${pourWater}` : ""}${totalTime ? ` · ${totalTime}` : ""}` });
@@ -168,14 +173,17 @@ export function getTechniqueLinesFromBrew(brew) {
   const steps = normalizePourSteps(brew?.pours, brew?.numPours);
   let currentStart = parseTimeValue(brew?.bloomTime);
   steps.forEach((step, index) => {
-    const pourTime = parseTimeValue(step.time);
-    const endTime = currentStart + pourTime;
-    if (step.water || step.time) {
+    const stepStart = parseTimeValue(step.startTime) || currentStart;
+    const pourTime = parseTimeValue(step.duration || step.time || "");
+    const pourEnd = stepStart + pourTime;
+    const nextStepStart = index < steps.length - 1 ? parseTimeValue(steps[index + 1]?.startTime) : parseTimeValue(totalTime);
+    const boundaryEnd = nextStepStart || pourEnd;
+    if (step.water || step.startTime || step.duration || step.time) {
       lines.push({
-        text: `Pour ${index + 2} · ${step.water ? `${step.water}g` : "?g"} · ${formatSecondsToTime(currentStart)} -> ${formatSecondsToTime(endTime)}`
+        text: `Pour ${index + 2} · ${step.water ? `${step.water}g` : "?g"} · ${formatSecondsToTime(stepStart)}-${formatSecondsToTime(pourEnd)} -> ${formatSecondsToTime(boundaryEnd)}`
       });
     }
-    currentStart = endTime;
+    currentStart = nextStepStart || pourEnd;
   });
 
   return lines;
@@ -198,9 +206,9 @@ export function getBeanSummaryTechniqueLine(brew) {
 
   let currentStart = bloomTime;
   steps.forEach((step, index) => {
-    if (!step.water && !step.time) return;
+    if (!step.water && !step.duration && !step.time) return;
     parts.push(`Pour ${index + 2}${step.water ? ` ${step.water}g` : ""}`);
-    currentStart += parseTimeValue(step.time);
+    currentStart += parseTimeValue(step.duration || step.time || "");
     parts.push(formatSecondsToTime(currentStart));
   });
 

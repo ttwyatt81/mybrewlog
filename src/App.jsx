@@ -36,7 +36,6 @@ import {
   parseTimeValue,
   formatSecondsToTime,
   getComputedBrewWater,
-  getComputedTotalTime,
   parsePourStepsFromStructure,
   getTechniqueLinesFromBrew,
   getBeanSummaryTechniqueLine
@@ -468,7 +467,7 @@ export default function App() {
       method_confirmed: undefined,
       bean_id: activeBean.id,
       water: getComputedBrewWater(brewForm),
-      totalTime: getComputedTotalTime(brewForm),
+      totalTime: brewForm.totalTime || "",
       pours: Array.isArray(brewForm.pours) ? brewForm.pours : []
     };
     const saved = await saveBrewData(session?.access_token, brewToSave);
@@ -1052,7 +1051,6 @@ export default function App() {
               setView={setView}
               setEditingBrewId={setEditingBrewId}
               getComputedBrewWater={getComputedBrewWater}
-              getComputedTotalTime={getComputedTotalTime}
               normalizePourSteps={normalizePourSteps}
               buildPourStructureFromForm={buildPourStructureFromForm}
               parseTimeValue={parseTimeValue}

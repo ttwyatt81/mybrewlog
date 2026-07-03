@@ -29,9 +29,9 @@ function formatSecondsToTime(seconds) {
 function normalizePourSteps(pourSteps = [], numPours = "") {
   const count = Math.max(0, Math.min(10, Number(numPours)) - 1);
   const steps = Array.isArray(pourSteps)
-    ? pourSteps.map((step) => ({ water: step?.water || "", time: step?.time || "" }))
+    ? pourSteps.map((step) => ({ water: step?.water || "", startTime: step?.startTime || "", duration: step?.duration || step?.time || "" }))
     : [];
-  while (steps.length < count) steps.push({ water: "", time: "" });
+  while (steps.length < count) steps.push({ water: "", startTime: "", duration: "" });
   return steps.slice(0, count);
 }
 function parsePourStepsFromStructure(pourStructure = "", numPours = "") {
@@ -76,10 +76,10 @@ function getTechniqueLines(brew) {
   );
   let currentStart = parseTimeValue(brew.bloomTime);
   steps.forEach((step, index) => {
-    if (!step.water && !step.time) return;
-    const pourTime = parseTimeValue(step.time);
+    if (!step.water && !step.duration && !step.time) return;
+    const pourTime = parseTimeValue(step.duration || step.time || "");
     const endTime = currentStart + pourTime;
-    lines.push({ text: `Pour ${index + 2} · ${step.water ? `${step.water}g` : "?g"}${step.time ? ` · ${formatSecondsToTime(endTime)}` : ""}` });
+    lines.push({ text: `Pour ${index + 2} · ${step.water ? `${step.water}g` : "?g"}${step.duration || step.time ? ` · ${formatSecondsToTime(endTime)}` : ""}` });
     currentStart = endTime;
   });
 
