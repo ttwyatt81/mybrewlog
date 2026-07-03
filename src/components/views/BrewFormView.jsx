@@ -1,0 +1,259 @@
+import Tag from "../ui/Tag";
+import StarRating from "../ui/StarRating";
+
+export default function BrewFormView({
+  liveBean,
+  brewForm,
+  setBr,
+  setPourStep,
+  editingBrewId,
+  recipes,
+  setShowAI,
+  saveBrew,
+  setView,
+  setEditingBrewId,
+  getComputedBrewWater,
+  getComputedTotalTime,
+  normalizePourSteps,
+  buildPourStructureFromForm,
+  parseTimeValue,
+  formatSecondsToTime,
+  getTechniqueLinesFromBrew,
+  brewMethods,
+  pourOverBrewers,
+  filterPapers,
+  preHeatOptions,
+  calcRatio,
+  Field,
+  SectionHead,
+  inp,
+  onFoc,
+  onBlr,
+  setBrewForm,
+}) {
+  const method = editingBrewId ? brewForm.method : brewForm.method_confirmed;
+
+  return (
+    <div>
+      {!editingBrewId && !brewForm.method_confirmed && (
+        <div>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "24px", marginBottom: "4px" }}>Log a Brew</div>
+          <div style={{ fontSize: "13px", color: "#6a5040", marginBottom: "32px" }}>Select your brewing method</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            {[
+              { method: "Pour Over", icon: "☕", sub: "V60, Chemex, Kalita…" },
+              { method: "Espresso", icon: "🫖", sub: "Shot, lungo, ristretto…" },
+            ].map(({ method: optionMethod, icon, sub }) => (
+              <div key={optionMethod} onClick={() => setBrewForm((f) => ({ ...f, method_confirmed: optionMethod }))} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(200,137,58,0.25)", borderRadius: "14px", padding: "28px 16px", cursor: "pointer", textAlign: "center", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(200,137,58,0.08)"; e.currentTarget.style.borderColor = "rgba(200,137,58,0.6)"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor = "rgba(200,137,58,0.25)"; }}>
+                <div style={{ fontSize: "36px", marginBottom: "12px" }}>{icon}</div>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "18px", marginBottom: "6px" }}>{optionMethod}</div>
+                <div style={{ fontSize: "11px", color: "#6a5040" }}>{sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(editingBrewId || brewForm.method_confirmed) && (
+        <div>
+          {!editingBrewId && (
+            <button onClick={() => setBrewForm((f) => ({ ...f, method_confirmed: null }))} style={{ background: "none", border: "none", color: "#9a7a5a", cursor: "pointer", fontSize: "12px", marginBottom: "14px", padding: 0 }}>← Change method</button>
+          )}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "24px" }}>{editingBrewId ? "Edit Brew" : method}</div>
+            <span style={{ fontSize: "11px", color: "#9a7a5a", background: "rgba(200,137,58,0.08)", padding: "3px 10px", borderRadius: "20px" }}>{method}</span>
+          </div>
+          <div style={{ fontSize: "13px", color: "#6a5040", marginBottom: "16px" }}>{[liveBean.roastLevel, liveBean.process, liveBean.origin].filter(Boolean).join(" · ")}</div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button onClick={() => { setBrewForm((f) => ({ ...f, recipeSource: "AI Generated", recipeName: "" })); setShowAI(true); }} style={{ flex: 1, background: "rgba(200,137,58,0.07)", border: "1px solid rgba(200,137,58,0.28)", borderRadius: "9px", color: "#c8a060", cursor: "pointer", padding: "10px 8px", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }} onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(200,137,58,0.14)")} onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(200,137,58,0.07)")}>✦ AI Suggestion</button>
+              <button onClick={() => {
+                const last = liveBean.brews.find((b) => b.method === method);
+                if (!last) return;
+                setBrewForm((f) => ({...f, ...last, id: f.id, date: f.date, method: last.method || method, method_confirmed: method, recipeSource: "Last Brew", recipeName: "" }));
+              }} disabled={!liveBean.brews.some((b) => b.method === method)} style={{ flex: 1, background: liveBean.brews.some((b) => b.method === method) ? "rgba(200,137,58,0.07)" : "rgba(255,255,255,0.02)", border: `1px solid ${liveBean.brews.some((b) => b.method === method) ? "rgba(200,137,58,0.28)" : "rgba(255,255,255,0.06)"}`, borderRadius: "9px", color: liveBean.brews.some((b) => b.method === method) ? "#c8a060" : "#3a2a1a", cursor: liveBean.brews.some((b) => b.method === method) ? "pointer" : "not-allowed", padding: "10px 8px", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={(e) => { if (liveBean.brews.some((b) => b.method === method)) e.currentTarget.style.background = "rgba(200,137,58,0.14)"; }} onMouseLeave={(e) => { if (liveBean.brews.some((b) => b.method === method)) e.currentTarget.style.background = "rgba(200,137,58,0.07)"; }}>↑ Last Brew</button>
+            </div>
+            {recipes.filter((r) => r.method === method).length > 0 && (
+              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
+                <span style={{ fontSize: "10px", color: "#5a4a3a", letterSpacing: "0.08em", textTransform: "uppercase" }}>Recipes:</span>
+                {recipes.filter((r) => r.method === method).map((recipe) => (
+                  <button key={recipe.id} onClick={() => setBrewForm((f) => ({ ...f, ...recipe, id: f.id, date: f.date, method: recipe.method || method, method_confirmed: method, recipeSource: "Saved Recipe", recipeName: recipe.name }))} style={{ padding: "5px 12px", borderRadius: "20px", border: "1px solid rgba(200,137,58,0.28)", background: "rgba(200,137,58,0.07)", color: "#c8a060", cursor: "pointer", fontSize: "12px" }} onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(200,137,58,0.16)")} onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(200,137,58,0.07)")}>{recipe.name}</button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "26px" }}>
+            {method === "Pour Over" && (
+              <>
+                <section>
+                  <SectionHead>Equipment</SectionHead>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+                    <Field label="Brewer">
+                      <select style={inp({ cursor: "pointer" })} value={brewForm.brewer} onChange={(e) => setBr("brewer", e.target.value)} onFocus={onFoc} onBlur={onBlr}>
+                        <option value="">Select…</option>
+                        {pourOverBrewers.map((b) => <option key={b} value={b}>{b}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="Filter Paper">
+                      <select style={inp({ cursor: "pointer" })} value={brewForm.filterPaper} onChange={(e) => setBr("filterPaper", e.target.value)} onFocus={onFoc} onBlur={onBlr}>
+                        <option value="">Select…</option>
+                        {filterPapers.map((f) => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                    </Field>
+                  </div>
+                </section>
+                <section>
+                  <SectionHead>Recipe</SectionHead>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+                    <Field label="Dose (g)">
+                      <input style={inp()} type="number" value={brewForm.dose} onChange={(e) => setBr("dose", e.target.value)} placeholder="e.g. 15" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Water (g)">
+                      <input style={inp({ background: "#f0f0f0", color: "#333" })} value={getComputedBrewWater(brewForm) || ""} readOnly />
+                    </Field>
+                    <Field label="Temperature (°C)">
+                      <input style={inp()} type="number" value={brewForm.temperature} onChange={(e) => setBr("temperature", e.target.value)} placeholder="e.g. 96" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Grind Size">
+                      <input style={inp()} value={brewForm.grindSize} onChange={(e) => setBr("grindSize", e.target.value)} placeholder="e.g. 3.2 / medium-fine" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                  </div>
+                  {brewForm.dose && getComputedBrewWater(brewForm) && (
+                    <div style={{ marginTop: "9px", padding: "9px 13px", background: "rgba(200,137,58,0.07)", borderRadius: "7px", fontSize: "13px", color: "#c8893a" }}>Ratio: 1:{calcRatio(brewForm.dose, getComputedBrewWater(brewForm))}</div>
+                  )}
+                </section>
+                <section>
+                  <SectionHead>Technique</SectionHead>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+                    <Field label="Bloom Water (g)">
+                      <input style={inp()} type="number" value={brewForm.bloomWater} onChange={(e) => setBr("bloomWater", e.target.value)} placeholder="e.g. 45" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Bloom Time (s)">
+                      <input style={inp()} type="number" value={brewForm.bloomTime} onChange={(e) => setBr("bloomTime", e.target.value)} placeholder="e.g. 45" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Number of Pours">
+                      <input style={inp()} type="number" value={brewForm.numPours} onChange={(e) => setBr("numPours", e.target.value)} placeholder="e.g. 3" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Total Time (mm:ss)">
+                      <input style={inp()} value={getComputedTotalTime(brewForm)} readOnly />
+                    </Field>
+                  </div>
+                  <div style={{ marginTop: "11px" }}>
+                    <Field label="Pour Structure Preview">
+                      <textarea style={inp({ resize: "vertical", minHeight: "68px", lineHeight: 1.6 })} value={buildPourStructureFromForm(brewForm)} readOnly />
+                    </Field>
+                  </div>
+                  <div style={{ marginTop: "11px" }}>
+                    <Field label="Pour Steps">
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        {normalizePourSteps(brewForm.pours, brewForm.numPours).map((step, index) => (
+                          <div key={`${index}-${step.water}-${step.time}`} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "8px", alignItems: "center" }}>
+                            <input style={inp()} type="number" value={step.water} onChange={(e) => setPourStep(index, "water", e.target.value)} placeholder={`Pour ${index + 2} water (g)`} onFocus={onFoc} onBlur={onBlr} />
+                            <input style={inp()} type="number" value={step.time} onChange={(e) => setPourStep(index, "time", e.target.value)} placeholder={`Pour ${index + 2} time (s)`} onFocus={onFoc} onBlur={onBlr} />
+                            <div style={{ fontSize: "12px", color: "#7a6050" }}>{index + 2}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </Field>
+                  </div>
+                  <div style={{ marginTop: "12px", padding: "10px 12px", background: "rgba(200,137,58,0.06)", borderRadius: "8px" }}>
+                    {getTechniqueLinesFromBrew(brewForm).length > 0 ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {getTechniqueLinesFromBrew(brewForm).map((line, idx) => (
+                          <div key={`${line.text}-${idx}`} style={{ fontSize: "12px", color: "#8a7050", lineHeight: 1.6 }}>{line.text}</div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: "13px", color: "#8a6f4c" }}>Enter bloom and pours to see the technique preview here.</div>
+                    )}
+                  </div>
+                </section>
+              </>
+            )}
+
+            {method === "Espresso" && (
+              <>
+                <section>
+                  <SectionHead>Equipment</SectionHead>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+                    <Field label="Espresso Machine">
+                      <input style={inp()} value={brewForm.machine} onChange={(e) => setBr("machine", e.target.value)} placeholder="e.g. Gaggia Classic" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Grinder">
+                      <input style={inp()} value={brewForm.grinder} onChange={(e) => setBr("grinder", e.target.value)} placeholder="e.g. Niche Zero" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                  </div>
+                  <div style={{ marginTop: "11px" }}>
+                    <Field label="Pre-heat Setting" hint="Group head / machine temperature">
+                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                        {preHeatOptions.map((opt) => (
+                          <button key={opt} onClick={() => setBr("preHeat", brewForm.preHeat === opt ? "" : opt)} style={{ padding: "7px 16px", borderRadius: "20px", border: `1px solid ${brewForm.preHeat === opt ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)"}`, background: brewForm.preHeat === opt ? "rgba(200,137,58,0.18)" : "transparent", color: brewForm.preHeat === opt ? "#c8a060" : "#5a4a3a", cursor: "pointer", fontSize: "13px", transition: "all 0.15s" }}>
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </Field>
+                  </div>
+                </section>
+                <section>
+                  <SectionHead>Recipe</SectionHead>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+                    <Field label="Dose (g)">
+                      <input style={inp()} type="number" value={brewForm.dose} onChange={(e) => setBr("dose", e.target.value)} placeholder="e.g. 18" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Yield / Water (g)">
+                      <input style={inp()} type="number" value={brewForm.water} onChange={(e) => setBr("water", e.target.value)} placeholder="e.g. 36" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Grind Setting">
+                      <input style={inp()} value={brewForm.grindSize} onChange={(e) => setBr("grindSize", e.target.value)} placeholder="e.g. 20 clicks" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Temperature (°C)">
+                      <input style={inp()} type="number" value={brewForm.temperature} onChange={(e) => setBr("temperature", e.target.value)} placeholder="e.g. 93" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                  </div>
+                  {brewForm.dose && brewForm.water && (
+                    <div style={{ marginTop: "9px", padding: "9px 13px", background: "rgba(200,137,58,0.07)", borderRadius: "7px", fontSize: "13px", color: "#c8893a" }}>Brew ratio: 1:{calcRatio(brewForm.dose, brewForm.water)}</div>
+                  )}
+                </section>
+                <section>
+                  <SectionHead>Technique</SectionHead>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+                    <Field label="Brew Time (seconds)">
+                      <input style={inp()} type="number" value={brewForm.brewTime} onChange={(e) => setBr("brewTime", e.target.value)} placeholder="e.g. 28" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Date">
+                      <input style={inp()} type="date" value={brewForm.date} onChange={(e) => setBr("date", e.target.value)} onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                  </div>
+                </section>
+              </>
+            )}
+
+            <section>
+              <SectionHead>Tasting</SectionHead>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <Field label="Rating">
+                  <StarRating value={brewForm.rating} onChange={(v) => setBr("rating", v)} />
+                </Field>
+                <Field label="Tasting Notes">
+                  <textarea style={inp({ resize: "vertical", minHeight: "80px", lineHeight: 1.6 })} value={brewForm.tastingNotes} onChange={(e) => setBr("tastingNotes", e.target.value)} placeholder="Flavours, body, finish…" onFocus={onFoc} onBlur={onBlr} />
+                </Field>
+              </div>
+            </section>
+
+            <div style={{ display: "flex", gap: "10px", paddingBottom: "40px" }}>
+              <button onClick={saveBrew} style={{ flex: 1, background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "9px", color: "#fff", padding: "13px", fontSize: "15px", fontWeight: "500", cursor: "pointer" }}>
+                {editingBrewId ? "Update Brew" : "Save Brew"}
+              </button>
+              <button onClick={() => { setView("beanDetail"); setEditingBrewId(null); }} style={{ padding: "13px 20px", background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "9px", color: "#6a5040", cursor: "pointer", fontSize: "14px" }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

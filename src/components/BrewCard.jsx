@@ -9,21 +9,59 @@ function bloomRatio(bloomWater, dose) {
   if (!bloomWater || !dose || isNaN(bloomWater) || isNaN(dose)) return null;
   return (parseFloat(bloomWater) / parseFloat(dose)).toFixed(1);
 }
-
-function splitPourStructure(pourStructure = "") {
-  return pourStructure
+function parseTimeValue(value) {
+  const text = String(value || "").trim();
+  if (!text) return 0;
+  if (/^\d+:\d{1,2}$/.test(text)) {
+    const [minutes, seconds] = text.split(":").map(Number);
+    return Number.isFinite(minutes) && Number.isFinite(seconds) ? minutes * 60 + seconds : 0;
+  }
+  const digits = Number(text.replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(digits) ? digits : 0;
+}
+function formatSecondsToTime(seconds) {
+  const total = Math.max(0, Number(seconds) || 0);
+  if (total < 60) return `${total}s`;
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${mins}:${String(secs).padStart(2, "0")}`;
+}
+function normalizePourSteps(pourSteps = [], numPours = "") {
+  const count = Math.max(0, Math.min(10, Number(numPours)) - 1);
+  const steps = Array.isArray(pourSteps)
+    ? pourSteps.map((step) => ({ water: step?.water || "", time: step?.time || "" }))
+    : [];
+  while (steps.length < count) steps.push({ water: "", time: "" });
+  return steps.slice(0, count);
+}
+function parsePourStepsFromStructure(pourStructure = "", numPours = "") {
+  const lines = pourStructure
     .split("→")
     .map((chunk) => chunk.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .slice(1);
+  const count = Math.max(0, Math.min(10, Number(numPours)) - 1);
+  const pours = lines.slice(0, count).map((line) => {
+    const waterMatch = line.match(/(\d+)\s*g/);
+    const timeMatch = line.match(/at\s+([0-9:]+)|([0-9]+)\s*s/);
+    let time = "";
+    if (timeMatch) time = timeMatch[1] || timeMatch[2] || "";
+    if (time.endsWith("s")) time = time.slice(0, -1);
+    return {
+      water: waterMatch ? waterMatch[1] : "",
+      time,
+    };
+  });
+  while (pours.length < count) pours.push({ water: "", time: "" });
+  return pours;
 }
-
 function getTechniqueLines(brew) {
   const lines = [];
-  const pours = brew.numPours ? `${brew.numPours} pours` : null;
+  const poursLabel = brew.numPours ? `${brew.numPours} pours` : null;
   const totalTime = brew.totalTime ? brew.totalTime : null;
 
-  if (pours || totalTime) {
-    lines.push({ text: `${pours || "? pours"}${totalTime ? ` · ${totalTime}` : ""}` });
+  if (poursLabel || totalTime) {
+    lines.push({ text: `${poursLabel || "? pours"}${totalTime ? ` · ${totalTime}` : ""}` });
   }
 
   if (brew.bloomWater || brew.bloomTime) {
@@ -32,17 +70,18 @@ function getTechniqueLines(brew) {
     lines.push({ text: `${bloomText}${bloomTimeText ? ` · ${bloomTimeText}` : ""}` });
   }
 
-  const structureLines = splitPourStructure(brew.pourStructure || "");
-  if (structureLines.length > 1) {
-    const rest = structureLines.slice(1);
-    rest.forEach((line, index) => {
-      if (line.startsWith("Pour ") && index >= 0) {
-        lines.push({ text: line.replace(/^Pour\s+1\s+/i, "Pour 2 ") });
-      } else {
-        lines.push({ text: line });
-      }
-    });
-  }
+  const steps = normalizePourSteps(
+    brew.pours && brew.pours.length ? brew.pours : parsePourStepsFromStructure(brew.pourStructure || "", brew.numPours),
+    brew.numPours
+  );
+  let currentStart = parseTimeValue(brew.bloomTime);
+  steps.forEach((step, index) => {
+    if (!step.water && !step.time) return;
+    const pourTime = parseTimeValue(step.time);
+    const endTime = currentStart + pourTime;
+    lines.push({ text: `Pour ${index + 2} · ${step.water ? `${step.water}g` : "?g"}${step.time ? ` · ${formatSecondsToTime(endTime)}` : ""}` });
+    currentStart = endTime;
+  });
 
   return lines;
 }
