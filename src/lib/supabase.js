@@ -1,5 +1,34 @@
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const AUTH_DEBUG = import.meta.env.DEV;
+
+let refreshInFlight = null;
+
+function maskToken(value) {
+  const text = String(value || "").trim();
+  if (!text) return null;
+  if (text.length <= 8) return `${text.slice(0, 2)}...${text.slice(-2)}`;
+  return `${text.slice(0, 4)}...${text.slice(-4)}`;
+}
+
+function logRefreshDebug(event, details = {}) {
+  if (!AUTH_DEBUG) return;
+  console.debug("[supabase refresh]", event, details);
+}
+
+function classifyRefreshError(status, body) {
+  const error = String(body?.error || "").toLowerCase();
+  const description = String(body?.error_description || body?.message || body?.msg || "").toLowerCase();
+  const combined = `${error} ${description}`.trim();
+  const mentionsRefreshToken = combined.includes("refresh token");
+  const explicitlyInvalid = combined.includes("invalid") || combined.includes("expired") || combined.includes("revoked") || combined.includes("not found");
+
+  if ((status === 400 || status === 401) && mentionsRefreshToken && explicitlyInvalid) {
+    return "invalid_refresh_token";
+  }
+
+  return "request_failed";
+}
 
 function ensureSupabaseConfig() {
   if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -66,28 +95,84 @@ export async function sbVerifyOtp(email, token) {
 }
 
 export async function sbRefreshSession(refreshToken) {
-  if (!refreshToken?.trim()) return null;
+  if (!refreshToken?.trim()) return { session: null, errorType: "missing_refresh_token" };
   ensureSupabaseConfig();
 
-  try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
-      method: "POST",
-      headers: {
-        apikey: SUPABASE_KEY,
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: new URLSearchParams({
-        grant_type: "refresh_token",
-        refresh_token: refreshToken
-      })
+  if (refreshInFlight) {
+    logRefreshDebug("reuse_in_flight", { refreshToken: maskToken(refreshToken), shared: true });
+    return refreshInFlight;
+  }
+
+  refreshInFlight = (async () => {
+    const refreshTokenId = maskToken(refreshToken);
+    logRefreshDebug("request_start", {
+      refreshToken: refreshTokenId,
+      shared: false,
+      endpoint: `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`
     });
 
-    const data = await res.json().catch(() => ({}));
-    return data.access_token ? data : null;
-  } catch (error) {
-    console.error("Refresh session request failed:", error);
-    return null;
-  }
+    try {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY,
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: refreshToken
+        })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      const error = data?.error || null;
+      const errorDescription = data?.error_description || data?.message || data?.msg || null;
+
+      if (data?.access_token) {
+        logRefreshDebug("request_success", {
+          refreshToken: refreshTokenId,
+          status: res.status,
+          ok: res.ok,
+          body: data,
+          error,
+          error_description: errorDescription,
+          errorType: null,
+          shared: false
+        });
+        return { session: data, errorType: null };
+      }
+
+      const errorType = res.ok ? "request_failed" : classifyRefreshError(res.status, data);
+      logRefreshDebug("request_failure", {
+        refreshToken: refreshTokenId,
+        status: res.status,
+        ok: res.ok,
+        body: data,
+        error,
+        error_description: errorDescription,
+        errorType,
+        shared: false
+      });
+      return { session: null, errorType };
+    } catch (error) {
+      console.error("Refresh session request failed:", error);
+      logRefreshDebug("request_network_error", {
+        refreshToken: refreshTokenId,
+        status: null,
+        ok: false,
+        body: null,
+        error: error?.message || String(error),
+        error_description: null,
+        errorType: "network",
+        shared: false
+      });
+      return { session: null, errorType: "network" };
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
 }
 
 export async function sbSignOut(token) {

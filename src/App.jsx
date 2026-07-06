@@ -37,8 +37,7 @@ import {
   formatSecondsToTime,
   getComputedBrewWater,
   parsePourStepsFromStructure,
-  getTechniqueLinesFromBrew,
-  getBeanSummaryTechniqueLine
+  getTechniqueLinesFromBrew
 } from "./features/brews/model";
 import { useBrews } from "./features/brews/hooks";
 import {
@@ -177,6 +176,7 @@ export default function App() {
   const [brewSort, setBrewSort] = useState("date");
 
   const SESSION_KEY = "sb_session";
+  const LAST_EMAIL_KEY = "last_auth_email";
 
   const saveSession = (sessionData) => {
     setSession(sessionData);
@@ -187,14 +187,13 @@ export default function App() {
     localStorage.removeItem(SESSION_KEY);
     setSession(null);
     setAuthState("login");
-    setAuthEmail("");
     setAuthCode("");
   };
 
   const refreshSession = async (currentSession) => {
     if (!currentSession?.refresh_token) return null;
-    const refreshed = await sbRefreshSession(currentSession.refresh_token);
-    if (!refreshed) return null;
+    const { session: refreshed, errorType } = await sbRefreshSession(currentSession.refresh_token);
+    if (!refreshed) return { session: null, errorType: errorType || "refresh_failed" };
 
     const nextSession = {
       ...currentSession,
@@ -203,16 +202,21 @@ export default function App() {
     };
 
     saveSession(nextSession);
-    return nextSession;
+    return { session: nextSession, errorType: null };
   };
 
   const getValidAccessToken = async () => {
     if (session?.access_token && session?.expires_at && Date.now() < session.expires_at - 60000) {
-      return session.access_token;
+      return { token: session.access_token, errorType: null };
     }
     const refreshed = await refreshSession(session);
-    return refreshed?.access_token || null;
+    return { token: refreshed?.session?.access_token || null, errorType: refreshed?.errorType || null };
   };
+
+  useEffect(() => {
+    const lastEmail = localStorage.getItem(LAST_EMAIL_KEY);
+    if (lastEmail) setAuthEmail(lastEmail);
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem(SESSION_KEY);
@@ -232,11 +236,15 @@ export default function App() {
       if (session?.refresh_token) {
         (async () => {
           const refreshed = await refreshSession(session);
-          if (refreshed) {
+          if (refreshed?.session) {
             setAuthState("app");
-            loadData(refreshed.access_token);
-          } else {
+            loadData(refreshed.session.access_token);
+          } else if (refreshed?.errorType === "invalid_refresh_token") {
             clearSession();
+          } else {
+            // Keep remembered email and allow retry later instead of forcing full logout.
+            setAuthState("login");
+            setAuthCode("");
           }
         })();
         return;
@@ -252,10 +260,10 @@ export default function App() {
   useEffect(() => {
     if (!session) return;
     const handleFocus = async () => {
-      const token = await getValidAccessToken();
+      const { token, errorType } = await getValidAccessToken();
       if (token) {
         loadData(token);
-      } else {
+      } else if (errorType === "invalid_refresh_token") {
         clearSession();
       }
     };
@@ -278,9 +286,11 @@ export default function App() {
   const handleSendOtp = async () => {
     if (!authEmail.trim()) return;
     setAuthLoading(true); setAuthError("");
-    const { ok, error } = await sbSendOtp(authEmail.trim());
+    const cleanEmail = authEmail.trim();
+    const { ok, error } = await sbSendOtp(cleanEmail);
     if (ok) { setAuthState("verify"); }
     else { setAuthError(error || "Could not send code. Check your email address."); }
+    localStorage.setItem(LAST_EMAIL_KEY, cleanEmail);
     setAuthLoading(false);
   };
 
@@ -289,12 +299,14 @@ export default function App() {
     setAuthLoading(true); setAuthError("");
     const data = await sbVerifyOtp(authEmail.trim(), authCode.trim());
     if (data) {
+      const cleanEmail = authEmail.trim();
       const sess = {
         access_token: data.access_token,
         refresh_token: data.refresh_token,
         expires_at: Date.now() + (data.expires_in || 0) * 1000,
-        email: authEmail.trim()
+        email: cleanEmail
       };
+      localStorage.setItem(LAST_EMAIL_KEY, cleanEmail);
       saveSession(sess);
       setAuthState("app");
       loadData(data.access_token);
@@ -1029,7 +1041,7 @@ export default function App() {
             deleteBrew={deleteBrew}
             calcRatio={calcRatio}
             bloomRatio={bloomRatio}
-            getBeanSummaryTechniqueLine={getBeanSummaryTechniqueLine}
+            getTechniqueLinesFromBrew={getTechniqueLinesFromBrew}
             StarRating={StarRating}
           />
         )}

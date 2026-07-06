@@ -10,7 +10,7 @@ export default function BeanDetailView({
   deleteBrew,
   calcRatio,
   bloomRatio,
-  getBeanSummaryTechniqueLine,
+  getTechniqueLinesFromBrew,
   StarRating,
 }) {
   return (
@@ -103,8 +103,12 @@ export default function BeanDetailView({
                 </div>
               )}
 
-              {getBeanSummaryTechniqueLine(brew) && (
-                <div style={{ fontSize: "12px", color: "#8a7050", lineHeight: 1.6, marginBottom: "7px", borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>{getBeanSummaryTechniqueLine(brew)}</div>
+              {getTechniqueLinesFromBrew(brew).length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#8a7050", lineHeight: 1.6, marginBottom: "7px", borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>
+                  {getTechniqueLinesFromBrew(brew).map((line, idx) => (
+                    <div key={`${line.text}-${idx}`}>{line.text}</div>
+                  ))}
+                </div>
               )}
               {brew.tastingNotes && (
                 <div style={{ fontSize: "12px", color: "#6a5a40", fontStyle: "italic", lineHeight: 1.6 }}>{`"${brew.tastingNotes}"`}</div>
