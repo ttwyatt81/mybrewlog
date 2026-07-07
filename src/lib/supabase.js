@@ -212,11 +212,6 @@ export async function sbGetUser(token) {
 
 export async function sbInsert(table, token, payload) {
   ensureSupabaseConfig();
-  const user = await sbGetUser(token);
-  if (!user?.id) {
-    console.error(`sbInsert failed: unable to resolve authenticated user for ${table}`);
-    return null;
-  }
   const url = `${SUPABASE_URL}/rest/v1/${table}`;
   const res = await fetchJson(url, {
     method: "POST",
@@ -234,11 +229,6 @@ export async function sbInsert(table, token, payload) {
 
 export async function sbUpsert(table, token, payload, conflictKeys = ["id"]) {
   ensureSupabaseConfig();
-  const user = await sbGetUser(token);
-  if (!user?.id) {
-    console.error(`sbUpsert failed: unable to resolve authenticated user for ${table}`);
-    return null;
-  }
   const query = `?on_conflict=${encodeURIComponent(conflictKeys.join(","))}`;
   const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
   const res = await fetchJson(url, {
@@ -257,11 +247,6 @@ export async function sbUpsert(table, token, payload, conflictKeys = ["id"]) {
 export async function sbUpdate(table, token, rowId, payload) {
   if (!rowId) return null;
   ensureSupabaseConfig();
-  const user = await sbGetUser(token);
-  if (!user?.id) {
-    console.error(`sbUpdate failed: unable to resolve authenticated user for ${table}`);
-    return null;
-  }
   const url = `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(rowId)}`;
   const res = await fetchJson(url, {
     method: "PATCH",

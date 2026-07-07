@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import AIModal from "./components/modals/AIModal";
 import BeanCard from "./components/BeanCard";
 import { BrewCard, BrewDetail } from "./components/BrewCard";
@@ -25,7 +25,8 @@ import {
   sbUpsert,
   sbUpdate,
   sbDelete,
-  sbRefreshSession
+  sbRefreshSession,
+  sbGetUser
 } from "./lib/supabase";
 import { beanPayload } from "./features/beans/model";
 import { useBeans } from "./features/beans/hooks";
@@ -147,6 +148,7 @@ export default function App() {
   const { load: loadBrewsData, save: saveBrewData, remove: deleteBrewData } = useBrews();
   const { recipes, setRecipes, load: loadRecipesData, save: saveRecipeData, remove: deleteRecipeData } = useRecipes();
   const [session, setSession] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [authState, setAuthState] = useState("login"); // login | verify | app
   const [authEmail, setAuthEmail] = useState("");
   const [authCode, setAuthCode] = useState("");
@@ -177,6 +179,44 @@ export default function App() {
 
   const SESSION_KEY = "sb_session";
   const LAST_EMAIL_KEY = "last_auth_email";
+  const userLoadInFlightRef = useRef({ token: null, promise: null });
+  const activeSessionTokenRef = useRef(null);
+
+  const loadCurrentUser = async (token) => {
+    if (!token) {
+      setCurrentUser(null);
+      userLoadInFlightRef.current = { token: null, promise: null };
+      return null;
+    }
+
+    const inflight = userLoadInFlightRef.current;
+    if (inflight.promise && inflight.token === token) {
+      return inflight.promise;
+    }
+
+    const promise = (async () => {
+      try {
+        const user = await sbGetUser(token);
+        if (activeSessionTokenRef.current === token) {
+          setCurrentUser(user || null);
+        }
+        return user || null;
+      } catch (error) {
+        console.error("Failed to load authenticated user:", error);
+        if (activeSessionTokenRef.current === token) {
+          setCurrentUser(null);
+        }
+        return null;
+      } finally {
+        if (userLoadInFlightRef.current.token === token) {
+          userLoadInFlightRef.current = { token: null, promise: null };
+        }
+      }
+    })();
+
+    userLoadInFlightRef.current = { token, promise };
+    return promise;
+  };
 
   const saveSession = (sessionData) => {
     setSession(sessionData);
@@ -186,6 +226,7 @@ export default function App() {
   const clearSession = () => {
     localStorage.removeItem(SESSION_KEY);
     setSession(null);
+    setCurrentUser(null);
     setAuthState("login");
     setAuthCode("");
   };
@@ -217,6 +258,16 @@ export default function App() {
     const lastEmail = localStorage.getItem(LAST_EMAIL_KEY);
     if (lastEmail) setAuthEmail(lastEmail);
   }, []);
+
+  useEffect(() => {
+    const token = session?.access_token || null;
+    activeSessionTokenRef.current = token;
+    if (!token) {
+      setCurrentUser(null);
+      return;
+    }
+    loadCurrentUser(token);
+  }, [session?.access_token]);
 
   useEffect(() => {
     const stored = localStorage.getItem(SESSION_KEY);
@@ -628,7 +679,7 @@ export default function App() {
             </button>
           )}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "1px" }}>
-            <div style={{ fontSize: "10px", color: "#4a3a2a", letterSpacing: "0.03em", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session?.email}</div>
+            <div style={{ fontSize: "10px", color: "#4a3a2a", letterSpacing: "0.03em", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentUser?.email || session?.email}</div>
             <div style={{ display: "flex", gap: "8px" }}>
               <button onClick={() => loadData(session?.access_token)} disabled={loading} style={{ background: "none", border: "none", color: loading ? "#bbb" : "#5a4030", cursor: loading ? "not-allowed" : "pointer", fontSize: "10px", padding: 0, letterSpacing: "0.05em", textDecoration: "underline" }}>Sync</button>
               <button onClick={handleSignOut} style={{ background: "none", border: "none", color: "#5a4030", cursor: "pointer", fontSize: "10px", padding: 0, letterSpacing: "0.05em" }}>Sign out</button>
