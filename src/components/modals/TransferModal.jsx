@@ -2,13 +2,14 @@ import { IS } from "../ui/formStyles";
 
 export default function TransferModal({
   showTransfer,
-  setShowTransfer,
+    onClose,
   importText,
-  setImportText,
-  importStatus,
-  setImportStatus,
+    onImportTextChange,
+    importError,
+    importSuccess,
   exportData,
   importData,
+    importing,
   beans = [],
   recipes = []
 }) {
@@ -19,7 +20,7 @@ return (
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px" }}>
             {showTransfer === "export" ? "Export Data" : "Import Data"}
             </div>
-            <button onClick={() => { setShowTransfer(null); setImportText(""); setImportStatus(""); }}
+            <button onClick={onClose}
             style={{ background: "none", border: "none", color: "#6a5040", cursor: "pointer", fontSize: "20px" }}>✕</button>
         </div>
 
@@ -52,18 +53,18 @@ return (
             </p>
             <textarea
                 value={importText}
-                onChange={e => { setImportText(e.target.value); setImportStatus(""); }}
+                onChange={e => onImportTextChange(e.target.value)}
                 placeholder="Paste your export code here…"
                 style={{ ...IS, resize: "none", height: "140px", fontSize: "11px", fontFamily: "monospace", lineHeight: 1.5 }} />
-            {importStatus === "error" && (
+            {importError && (
                 <div style={{ marginTop: "8px", fontSize: "12px", color: "#c87060" }}>Invalid code — make sure you copied the full export text.</div>
             )}
-            {importStatus === "success" && (
+            {importSuccess && (
                 <div style={{ marginTop: "8px", fontSize: "12px", color: "#60c880" }}>✓ Data imported successfully!</div>
             )}
-            <button onClick={importData} disabled={!importText.trim()}
+            <button onClick={importData} disabled={!importText.trim() || importing}
                 style={{ width: "100%", marginTop: "12px", background: importText.trim() ? "linear-gradient(135deg,#c8893a,#a06828)" : "rgba(200,137,58,0.15)", border: "none", borderRadius: "9px", color: importText.trim() ? "#fff" : "#4a3020", padding: "12px", fontSize: "14px", fontWeight: "500", cursor: importText.trim() ? "pointer" : "not-allowed" }}>
-                Import Data
+                {importing ? "Importing..." : "Import Data"}
             </button>
             <div style={{ marginTop: "10px", fontSize: "11px", color: "#4a3a2a", textAlign: "center" }}>
                 ⚠ This will overwrite existing data on this device

@@ -1,0 +1,97 @@
+export default function BeanForm({
+  editBean,
+  setB,
+  saveBean,
+  setView,
+  SectionHead,
+  Field,
+  inp,
+  onFoc,
+  onBlr,
+  roastLevels,
+  processOptions,
+  beanTypes,
+}) {
+  return (
+    <div>
+      <button onClick={() => setView("beans")} style={{ background: "none", border: "none", color: "#9a7a5a", cursor: "pointer", fontSize: "13px", marginBottom: "18px", padding: 0 }}>← Back</button>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "24px", marginBottom: "4px" }}>{editBean.id ? "Edit Bean" : "New Bean"}</div>
+      <div style={{ fontSize: "13px", color: "#6a5040", marginBottom: "24px" }}>Fill in what you know — more detail gives better AI suggestions</div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "26px" }}>
+        <section>
+          <SectionHead>Identity</SectionHead>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+            <Field label="Bean / Lot Name">
+              <input style={inp()} value={editBean.name} onChange={e => setB("name", e.target.value)} placeholder="e.g. Sidra Las Flores" onFocus={onFoc} onBlur={onBlr} />
+            </Field>
+            <Field label="Roaster">
+              <input style={inp()} value={editBean.roaster} onChange={e => setB("roaster", e.target.value)} placeholder="e.g. Nomad" onFocus={onFoc} onBlur={onBlr} />
+            </Field>
+            <Field label="Country / Origin">
+              <input style={inp()} value={editBean.origin} onChange={e => setB("origin", e.target.value)} placeholder="e.g. Colombia" onFocus={onFoc} onBlur={onBlr} />
+            </Field>
+            <Field label="Region">
+              <input style={inp()} value={editBean.region} onChange={e => setB("region", e.target.value)} placeholder="e.g. Huila, Nariño" onFocus={onFoc} onBlur={onBlr} />
+            </Field>
+            <Field label="Roast Date">
+              <input style={inp()} type="date" value={editBean.roastDate} onChange={e => setB("roastDate", e.target.value)} onFocus={onFoc} onBlur={onBlr} />
+            </Field>
+          </div>
+        </section>
+
+        <section>
+          <SectionHead>Profile — used for AI suggestions</SectionHead>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+            <Field label="Roast Level">
+              <select style={inp({ cursor: "pointer" })} value={editBean.roastLevel} onChange={e => setB("roastLevel", e.target.value)} onFocus={onFoc} onBlur={onBlr}>
+                <option value="">Select…</option>
+                {roastLevels.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </Field>
+            <Field label="Process">
+              <select style={inp({ cursor: "pointer" })} value={editBean.process} onChange={e => setB("process", e.target.value)} onFocus={onFoc} onBlur={onBlr}>
+                <option value="">Select…</option>
+                {processOptions.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </Field>
+            <Field label="Varietal">
+              <input style={inp()} value={editBean.varietal} onChange={e => setB("varietal", e.target.value)} placeholder="e.g. Gesha, Bourbon, Sidra" onFocus={onFoc} onBlur={onBlr} />
+            </Field>
+            <Field label="Altitude" hint="e.g. 1800m">
+              <input style={inp()} value={editBean.altitude} onChange={e => setB("altitude", e.target.value)} placeholder="e.g. 1800m" onFocus={onFoc} onBlur={onBlr} />
+            </Field>
+            <Field label="Type">
+              <div style={{ display: "flex", gap: "8px" }}>
+                {beanTypes.map(t => (
+                  <button key={t} onClick={() => setB("type", editBean.type === t ? "" : t)}
+                    style={{ flex: 1, padding: "9px", borderRadius: "7px", border: `1px solid ${editBean.type === t ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)"}`, background: editBean.type === t ? "rgba(200,137,58,0.18)" : "transparent", color: editBean.type === t ? "#c8a060" : "#5a4a3a", cursor: "pointer", fontSize: "13px", transition: "all 0.15s" }}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </Field>
+          </div>
+          <div style={{ marginTop: "11px" }}>
+            <Field label="Roaster's Tasting Notes" hint="Helps the AI tailor the recipe">
+              <textarea style={inp({ resize: "vertical", minHeight: "65px", lineHeight: 1.6 })}
+                value={editBean.notes} onChange={e => setB("notes", e.target.value)}
+                placeholder="e.g. Jasmine, tropical fruit, creamy body…" onFocus={onFoc} onBlur={onBlr} />
+            </Field>
+          </div>
+        </section>
+
+        <div style={{ display: "flex", gap: "10px", paddingBottom: "40px" }}>
+          <button onClick={saveBean} disabled={!editBean.name}
+            style={{ flex: 1, background: editBean.name ? "linear-gradient(135deg,#c8893a,#a06828)" : "rgba(200,137,58,0.15)", border: "none", borderRadius: "9px", color: editBean.name ? "#fff" : "#4a3020", padding: "13px", fontSize: "15px", fontWeight: "500", cursor: editBean.name ? "pointer" : "not-allowed" }}>
+            Save Bean
+          </button>
+          <button onClick={() => setView("beans")}
+            style={{ padding: "13px 20px", background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "9px", color: "#6a5040", cursor: "pointer", fontSize: "14px" }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
