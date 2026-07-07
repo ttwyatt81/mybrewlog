@@ -10,6 +10,7 @@ function getValue(row, ...keys) {
 export function normalizeBeanRow(row = {}) {
   return {
     id: row.id,
+    createdAt: getValue(row, "createdAt", "created_at") || "",
     name: getValue(row, "name") || "",
     roaster: getValue(row, "roaster") || "",
     origin: getValue(row, "origin") || "",
@@ -39,6 +40,31 @@ export function beanPayload(bean) {
     roast_date: bean.roastDate || null,
     notes: bean.notes || null
   };
+}
+
+function toTimestamp(value) {
+  if (!value) return 0;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
+}
+
+export function getBeanSortTimestamp(bean) {
+  const brews = Array.isArray(bean?.brews) ? bean.brews : [];
+  const latestBrew = brews.reduce((max, brew) => {
+    const ts = toTimestamp(brew?.date);
+    return ts > max ? ts : max;
+  }, 0);
+
+  if (latestBrew > 0) return latestBrew;
+  return toTimestamp(bean?.createdAt);
+}
+
+export function sortBeansByRecentActivity(beans = []) {
+  return [...beans].sort((a, b) => {
+    const delta = getBeanSortTimestamp(b) - getBeanSortTimestamp(a);
+    if (delta !== 0) return delta;
+    return (a?.name || "").localeCompare(b?.name || "");
+  });
 }
 
 export function combineBeansAndBrews(beanRows, brewRows, existingBeans = []) {
@@ -75,10 +101,10 @@ export function combineBeansAndBrews(beanRows, brewRows, existingBeans = []) {
     bean.brews = existingBrews;
   });
 
-  return Object.values(lookup).map((bean) => ({
+  return sortBeansByRecentActivity(Object.values(lookup).map((bean) => ({
     ...bean,
     brews: Array.isArray(bean.brews)
       ? [...bean.brews].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
       : []
-  }));
+  })));
 }

@@ -95,7 +95,10 @@ export default function BeansView({
             </div>
           </div>
 
-          <div style={{ fontSize: "11px", color: "#4a3a2a", marginBottom: "4px", letterSpacing: "0.04em" }}>{filtered.length} bean{filtered.length !== 1 ? "s" : ""}{activeFilterCount > 0 ? " matching filters" : ""}</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+            <div style={{ fontSize: "11px", color: "#4a3a2a", letterSpacing: "0.04em" }}>{filtered.length} bean{filtered.length !== 1 ? "s" : ""}{activeFilterCount > 0 ? " matching filters" : ""}</div>
+            <div style={{ fontSize: "10px", color: "#5a4030", letterSpacing: "0.06em", textTransform: "uppercase" }}>Sorted by latest activity</div>
+          </div>
           {filtered.map((bean) => (
             <BeanCard key={bean.id} bean={bean} bestBrew={bestBrew} setActiveBean={setActiveBean} setView={setView} Tag={Tag} />
           ))}

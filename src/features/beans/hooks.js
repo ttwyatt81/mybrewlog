@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { loadBeans, saveBean, deleteBean } from "./api";
-import { combineBeansAndBrews, normalizeBeanRow } from "./model";
+import { combineBeansAndBrews, normalizeBeanRow, sortBeansByRecentActivity } from "./model";
 
 export function useBeans(initialBeans = []) {
   const [beans, setBeans] = useState(initialBeans);
@@ -18,9 +18,10 @@ export function useBeans(initialBeans = []) {
     const normalized = { ...normalizeBeanRow(saved), brews: bean.brews || [] };
     setBeans((current) => {
       const exists = current.some((existing) => existing.id === normalized.id);
-      return exists
+      const next = exists
         ? current.map((existing) => (existing.id === normalized.id ? normalized : existing))
         : [{ ...normalized, brews: bean.brews || [] }, ...current];
+      return sortBeansByRecentActivity(next);
     });
 
     return normalized;
