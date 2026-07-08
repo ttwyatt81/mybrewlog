@@ -101,6 +101,14 @@ export function useAuthSession({
     return { token: refreshed?.session?.access_token || null, errorType: refreshed?.errorType || null };
   }, [refreshSession, session]);
 
+  const ensureValidAccessToken = useCallback(async () => {
+    const result = await getValidAccessToken();
+    if (!result?.token && result?.errorType === "invalid_refresh_token") {
+      clearSession();
+    }
+    return result;
+  }, [clearSession, getValidAccessToken]);
+
   const loadData = useCallback(async (token) => {
     setLoading(true);
     try {
@@ -170,16 +178,25 @@ export function useAuthSession({
   useEffect(() => {
     if (!session) return;
     const handleFocus = async () => {
-      const { token, errorType } = await getValidAccessToken();
+      const { token } = await ensureValidAccessToken();
       if (token) {
         loadData(token);
-      } else if (errorType === "invalid_refresh_token") {
-        clearSession();
       }
     };
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
-  }, [clearSession, getValidAccessToken, loadData, session]);
+  }, [ensureValidAccessToken, loadData, session]);
+
+  useEffect(() => {
+    if (!session?.expires_at || !session?.refresh_token) return;
+
+    const refreshDelayMs = Math.max(5000, session.expires_at - Date.now() - 30000);
+    const timer = window.setTimeout(() => {
+      ensureValidAccessToken();
+    }, refreshDelayMs);
+
+    return () => window.clearTimeout(timer);
+  }, [ensureValidAccessToken, session?.expires_at, session?.refresh_token]);
 
   const handleSendOtp = useCallback(async () => {
     if (!authEmail.trim()) return;
@@ -240,6 +257,7 @@ export function useAuthSession({
     loading,
     setLoading,
     loadData,
+    ensureValidAccessToken,
     handleSendOtp,
     handleVerifyOtp,
     setAuthState,

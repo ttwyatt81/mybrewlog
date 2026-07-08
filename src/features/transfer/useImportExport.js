@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 
 export function useImportExport({
   sessionToken,
+  getAccessToken,
   beans,
   recipes,
   setBeans,
@@ -60,7 +61,9 @@ export function useImportExport({
   }, [beans, recipes]);
 
   const importData = useCallback(async (rawImportText) => {
-    if (!sessionToken) return false;
+    const tokenResult = getAccessToken ? await getAccessToken() : { token: sessionToken };
+    const token = tokenResult?.token || null;
+    if (!token) return false;
 
     try {
       setImporting(true);
@@ -86,7 +89,7 @@ export function useImportExport({
 
       for (const rawBean of payload.beans) {
         const beanPayloadToInsert = buildBeanPayload(rawBean);
-        const record = await insertRow("beans", sessionToken, beanPayloadToInsert);
+        const record = await insertRow("beans", token, beanPayloadToInsert);
         if (record) {
           beanIdMap[rawBean.id] = record.id;
         }
@@ -100,7 +103,7 @@ export function useImportExport({
         if (rawBrew.bean_id && beanIdMap[rawBrew.bean_id]) {
           const brewPayloadToInsert = buildBrewPayload(rawBrew);
           brewPayloadToInsert.bean_id = beanIdMap[rawBrew.bean_id];
-          const insertedBrew = await insertRow("brews", sessionToken, brewPayloadToInsert);
+          const insertedBrew = await insertRow("brews", token, brewPayloadToInsert);
           if (insertedBrew && rawBrew.pours) {
             brewPoursMap[insertedBrew.id] = rawBrew.pours;
           }
@@ -109,10 +112,10 @@ export function useImportExport({
 
       for (const rawRecipe of payload.recipes) {
         const recipePayloadToInsert = buildRecipePayload(rawRecipe);
-        await insertRow("recipes", sessionToken, recipePayloadToInsert);
+        await insertRow("recipes", token, recipePayloadToInsert);
       }
 
-      await loadData(sessionToken);
+      await loadData(token);
       if (Object.keys(brewPoursMap).length > 0) {
         setBeans((currentBeans) =>
           currentBeans.map((bean) => ({
@@ -136,6 +139,7 @@ export function useImportExport({
     }
   }, [
     sessionToken,
+    getAccessToken,
     setGlobalLoading,
     clearFeedback,
     setSaveError,

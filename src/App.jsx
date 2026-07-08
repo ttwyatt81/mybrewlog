@@ -81,6 +81,7 @@ export default function App() {
     loading,
     setLoading,
     loadData,
+    ensureValidAccessToken,
     handleSendOtp,
     handleVerifyOtp,
     setAuthState,
@@ -123,6 +124,7 @@ export default function App() {
     clearFeedback,
   } = useImportExport({
     sessionToken: session?.access_token,
+    getAccessToken: ensureValidAccessToken,
     beans,
     recipes,
     setBeans,
@@ -135,10 +137,21 @@ export default function App() {
     buildRecipePayload: recipePayload,
   });
 
+  const getAccessTokenOrFail = async () => {
+    const { token, errorType } = await ensureValidAccessToken();
+    if (token) return token;
+    if (errorType && errorType !== "invalid_refresh_token") {
+      setSaveError("Session temporarily unavailable. Please try again.");
+    }
+    return null;
+  };
+
   const saveRecipe = async () => {
     if (!editRecipe?.name) return;
     setSaveError("");
-    const saved = await saveRecipeData(session?.access_token, editRecipe);
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
+    const saved = await saveRecipeData(token, editRecipe);
     if (!saved) {
       setSaveError("Failed to save recipe. Check your connection and try again.");
       return;
@@ -147,7 +160,9 @@ export default function App() {
   };
 
   const deleteRecipe = async (id) => {
-    const deleted = await deleteRecipeData(session?.access_token, id);
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
+    const deleted = await deleteRecipeData(token, id);
     if (deleted) {
       setEditRecipe(null);
     }
@@ -166,7 +181,9 @@ export default function App() {
   const saveBean = async () => {
     if (!editBean?.name) return;
     setSaveError("");
-    const saved = await saveBeanData(session?.access_token, editBean);
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
+    const saved = await saveBeanData(token, editBean);
     if (!saved) {
       setSaveError("Failed to save bean. Check your connection and try again.");
       return;
@@ -176,7 +193,9 @@ export default function App() {
   };
 
   const deleteBean = async (id) => {
-    const deleted = await deleteBeanData(session?.access_token, id);
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
+    const deleted = await deleteBeanData(token, id);
     if (deleted) {
       setView("beans");
     }
@@ -185,6 +204,8 @@ export default function App() {
   const saveBrew = async () => {
     if (!activeBean) return;
     setSaveError("");
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
     const finalMethod = brewForm.method_confirmed || brewForm.method;
     const brewToSave = {
       ...brewForm,
@@ -195,7 +216,7 @@ export default function App() {
       totalTime: brewForm.totalTime || "",
       pours: Array.isArray(brewForm.pours) ? brewForm.pours : []
     };
-    const saved = await saveBrewData(session?.access_token, brewToSave);
+    const saved = await saveBrewData(token, brewToSave);
     if (!saved) {
       setSaveError("Failed to save brew. Check your connection and try again.");
       return;
@@ -217,7 +238,9 @@ export default function App() {
   };
 
   const deleteBrew = async (brewId) => {
-    const deleted = await deleteBrewData(session?.access_token, brewId);
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
+    const deleted = await deleteBrewData(token, brewId);
     if (!deleted) return;
     if (!activeBean) return;
     const updated = beans.map(b => b.id === activeBean.id ? { ...b, brews: b.brews.filter(br => br.id !== brewId) } : b);
@@ -323,7 +346,10 @@ export default function App() {
       canLogBrew={view === "beanDetail" && !!liveBean}
       onLogBrew={() => { setBrewForm({ ...defaultBrew, date: new Date().toISOString().split("T")[0] }); setView("brewForm"); }}
       userEmail={currentUser?.email || session?.email}
-      onSync={() => loadData(session?.access_token)}
+      onSync={async () => {
+        const token = await getAccessTokenOrFail();
+        if (token) loadData(token);
+      }}
       onSignOut={handleSignOut}
       loading={loading}
     >

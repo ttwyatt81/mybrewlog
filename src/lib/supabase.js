@@ -2,7 +2,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const AUTH_DEBUG = import.meta.env.DEV;
 
-let refreshInFlight = null;
+const refreshInFlightByToken = new Map();
 
 function maskToken(value) {
   const text = String(value || "").trim();
@@ -98,12 +98,14 @@ export async function sbRefreshSession(refreshToken) {
   if (!refreshToken?.trim()) return { session: null, errorType: "missing_refresh_token" };
   ensureSupabaseConfig();
 
-  if (refreshInFlight) {
+  const normalizedRefreshToken = refreshToken.trim();
+
+  if (refreshInFlightByToken.has(normalizedRefreshToken)) {
     logRefreshDebug("reuse_in_flight", { refreshToken: maskToken(refreshToken), shared: true });
-    return refreshInFlight;
+    return refreshInFlightByToken.get(normalizedRefreshToken);
   }
 
-  refreshInFlight = (async () => {
+  const refreshPromise = (async () => {
     const refreshTokenId = maskToken(refreshToken);
     logRefreshDebug("request_start", {
       refreshToken: refreshTokenId,
@@ -120,7 +122,7 @@ export async function sbRefreshSession(refreshToken) {
         },
         body: new URLSearchParams({
           grant_type: "refresh_token",
-          refresh_token: refreshToken
+          refresh_token: normalizedRefreshToken
         })
       });
 
@@ -168,11 +170,13 @@ export async function sbRefreshSession(refreshToken) {
       });
       return { session: null, errorType: "network" };
     } finally {
-      refreshInFlight = null;
+      refreshInFlightByToken.delete(normalizedRefreshToken);
     }
   })();
 
-  return refreshInFlight;
+  refreshInFlightByToken.set(normalizedRefreshToken, refreshPromise);
+
+  return refreshPromise;
 }
 
 export async function sbSignOut(token) {
