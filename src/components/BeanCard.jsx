@@ -49,7 +49,7 @@ export default function BeanCard({
             fontSize: "12px",
             color: "#7a6050"
           }}>
-            {[bean.roaster, bean.origin, bean.region]
+            {[bean.roaster, bean.origin, bean.producer, bean.region]
               .filter(Boolean)
               .join(" · ")}
           </div>

@@ -31,6 +31,12 @@ export default function BrewFormView({
   setBrewForm,
 }) {
   const method = editingBrewId ? brewForm.method : brewForm.method_confirmed;
+  const techniquePreviewLines = getTechniqueLinesFromBrew(brewForm).filter((line, index) => {
+    if (index !== 0) return true;
+    return !String(line?.text || "").includes(" pours · ");
+  });
+  const pourSteps = normalizePourSteps(brewForm.pours, brewForm.numPours);
+  const bloomTimeFromPour2 = pourSteps[0]?.startTime ? parseTimeValue(pourSteps[0].startTime) : "";
 
   return (
     <div>
@@ -110,7 +116,16 @@ export default function BrewFormView({
                       <input style={inp()} type="number" value={brewForm.dose} onChange={(e) => setBr("dose", e.target.value)} placeholder="e.g. 15" onFocus={onFoc} onBlur={onBlr} />
                     </Field>
                     <Field label="Water (g)">
-                      <input style={inp({ background: "#f0f0f0", color: "#333" })} value={getComputedBrewWater(brewForm) || ""} readOnly />
+                      <input
+                        style={inp({
+                          background: "rgba(200,137,58,0.10)",
+                          border: "1px solid rgba(200,137,58,0.35)",
+                          color: "#d8c3a3",
+                          boxShadow: "inset 0 0 0 1px rgba(200,137,58,0.08)",
+                        })}
+                        value={getComputedBrewWater(brewForm) || ""}
+                        readOnly
+                      />
                     </Field>
                     <Field label="Temperature (°C)">
                       <input style={inp()} type="number" value={brewForm.temperature} onChange={(e) => setBr("temperature", e.target.value)} placeholder="e.g. 96" onFocus={onFoc} onBlur={onBlr} />
@@ -130,7 +145,16 @@ export default function BrewFormView({
                       <input style={inp()} type="number" value={brewForm.bloomWater} onChange={(e) => setBr("bloomWater", e.target.value)} placeholder="e.g. 45" onFocus={onFoc} onBlur={onBlr} />
                     </Field>
                     <Field label="Bloom Time (s)">
-                      <input style={inp()} type="number" value={brewForm.bloomTime} onChange={(e) => setBr("bloomTime", e.target.value)} placeholder="e.g. 45" onFocus={onFoc} onBlur={onBlr} />
+                      <input
+                        style={inp({
+                          background: "rgba(200,137,58,0.10)",
+                          border: "1px solid rgba(200,137,58,0.35)",
+                          color: "#d8c3a3",
+                          boxShadow: "inset 0 0 0 1px rgba(200,137,58,0.08)",
+                        })}
+                        value={bloomTimeFromPour2}
+                        readOnly
+                      />
                     </Field>
                     <Field label="Number of Pours">
                       <input style={inp()} type="number" value={brewForm.numPours} onChange={(e) => setBr("numPours", e.target.value)} placeholder="e.g. 3" onFocus={onFoc} onBlur={onBlr} />
@@ -142,7 +166,7 @@ export default function BrewFormView({
                   <div style={{ marginTop: "11px" }}>
                     <Field label="Pour Steps">
                       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                        {normalizePourSteps(brewForm.pours, brewForm.numPours).map((step, index) => (
+                        {pourSteps.map((step, index) => (
                           <div key={`pour-step-${index}`} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto", gap: "8px", alignItems: "end" }}>
                             <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
                               <label style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase" }}>{`Pour ${index + 2} water (g)`}</label>
@@ -150,7 +174,22 @@ export default function BrewFormView({
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
                               <label style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase" }}>{`Pour ${index + 2} start time (MM:SS)`}</label>
-                              <input style={inp()} type="text" value={step.startTime ?? ""} onChange={(e) => setPourStep(index, "startTime", e.target.value)} placeholder="e.g. 0:45" onFocus={onFoc} onBlur={onBlr} />
+                              <input
+                                style={inp()}
+                                type="text"
+                                value={step.startTime ?? ""}
+                                onChange={(e) => {
+                                  const nextStartTime = e.target.value;
+                                  setPourStep(index, "startTime", nextStartTime);
+                                  if (index === 0) {
+                                    const bloomSeconds = nextStartTime.trim() ? parseTimeValue(nextStartTime) : "";
+                                    setBr("bloomTime", bloomSeconds === "" ? "" : String(bloomSeconds));
+                                  }
+                                }}
+                                placeholder="e.g. 0:45"
+                                onFocus={onFoc}
+                                onBlur={onBlr}
+                              />
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
                               <label style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase" }}>{`Pour ${index + 2} duration (S)`}</label>
@@ -165,9 +204,9 @@ export default function BrewFormView({
                   <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "5px" }}>
                     <label style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase" }}>Pour technique</label>
                     <div style={inp({ minHeight: "80px", lineHeight: 1.6, whiteSpace: "pre-wrap" })}>
-                      {getTechniqueLinesFromBrew(brewForm).length > 0 ? (
+                      {techniquePreviewLines.length > 0 ? (
                         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                          {getTechniqueLinesFromBrew(brewForm).map((line, idx) => (
+                          {techniquePreviewLines.map((line, idx) => (
                             <div key={`${line.text}-${idx}`} style={{ fontSize: "12px", color: "#f0e6d3", lineHeight: 1.6 }}>{line.text}</div>
                           ))}
                         </div>

@@ -34,6 +34,9 @@ export default function BeanForm({
             <Field label="Region">
               <input style={inp()} value={editBean.region} onChange={e => setB("region", e.target.value)} placeholder="e.g. Huila, Nariño" onFocus={onFoc} onBlur={onBlr} />
             </Field>
+            <Field label="Producer">
+              <input style={inp()} value={editBean.producer || ""} onChange={e => setB("producer", e.target.value)} placeholder="e.g. Jose Ramirez" onFocus={onFoc} onBlur={onBlr} />
+            </Field>
             <Field label="Roast Date">
               <input style={inp()} type="date" value={editBean.roastDate} onChange={e => setB("roastDate", e.target.value)} onFocus={onFoc} onBlur={onBlr} />
             </Field>
@@ -41,8 +44,18 @@ export default function BeanForm({
         </section>
 
         <section>
-          <SectionHead>Profile — used for AI suggestions</SectionHead>
+          <SectionHead>Profile</SectionHead>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+            <Field label="Type">
+              <div style={{ display: "flex", gap: "8px" }}>
+                {beanTypes.map(t => (
+                  <button key={t} onClick={() => setB("type", editBean.type === t ? "" : t)}
+                    style={{ flex: 1, padding: "9px", borderRadius: "7px", border: `1px solid ${editBean.type === t ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)"}`, background: editBean.type === t ? "rgba(200,137,58,0.18)" : "transparent", color: editBean.type === t ? "#c8a060" : "#5a4a3a", cursor: "pointer", fontSize: "13px", transition: "all 0.15s" }}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </Field>
             <Field label="Roast Level">
               <select style={inp({ cursor: "pointer" })} value={editBean.roastLevel} onChange={e => setB("roastLevel", e.target.value)} onFocus={onFoc} onBlur={onBlr}>
                 <option value="">Select…</option>
@@ -60,16 +73,6 @@ export default function BeanForm({
             </Field>
             <Field label="Altitude" hint="e.g. 1800m">
               <input style={inp()} value={editBean.altitude} onChange={e => setB("altitude", e.target.value)} placeholder="e.g. 1800m" onFocus={onFoc} onBlur={onBlr} />
-            </Field>
-            <Field label="Type">
-              <div style={{ display: "flex", gap: "8px" }}>
-                {beanTypes.map(t => (
-                  <button key={t} onClick={() => setB("type", editBean.type === t ? "" : t)}
-                    style={{ flex: 1, padding: "9px", borderRadius: "7px", border: `1px solid ${editBean.type === t ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)"}`, background: editBean.type === t ? "rgba(200,137,58,0.18)" : "transparent", color: editBean.type === t ? "#c8a060" : "#5a4a3a", cursor: "pointer", fontSize: "13px", transition: "all 0.15s" }}>
-                    {t}
-                  </button>
-                ))}
-              </div>
             </Field>
           </div>
           <div style={{ marginTop: "11px" }}>

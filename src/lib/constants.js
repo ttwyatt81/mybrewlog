@@ -13,6 +13,7 @@ export const altitudeOptions = ["<1200m", "1200–1500m", "1500–1800m", "1800�
 
 export const defaultBean = {
   id: null, name: "", roaster: "", origin: "", region: "",
+  producer: "",
   process: "", roastLevel: "", varietal: "", altitude: "", type: "", roastDate: "", notes: "",
   brews: [],
 };

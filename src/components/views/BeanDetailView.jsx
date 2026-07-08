@@ -13,6 +13,12 @@ export default function BeanDetailView({
   getTechniqueLinesFromBrew,
   StarRating,
 }) {
+  const filteredTechniqueLines = (brew) =>
+    getTechniqueLinesFromBrew(brew).filter((line, index) => {
+      if (index !== 0) return true;
+      return !String(line?.text || "").includes(" pours · ");
+    });
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
@@ -103,9 +109,9 @@ export default function BeanDetailView({
                 </div>
               )}
 
-              {getTechniqueLinesFromBrew(brew).length > 0 && (
+              {filteredTechniqueLines(brew).length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#8a7050", lineHeight: 1.6, marginBottom: "7px", borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>
-                  {getTechniqueLinesFromBrew(brew).map((line, idx) => (
+                  {filteredTechniqueLines(brew).map((line, idx) => (
                     <div key={`${line.text}-${idx}`}>{line.text}</div>
                   ))}
                 </div>
