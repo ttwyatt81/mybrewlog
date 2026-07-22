@@ -19,6 +19,45 @@ export default function BeanDetailView({
       return !String(line?.text || "").includes(" pours · ");
     });
 
+  const espressoOverviewLine = (brew) => {
+    if (brew?.method !== "Espresso") return "";
+
+    const parts = [];
+    if (brew.preInfusionTime || brew.preInfusionBar) {
+      const preInfusionPart = [
+        brew.preInfusionTime ? `Pre-infusion ${brew.preInfusionTime}s` : "Pre-infusion",
+        brew.preInfusionBar ? `at ${brew.preInfusionBar} bar` : "",
+      ].filter(Boolean).join(" ");
+      parts.push(preInfusionPart);
+    }
+
+    if (brew.maxPressureBar || brew.maxPressureUntilG || brew.finishPressureBar) {
+      const maxPart = brew.maxPressureBar ? `Max pressure ${brew.maxPressureBar} bar` : "Max pressure";
+      if (brew.maxPressureUntilG && brew.finishPressureBar) {
+        parts.push(`${maxPart} · At ${brew.maxPressureUntilG}g decline to ${brew.finishPressureBar} bar`);
+      } else if (brew.maxPressureUntilG) {
+        parts.push(`${maxPart} · At ${brew.maxPressureUntilG}g`);
+      } else if (brew.finishPressureBar) {
+        parts.push(`${maxPart} · Decline to ${brew.finishPressureBar} bar`);
+      } else {
+        parts.push(maxPart);
+      }
+    }
+
+    const totalLineParts = [];
+    if (brew.brewTime) {
+      totalLineParts.push(`Total shot time ${brew.brewTime}s`);
+    }
+    if (brew.shotYield || brew.water) {
+      totalLineParts.push(`Total yield ${brew.shotYield || brew.water}g`);
+    }
+    if (totalLineParts.length) {
+      parts.push(totalLineParts.join(" · "));
+    }
+
+    return parts.join("\n");
+  };
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
@@ -91,26 +130,25 @@ export default function BeanDetailView({
                     { l: "Bloom ×", v: bloomRatio(brew.bloomWater, brew.dose) ? `×${bloomRatio(brew.bloomWater, brew.dose)}` : null },
                     { l: "# Pours", v: brew.numPours || null },
                   ] : [
-                    ...(brew.shotYield || brew.water ? [{ l: "Shot Yield", v: `${brew.shotYield || brew.water}g` }] : []),
                     { l: "Dose", v: brew.dose ? `${brew.dose}g` : null },
                     { l: "Ratio", v: calcRatio(brew.dose, brew.shotYield || brew.water) ? `1:${calcRatio(brew.dose, brew.shotYield || brew.water)}` : null },
                     { l: "Temp", v: brew.temperature ? `${brew.temperature}°C` : null },
-                    { l: "Grind", v: brew.grindSize || null },
-                    { l: "Pre-Infusion", v: brew.preInfusionTime ? `${brew.preInfusionTime}s` : null },
-                    { l: "Pre-Infusion Bar", v: brew.preInfusionBar ? `${brew.preInfusionBar} bar` : null },
-                    { l: "Max Pressure", v: brew.maxPressureBar ? `${brew.maxPressureBar} bar` : null },
-                    { l: "Max Pressure Until", v: brew.maxPressureUntilG ? `${brew.maxPressureUntilG}g` : null },
-                    { l: "Finish Pressure", v: brew.finishPressureBar ? `${brew.finishPressureBar} bar` : null },
-                    { l: "Time", v: brew.brewTime ? `${brew.brewTime}s` : null },
                     { l: "Machine", v: brew.machine || null },
-                    { l: "Grinder", v: brew.grinder || null },
                     { l: "Pre-heat", v: brew.preHeat || null },
+                    { l: "Grinder", v: brew.grinder || null, colStart: 1 },
+                    { l: "Grind", v: brew.grindSize || null, colStart: 2 },
                   ]).filter((x) => x.v).map((x) => (
-                    <div key={x.l} style={{ background: "rgba(200,137,58,0.04)", borderRadius: "7px", padding: "8px 6px", textAlign: "center" }}>
+                    <div key={x.l} style={{ background: "rgba(200,137,58,0.04)", borderRadius: "7px", padding: "8px 6px", textAlign: "center", gridColumn: x.colStart ? `${x.colStart} / span 1` : undefined }}>
                       <div style={{ fontSize: "13px", color: "#e0cdb0", fontFamily: "'Playfair Display', serif" }}>{x.v}</div>
                       <div style={{ fontSize: "9px", color: "#5a4030", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: "2px" }}>{x.l}</div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {brew.method === "Espresso" && espressoOverviewLine(brew) && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#8a7050", lineHeight: 1.6, marginBottom: "10px", borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>
+                  <div style={{ whiteSpace: "pre-line" }}>{espressoOverviewLine(brew)}</div>
                 </div>
               )}
 
