@@ -47,7 +47,7 @@ export default function BeanCard({
 
           <div style={{
             fontSize: "12px",
-            color: "#7a6050"
+            color: "#d0b69a"
           }}>
             {[bean.roaster, bean.origin, bean.producer, bean.region]
               .filter(Boolean)
@@ -71,7 +71,7 @@ export default function BeanCard({
 
           <div style={{
             fontSize: "11px",
-            color: "#4a3a2a",
+            color: "#c1a88c",
             marginTop: "3px"
           }}>
             {brewCount} brew{brewCount !== 1 ? "s" : ""}
@@ -94,7 +94,7 @@ export default function BeanCard({
         {bean.roastDate && (
           <span style={{
             fontSize: "11px",
-            color: "#6a5040",
+            color: "#c9b094",
             marginLeft: "2px"
           }}>
             Roasted{" "}

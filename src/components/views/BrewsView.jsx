@@ -33,7 +33,7 @@ export default function BrewsView({
     <div>
       <div style={{ marginBottom: "22px" }}>
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", marginBottom: "4px" }}>Brews</div>
-        <div style={{ fontSize: "10px", color: "#5a4030", letterSpacing: "0.18em", textTransform: "uppercase" }}>All brew sessions</div>
+        <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.18em", textTransform: "uppercase" }}>All brew sessions</div>
       </div>
 
       {allBrews.length > 0 && (
@@ -48,7 +48,7 @@ export default function BrewsView({
                   borderRadius: "20px",
                   border: `1px solid ${brewFilterMethod === m ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)"}`,
                   background: brewFilterMethod === m ? "rgba(200,137,58,0.18)" : "transparent",
-                  color: brewFilterMethod === m ? "#c8a060" : "#5a4a3a",
+                  color: brewFilterMethod === m ? "#c8a060" : "#c4ab90",
                   cursor: "pointer",
                   fontSize: "12px",
                   transition: "all 0.15s",
@@ -70,7 +70,7 @@ export default function BrewsView({
                 padding: "5px 10px",
                 cursor: "pointer",
                 borderColor: brewFilterBean ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)",
-                color: brewFilterBean ? "#c8a060" : "#5a4a3a",
+                color: brewFilterBean ? "#c8a060" : "#c4ab90",
               }}
             >
               <option value="">All Beans</option>
@@ -85,7 +85,7 @@ export default function BrewsView({
           <select
             value={brewSort}
             onChange={(e) => setBrewSort(e.target.value)}
-            style={{ ...IS, width: "auto", fontSize: "12px", padding: "5px 10px", cursor: "pointer", color: "#9a7a5a" }}
+            style={{ ...IS, width: "auto", fontSize: "12px", padding: "5px 10px", cursor: "pointer", color: "#d4bca0" }}
           >
             <option value="date">Latest first</option>
             <option value="rating">Highest rated</option>
@@ -113,7 +113,7 @@ export default function BrewsView({
         </div>
       )}
 
-      <div style={{ fontSize: "11px", color: "#4a3a2a", marginBottom: "12px", letterSpacing: "0.04em" }}>
+      <div style={{ fontSize: "11px", color: "#c1a88c", marginBottom: "12px", letterSpacing: "0.04em" }}>
         {sortedBrews.length} brew{sortedBrews.length !== 1 ? "s" : ""}
       </div>
 

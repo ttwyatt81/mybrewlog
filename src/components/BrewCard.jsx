@@ -117,11 +117,11 @@ export function BrewCard({ brew, bean, onClick }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
         <div>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", marginBottom: "2px" }}>{bean.name}</div>
-          <div style={{ fontSize: "11px", color: "#6a5040" }}>{[bean.roaster, bean.origin].filter(Boolean).join(" · ")}</div>
+          <div style={{ fontSize: "11px", color: "#c9b094" }}>{[bean.roaster, bean.origin].filter(Boolean).join(" · ")}</div>
         </div>
         <div style={{ textAlign: "right" }}>
           <StarRating value={brew.rating} size={13} />
-          <div style={{ fontSize: "11px", color: "#4a3a2a", marginTop: "3px" }}>{brew.date}</div>
+          <div style={{ fontSize: "11px", color: "#c1a88c", marginTop: "3px" }}>{brew.date}</div>
         </div>
       </div>
       {/* Tags */}
@@ -141,7 +141,7 @@ export function BrewCard({ brew, bean, onClick }) {
         {brew.totalTime && <Tag>{brew.totalTime}</Tag>}
       </div>
       {brew.tastingNotes && (
-        <div style={{ marginTop: "8px", fontSize: "12px", color: "#6a5a40", fontStyle: "italic", lineHeight: 1.5 }}>
+        <div style={{ marginTop: "8px", fontSize: "12px", color: "#ccb294", fontStyle: "italic", lineHeight: 1.5 }}>
           "{brew.tastingNotes.slice(0, 80)}{brew.tastingNotes.length > 80 ? "…" : ""}"
         </div>
       )}
@@ -154,32 +154,32 @@ export function BrewDetail({ brew, bean, onBack, onEdit, onCopyToRecipe, onGoToB
   return (
     <div>
       <button onClick={onBack}
-        style={{ background: "none", border: "none", color: "#9a7a5a", cursor: "pointer", fontSize: "13px", marginBottom: "20px", padding: 0 }}>
+        style={{ background: "none", border: "none", color: "#d4bca0", cursor: "pointer", fontSize: "13px", marginBottom: "20px", padding: 0 }}>
         ← All Brews
       </button>
 
       {/* Bean reference */}
       <div style={{ background: "rgba(200,137,58,0.05)", border: "1px solid rgba(200,137,58,0.15)", borderRadius: "10px", padding: "12px 16px", marginBottom: "20px", cursor: "pointer" }}
         onClick={onGoToBean}>
-        <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#6a5040", textTransform: "uppercase", marginBottom: "4px" }}>Bean</div>
+        <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#c9b094", textTransform: "uppercase", marginBottom: "4px" }}>Bean</div>
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", marginBottom: "2px" }}>{bean.name}</div>
-        <div style={{ fontSize: "12px", color: "#7a6050" }}>{[bean.roaster, bean.origin, bean.roastLevel].filter(Boolean).join(" · ")}</div>
+        <div style={{ fontSize: "12px", color: "#d0b69a" }}>{[bean.roaster, bean.origin, bean.roastLevel].filter(Boolean).join(" · ")}</div>
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
         <div>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "22px", marginBottom: "4px" }}>Brew Session</div>
-          <div style={{ fontSize: "12px", color: "#6a5040" }}>{brew.date}</div>
+          <div style={{ fontSize: "12px", color: "#c9b094" }}>{brew.date}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
           <StarRating value={brew.rating} size={18} />
           <div style={{ display: "flex", gap: "6px" }}>
             <button onClick={onEdit}
-              style={{ background: "none", border: "1px solid rgba(200,137,58,0.25)", borderRadius: "7px", color: "#9a7a5a", cursor: "pointer", fontSize: "12px", padding: "5px 11px" }}>
+              style={{ background: "none", border: "1px solid rgba(200,137,58,0.25)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", fontSize: "12px", padding: "5px 11px" }}>
               Edit Brew
             </button>
             <button onClick={onCopyToRecipe}
-              style={{ background: "none", border: "1px solid rgba(200,137,58,0.25)", borderRadius: "7px", color: "#9a7a5a", cursor: "pointer", fontSize: "12px", padding: "5px 11px" }}>
+              style={{ background: "none", border: "1px solid rgba(200,137,58,0.25)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", fontSize: "12px", padding: "5px 11px" }}>
               → Save as Recipe
             </button>
           </div>
@@ -214,7 +214,7 @@ export function BrewDetail({ brew, bean, onBack, onEdit, onCopyToRecipe, onGoToB
           ].filter(x => x.v).map(x => (
             <div key={x.l} style={{ background: "rgba(200,137,58,0.05)", border: "1px solid rgba(200,137,58,0.1)", borderRadius: "9px", padding: "11px 8px", textAlign: "center" }}>
               <div style={{ fontSize: "16px", color: "#f0e6d3", fontFamily: "'Playfair Display', serif" }}>{x.v}</div>
-              <div style={{ fontSize: "9px", color: "#6a5040", letterSpacing: "0.07em", textTransform: "uppercase", marginTop: "3px" }}>{x.l}</div>
+              <div style={{ fontSize: "9px", color: "#c9b094", letterSpacing: "0.07em", textTransform: "uppercase", marginTop: "3px" }}>{x.l}</div>
             </div>
           ))}
         </div>
@@ -222,7 +222,7 @@ export function BrewDetail({ brew, bean, onBack, onEdit, onCopyToRecipe, onGoToB
 
       {brew.method === "Pour Over" && (
         <div style={{ marginBottom: "18px" }}>
-          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase", marginBottom: "8px" }}>Technique</div>
+          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#d4bca0", textTransform: "uppercase", marginBottom: "8px" }}>Technique</div>
           <div style={{ display: "grid", gap: "10px", background: "rgba(200,137,58,0.05)", padding: "14px", borderRadius: "10px", borderLeft: "2px solid rgba(200,137,58,0.35)" }}>
             {getTechniqueLines(brew).map((line, index) => (
               <div key={index} style={{ fontSize: index === 0 ? "14px" : "13px", color: "#c8a878", lineHeight: 1.5, fontWeight: index === 0 ? 600 : 400 }}>
@@ -235,7 +235,7 @@ export function BrewDetail({ brew, bean, onBack, onEdit, onCopyToRecipe, onGoToB
 
       {brew.tastingNotes && (
         <div style={{ marginBottom: "18px" }}>
-          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#9a7a5a", textTransform: "uppercase", marginBottom: "8px" }}>Tasting Notes</div>
+          <div style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#d4bca0", textTransform: "uppercase", marginBottom: "8px" }}>Tasting Notes</div>
           <div style={{ fontSize: "14px", color: "#c8a878", lineHeight: 1.7, fontStyle: "italic" }}>"{brew.tastingNotes}"</div>
         </div>
       )}

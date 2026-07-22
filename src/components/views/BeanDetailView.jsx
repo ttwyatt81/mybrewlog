@@ -61,29 +61,29 @@ export default function BeanDetailView({
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
-        <button onClick={() => setView("beans")} style={{ background: "none", border: "none", color: "#9a7a5a", cursor: "pointer", fontSize: "13px", padding: 0 }}>← All Beans</button>
+        <button onClick={() => setView("beans")} style={{ background: "none", border: "none", color: "#d4bca0", cursor: "pointer", fontSize: "13px", padding: 0 }}>← All Beans</button>
         <div style={{ display: "flex", gap: "8px" }}>
-          <button onClick={() => { setEditBean({ ...liveBean }); setView("beanForm"); }} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#9a7a5a", cursor: "pointer", padding: "6px 12px", fontSize: "12px" }}>Edit</button>
+          <button onClick={() => { setEditBean({ ...liveBean }); setView("beanForm"); }} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", padding: "6px 12px", fontSize: "12px" }}>Edit</button>
           <button onClick={() => deleteBean(liveBean.id)} style={{ background: "none", border: "1px solid rgba(200,50,50,0.2)", borderRadius: "7px", color: "#8a4a4a", cursor: "pointer", padding: "6px 12px", fontSize: "12px" }}>Delete</button>
         </div>
       </div>
 
       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "26px", marginBottom: "4px" }}>{liveBean.name}</div>
-      <div style={{ fontSize: "13px", color: "#7a6050", marginBottom: "10px" }}>{[liveBean.roaster, liveBean.origin, liveBean.region].filter(Boolean).join(" · ")}</div>
+      <div style={{ fontSize: "13px", color: "#d0b69a", marginBottom: "10px" }}>{[liveBean.roaster, liveBean.producer, liveBean.origin, liveBean.region].filter(Boolean).join(" · ")}</div>
       <div style={{ display: "flex", gap: "7px", flexWrap: "wrap", marginBottom: "18px" }}>
         {liveBean.type && <Tag>{liveBean.type}</Tag>}
         {liveBean.roastLevel && <Tag>{liveBean.roastLevel}</Tag>}
         {liveBean.process && <Tag>{liveBean.process}</Tag>}
         {liveBean.varietal && <Tag>{liveBean.varietal}</Tag>}
         {liveBean.altitude && <Tag>{liveBean.altitude}</Tag>}
-        {liveBean.roastDate && <span style={{ fontSize: "11px", color: "#6a5040" }}>Roasted {new Date(liveBean.roastDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>}
+        {liveBean.roastDate && <Tag>{`Roasted ${new Date(liveBean.roastDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`}</Tag>}
       </div>
 
       {liveBean.notes && (
-        <div style={{ marginBottom: "20px", fontSize: "13px", color: "#7a6050", fontStyle: "italic", lineHeight: 1.6, borderLeft: "2px solid rgba(200,137,58,0.22)", paddingLeft: "12px" }}>{liveBean.notes}</div>
+        <div style={{ marginBottom: "20px", fontSize: "13px", color: "#d0b69a", fontStyle: "italic", lineHeight: 1.6, borderLeft: "2px solid rgba(200,137,58,0.22)", paddingLeft: "12px" }}>{liveBean.notes}</div>
       )}
 
-      <div style={{ fontSize: "10px", letterSpacing: "0.12em", color: "#9a7a5a", textTransform: "uppercase", marginBottom: "12px" }}>
+      <div style={{ fontSize: "10px", letterSpacing: "0.12em", color: "#d4bca0", textTransform: "uppercase", marginBottom: "12px" }}>
         Brew Log · {liveBean.brews.length} session{liveBean.brews.length !== 1 ? "s" : ""}
       </div>
 
@@ -97,11 +97,11 @@ export default function BeanDetailView({
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "13px", color: "#c8893a" }}>#{liveBean.brews.length - i}</span>
                   <StarRating value={brew.rating} size={13} />
-                  <span style={{ fontSize: "11px", color: "#4a3a2a" }}>{brew.date}</span>
+                  <span style={{ fontSize: "11px", color: "#c1a88c" }}>{brew.date}</span>
                 </div>
                 <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
-                  <button onClick={() => editBrew(brew, liveBean)} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "6px", color: "#9a7a5a", cursor: "pointer", fontSize: "11px", padding: "3px 8px" }}>Edit</button>
-                  <button onClick={() => copyBrewToRecipe(brew)} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "6px", color: "#9a7a5a", cursor: "pointer", fontSize: "11px", padding: "3px 8px" }}>→ Recipe</button>
+                  <button onClick={() => editBrew(brew, liveBean)} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "6px", color: "#d4bca0", cursor: "pointer", fontSize: "11px", padding: "3px 8px" }}>Edit</button>
+                  <button onClick={() => copyBrewToRecipe(brew)} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "6px", color: "#d4bca0", cursor: "pointer", fontSize: "11px", padding: "3px 8px" }}>→ Recipe</button>
                   <button onClick={() => deleteBrew(brew.id)} style={{ background: "none", border: "none", color: "#3a2a1a", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#3a2a1a")}>✕</button>
                 </div>
               </div>
@@ -141,27 +141,27 @@ export default function BeanDetailView({
                   ]).filter((x) => x.v).map((x) => (
                     <div key={x.l} style={{ background: "rgba(200,137,58,0.04)", borderRadius: "7px", padding: "8px 6px", textAlign: "center", gridColumn: x.colStart ? `${x.colStart} / span 1` : undefined }}>
                       <div style={{ fontSize: "13px", color: "#e0cdb0", fontFamily: "'Playfair Display', serif" }}>{x.v}</div>
-                      <div style={{ fontSize: "9px", color: "#5a4030", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: "2px" }}>{x.l}</div>
+                      <div style={{ fontSize: "9px", color: "#c3aa90", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: "2px" }}>{x.l}</div>
                     </div>
                   ))}
                 </div>
               )}
 
               {brew.method === "Espresso" && espressoOverviewLine(brew) && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#8a7050", lineHeight: 1.6, marginBottom: "10px", borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#d3b99c", lineHeight: 1.6, marginBottom: "10px", borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>
                   <div style={{ whiteSpace: "pre-line" }}>{espressoOverviewLine(brew)}</div>
                 </div>
               )}
 
               {filteredTechniqueLines(brew).length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#8a7050", lineHeight: 1.6, marginBottom: "7px", borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#d3b99c", lineHeight: 1.6, marginBottom: "7px", borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>
                   {filteredTechniqueLines(brew).map((line, idx) => (
                     <div key={`${line.text}-${idx}`}>{line.text}</div>
                   ))}
                 </div>
               )}
               {brew.tastingNotes && (
-                <div style={{ fontSize: "12px", color: "#6a5a40", fontStyle: "italic", lineHeight: 1.6 }}>{`"${brew.tastingNotes}"`}</div>
+                <div style={{ fontSize: "12px", color: "#ccb294", fontStyle: "italic", lineHeight: 1.6 }}>{`"${brew.tastingNotes}"`}</div>
               )}
             </div>
           ))}

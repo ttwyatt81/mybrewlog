@@ -329,7 +329,7 @@ export default function App() {
 
     if (loading) {
       return (
-        <div style={{ minHeight: "100vh", background: "#0c0905", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", color: "#6a5040" }}>
+        <div style={{ minHeight: "100vh", background: "#0c0905", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", color: "#c9b094" }}>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: "32px", marginBottom: "12px", animation: "spin 1.4s linear infinite", display: "inline-block" }}>⟳</div>
             <div style={{ fontSize: "13px" }}>Loading your brews…</div>
@@ -483,7 +483,7 @@ export default function App() {
         {/* ── BREW FORM ── */}
         {view === "brewForm" && liveBean && (
           <div>
-            <button onClick={() => { setView("beanDetail"); setEditingBrewId(null); }} style={{ background: "none", border: "none", color: "#9a7a5a", cursor: "pointer", fontSize: "13px", marginBottom: "18px", padding: 0 }}>← {liveBean.name}</button>
+            <button onClick={() => { setView("beanDetail"); setEditingBrewId(null); }} style={{ background: "none", border: "none", color: "#d4bca0", cursor: "pointer", fontSize: "13px", marginBottom: "18px", padding: 0 }}>← {liveBean.name}</button>
             <BrewFormView
               liveBean={liveBean}
               brewForm={brewForm}

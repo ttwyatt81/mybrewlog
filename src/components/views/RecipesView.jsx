@@ -24,7 +24,7 @@ export default function RecipesView({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
           <div>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", marginBottom: "4px" }}>Recipes</div>
-            <div style={{ fontSize: "10px", color: "#5a4030", letterSpacing: "0.18em", textTransform: "uppercase" }}>Saved brew recipes</div>
+            <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.18em", textTransform: "uppercase" }}>Saved brew recipes</div>
           </div>
           <button onClick={() => setEditRecipe({ ...defaultRecipe })}
             style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
@@ -71,7 +71,7 @@ export default function RecipesView({
                     </div>
                     <div style={{ display: "flex", gap: "6px" }}>
                       <button onClick={() => setEditRecipe({ ...recipe })}
-                        style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#9a7a5a", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}>Edit</button>
+                        style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}>Edit</button>
                       <button onClick={() => deleteRecipe(recipe.id)}
                         style={{ background: "none", border: "1px solid rgba(200,50,50,0.2)", borderRadius: "7px", color: "#8a4a4a", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}>Delete</button>
                     </div>
@@ -90,13 +90,13 @@ export default function RecipesView({
                       ].filter(x => x.v).map(x => (
                         <div key={x.l} style={{ background: "rgba(200,137,58,0.04)", borderRadius: "7px", padding: "7px 6px", textAlign: "center" }}>
                           <div style={{ fontSize: "12px", color: "#e0cdb0", fontFamily: "'Playfair Display', serif" }}>{x.v}</div>
-                          <div style={{ fontSize: "9px", color: "#5a4030", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: "2px" }}>{x.l}</div>
+                          <div style={{ fontSize: "9px", color: "#c3aa90", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: "2px" }}>{x.l}</div>
                         </div>
                       ))}
                     </div>
                   )}
                   {recipe.pourStructure && (
-                    <div style={{ marginTop: "10px", fontSize: "12px", color: "#7a6050", lineHeight: 1.6, borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>
+                    <div style={{ marginTop: "10px", fontSize: "12px", color: "#d0b69a", lineHeight: 1.6, borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>
                       {recipe.pourStructure}
                     </div>
                   )}
