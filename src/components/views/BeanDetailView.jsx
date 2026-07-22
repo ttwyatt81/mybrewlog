@@ -108,6 +108,8 @@ export default function BeanDetailView({
 
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "10px" }}>
                 {brew.method && <Tag>{brew.method}</Tag>}
+                {brew.method === "Espresso" && brew.machine && <Tag>{brew.machine}</Tag>}
+                {brew.method === "Espresso" && brew.grinder && <Tag>{brew.grinder}</Tag>}
                 {brew.brewer && <Tag>{brew.brewer}</Tag>}
                 {brew.filterPaper && <Tag>{brew.filterPaper}</Tag>}
                 {brew.recipeSource && brew.recipeSource !== "Manual" && (
@@ -131,12 +133,11 @@ export default function BeanDetailView({
                     { l: "# Pours", v: brew.numPours || null },
                   ] : [
                     { l: "Dose", v: brew.dose ? `${brew.dose}g` : null },
+                    { l: "Total Yield", v: brew.shotYield || brew.water ? `${brew.shotYield || brew.water}g` : null },
                     { l: "Ratio", v: calcRatio(brew.dose, brew.shotYield || brew.water) ? `1:${calcRatio(brew.dose, brew.shotYield || brew.water)}` : null },
                     { l: "Temp", v: brew.temperature ? `${brew.temperature}°C` : null },
-                    { l: "Machine", v: brew.machine || null },
                     { l: "Pre-heat", v: brew.preHeat || null },
-                    { l: "Grinder", v: brew.grinder || null, colStart: 1 },
-                    { l: "Grind", v: brew.grindSize || null, colStart: 2 },
+                    { l: "Grind", v: brew.grindSize || null },
                   ]).filter((x) => x.v).map((x) => (
                     <div key={x.l} style={{ background: "rgba(200,137,58,0.04)", borderRadius: "7px", padding: "8px 6px", textAlign: "center", gridColumn: x.colStart ? `${x.colStart} / span 1` : undefined }}>
                       <div style={{ fontSize: "13px", color: "#e0cdb0", fontFamily: "'Playfair Display', serif" }}>{x.v}</div>

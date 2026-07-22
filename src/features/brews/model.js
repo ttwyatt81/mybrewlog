@@ -5,6 +5,22 @@ function getValue(row, ...keys) {
   return "";
 }
 
+function toTimestamp(value) {
+  if (!value) return 0;
+  const ts = new Date(value).getTime();
+  return Number.isNaN(ts) ? 0 : ts;
+}
+
+export function compareBrewsNewestFirst(a, b) {
+  const dateDelta = toTimestamp(b?.date) - toTimestamp(a?.date);
+  if (dateDelta !== 0) return dateDelta;
+  return toTimestamp(b?.created_at || b?.createdAt) - toTimestamp(a?.created_at || a?.createdAt);
+}
+
+export function sortBrewsNewestFirst(brews = []) {
+  return [...brews].sort(compareBrewsNewestFirst);
+}
+
 export function splitPourStructure(pourStructure = "") {
   return pourStructure
     .split("→")

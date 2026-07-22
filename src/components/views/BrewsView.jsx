@@ -1,3 +1,5 @@
+import { compareBrewsNewestFirst } from "../../features/brews/model";
+
 export default function BrewsView({
   beans,
   brewMethods,
@@ -20,7 +22,7 @@ export default function BrewsView({
   });
 
   const sortedBrews = [...filteredBrews].sort((a, b) => {
-    if (brewSort === "date") return new Date(b.brew.date) - new Date(a.brew.date);
+    if (brewSort === "date") return compareBrewsNewestFirst(a.brew, b.brew);
     if (brewSort === "rating") return (b.brew.rating || 0) - (a.brew.rating || 0);
     return 0;
   });

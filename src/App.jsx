@@ -25,7 +25,8 @@ import {
   formatSecondsToTime,
   getComputedBrewWater,
   parsePourStepsFromStructure,
-  getTechniqueLinesFromBrew
+  getTechniqueLinesFromBrew,
+  sortBrewsNewestFirst
 } from "./features/brews/model";
 import { useBrews } from "./features/brews/hooks";
 import {
@@ -63,6 +64,7 @@ function bloomRatio(bloomWater, dose) {
   if (!bloomWater || !dose || isNaN(bloomWater) || isNaN(dose)) return null;
   return (parseFloat(bloomWater) / parseFloat(dose)).toFixed(1);
 }
+
 export default function App() {
   const { beans, setBeans, load: loadBeansData, save: saveBeanData, remove: deleteBeanData } = useBeans();
   const { load: loadBrewsData, save: saveBrewData, remove: deleteBrewData } = useBrews();
@@ -225,10 +227,10 @@ export default function App() {
     const savedWithPours = saved ? { ...saved, pours: brewForm.pours || [] } : saved;
     const updated = beans.map(b => {
       if (b.id !== activeBean.id) return b;
-      const brews = editingBrewId
+      const nextBrews = editingBrewId
         ? b.brews.map(br => br.id === editingBrewId ? savedWithPours : br)
         : [savedWithPours, ...b.brews];
-      return { ...b, brews };
+      return { ...b, brews: sortBrewsNewestFirst(nextBrews) };
     });
 
     setBeans(updated);

@@ -1,4 +1,4 @@
-import { normalizeBrewRow } from "../brews/model";
+import { normalizeBrewRow, sortBrewsNewestFirst } from "../brews/model";
 
 function getValue(row, ...keys) {
   for (const key of keys) {
@@ -105,8 +105,6 @@ export function combineBeansAndBrews(beanRows, brewRows, existingBeans = []) {
 
   return sortBeansByRecentActivity(Object.values(lookup).map((bean) => ({
     ...bean,
-    brews: Array.isArray(bean.brews)
-      ? [...bean.brews].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
-      : []
+    brews: Array.isArray(bean.brews) ? sortBrewsNewestFirst(bean.brews) : []
   })));
 }
