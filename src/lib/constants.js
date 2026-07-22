@@ -31,5 +31,5 @@ export const defaultBrew = {
   pours: [], pourStructure: "", rating: 0, tastingNotes: "",
   recipeSource: "Manual", recipeName: "",
   // Espresso fields
-  machine: "", grinder: "", preHeat: "", brewTime: "",
+  machine: "", grinder: "", preHeat: "", preInfusionTime: "", preInfusionBar: "", maxPressureBar: "", maxPressureUntilG: "", finishPressureBar: "", shotYield: "", brewTime: "",
 };

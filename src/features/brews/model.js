@@ -98,16 +98,19 @@ export function normalizeBrewRow(row = {}) {
   const rawPours = Array.isArray(row.pours) ? row.pours : [];
   const pourStructure = getValue(row, "pourStructure", "pour_structure");
   const numPours = getValue(row, "numPours", "num_pours");
+  const method = getValue(row, "method") || "";
+  const water = getValue(row, "water") ?? "";
+  const shotYield = getValue(row, "shotYield", "shot_yield");
 
   return {
     id: row.id,
     bean_id: getValue(row, "bean_id", "beanId"),
     date: getValue(row, "date") || "",
-    method: getValue(row, "method") || "",
+    method,
     brewer: getValue(row, "brewer") || "",
     filterPaper: getValue(row, "filterPaper", "filter_paper") || "",
     dose: getValue(row, "dose") ?? "",
-    water: getValue(row, "water") ?? "",
+    water,
     temperature: getValue(row, "temperature") ?? "",
     grindSize: getValue(row, "grindSize", "grind_size") || "",
     bloomWater: getValue(row, "bloomWater", "bloom_water") ?? "",
@@ -123,11 +126,19 @@ export function normalizeBrewRow(row = {}) {
     machine: getValue(row, "machine") || "",
     grinder: getValue(row, "grinder") || "",
     preHeat: getValue(row, "preHeat", "pre_heat") || "",
+    preInfusionTime: getValue(row, "preInfusionTime", "pre_infusion_time") ?? "",
+    preInfusionBar: getValue(row, "preInfusionBar", "pre_infusion_bar") ?? "",
+    maxPressureBar: getValue(row, "maxPressureBar", "max_pressure_bar") ?? "",
+    maxPressureUntilG: getValue(row, "maxPressureUntilG", "max_pressure_until_g") ?? "",
+    finishPressureBar: getValue(row, "finishPressureBar", "finish_pressure_bar") ?? "",
+    shotYield: shotYield ?? (method === "Espresso" ? water : ""),
     brewTime: getValue(row, "brewTime", "brew_time") ?? ""
   };
 }
 
 export function brewPayload(brew) {
+  const espressoYield = brew.method === "Espresso" ? (brew.shotYield || brew.water) : brew.water;
+
   return {
     bean_id: brew.bean_id,
     date: brew.date || null,
@@ -135,7 +146,7 @@ export function brewPayload(brew) {
     brewer: brew.brewer || null,
     filter_paper: brew.filterPaper || null,
     dose: brew.dose ? Number(brew.dose) : null,
-    water: brew.water ? Number(brew.water) : null,
+    water: espressoYield ? Number(espressoYield) : null,
     temperature: brew.temperature ? Number(brew.temperature) : null,
     grind_size: brew.grindSize || null,
     bloom_water: brew.bloomWater ? Number(brew.bloomWater) : null,
@@ -150,6 +161,12 @@ export function brewPayload(brew) {
     machine: brew.machine || null,
     grinder: brew.grinder || null,
     pre_heat: brew.preHeat || null,
+    pre_infusion_time: brew.preInfusionTime ? Number(brew.preInfusionTime) : null,
+    pre_infusion_bar: brew.preInfusionBar ? Number(brew.preInfusionBar) : null,
+    max_pressure_bar: brew.maxPressureBar ? Number(brew.maxPressureBar) : null,
+    max_pressure_until_g: brew.maxPressureUntilG ? Number(brew.maxPressureUntilG) : null,
+    finish_pressure_bar: brew.finishPressureBar ? Number(brew.finishPressureBar) : null,
+    shot_yield: brew.shotYield ? Number(brew.shotYield) : (brew.method === "Espresso" && brew.water ? Number(brew.water) : null),
     brew_time: brew.brewTime ? Number(brew.brewTime) : null
   };
 }

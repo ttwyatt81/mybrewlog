@@ -227,11 +227,6 @@ export default function BrewFormView({
                     <Field label="Espresso Machine">
                       <input style={inp()} value={brewForm.machine} onChange={(e) => setBr("machine", e.target.value)} placeholder="e.g. Gaggia Classic" onFocus={onFoc} onBlur={onBlr} />
                     </Field>
-                    <Field label="Grinder">
-                      <input style={inp()} value={brewForm.grinder} onChange={(e) => setBr("grinder", e.target.value)} placeholder="e.g. Niche Zero" onFocus={onFoc} onBlur={onBlr} />
-                    </Field>
-                  </div>
-                  <div style={{ marginTop: "11px" }}>
                     <Field label="Pre-heat Setting" hint="Group head / machine temperature">
                       <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                         {preHeatOptions.map((opt) => (
@@ -241,6 +236,12 @@ export default function BrewFormView({
                         ))}
                       </div>
                     </Field>
+                    <Field label="Grinder">
+                      <input style={inp()} value={brewForm.grinder} onChange={(e) => setBr("grinder", e.target.value)} placeholder="e.g. Niche Zero" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Grind Setting">
+                      <input style={inp()} value={brewForm.grindSize} onChange={(e) => setBr("grindSize", e.target.value)} placeholder="e.g. 20 clicks" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
                   </div>
                 </section>
                 <section>
@@ -249,23 +250,35 @@ export default function BrewFormView({
                     <Field label="Dose (g)">
                       <input style={inp()} type="number" value={brewForm.dose} onChange={(e) => setBr("dose", e.target.value)} placeholder="e.g. 18" onFocus={onFoc} onBlur={onBlr} />
                     </Field>
-                    <Field label="Yield / Water (g)">
-                      <input style={inp()} type="number" value={brewForm.water} onChange={(e) => setBr("water", e.target.value)} placeholder="e.g. 36" onFocus={onFoc} onBlur={onBlr} />
-                    </Field>
-                    <Field label="Grind Setting">
-                      <input style={inp()} value={brewForm.grindSize} onChange={(e) => setBr("grindSize", e.target.value)} placeholder="e.g. 20 clicks" onFocus={onFoc} onBlur={onBlr} />
-                    </Field>
                     <Field label="Temperature (°C)">
                       <input style={inp()} type="number" value={brewForm.temperature} onChange={(e) => setBr("temperature", e.target.value)} placeholder="e.g. 93" onFocus={onFoc} onBlur={onBlr} />
                     </Field>
                   </div>
-                  {brewForm.dose && brewForm.water && (
-                    <div style={{ marginTop: "9px", padding: "9px 13px", background: "rgba(200,137,58,0.07)", borderRadius: "7px", fontSize: "13px", color: "#c8893a" }}>Brew ratio: 1:{calcRatio(brewForm.dose, brewForm.water)}</div>
+                  {brewForm.dose && (brewForm.shotYield || brewForm.water) && (
+                    <div style={{ marginTop: "9px", padding: "9px 13px", background: "rgba(200,137,58,0.07)", borderRadius: "7px", fontSize: "13px", color: "#c8893a" }}>Brew ratio: 1:{calcRatio(brewForm.dose, brewForm.shotYield || brewForm.water)}</div>
                   )}
                 </section>
                 <section>
                   <SectionHead>Technique</SectionHead>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+                    <Field label="Pre-Infusion (s)">
+                      <input style={inp()} type="number" value={brewForm.preInfusionTime || ""} onChange={(e) => setBr("preInfusionTime", e.target.value)} placeholder="e.g. 12" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Pre-Infusion (Bar)">
+                      <input style={inp()} type="number" value={brewForm.preInfusionBar || ""} onChange={(e) => setBr("preInfusionBar", e.target.value)} placeholder="e.g. 2" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Max Pressure (Bar)">
+                      <input style={inp()} type="number" value={brewForm.maxPressureBar || ""} onChange={(e) => setBr("maxPressureBar", e.target.value)} placeholder="e.g. 9" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Max Pressure Until (g)">
+                      <input style={inp()} type="number" value={brewForm.maxPressureUntilG || ""} onChange={(e) => setBr("maxPressureUntilG", e.target.value)} placeholder="e.g. 20" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Finish Pressure (Bar)">
+                      <input style={inp()} type="number" value={brewForm.finishPressureBar || ""} onChange={(e) => setBr("finishPressureBar", e.target.value)} placeholder="e.g. 4.5" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
+                    <Field label="Shot Yield (g)">
+                      <input style={inp()} type="number" value={brewForm.shotYield || ""} onChange={(e) => { setBr("shotYield", e.target.value); setBr("water", e.target.value); }} placeholder="e.g. 36" onFocus={onFoc} onBlur={onBlr} />
+                    </Field>
                     <Field label="Brew Time (seconds)">
                       <input style={inp()} type="number" value={brewForm.brewTime} onChange={(e) => setBr("brewTime", e.target.value)} placeholder="e.g. 28" onFocus={onFoc} onBlur={onBlr} />
                     </Field>
