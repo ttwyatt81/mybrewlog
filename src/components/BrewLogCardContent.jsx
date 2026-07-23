@@ -1,4 +1,5 @@
 import Tag from "./ui/Tag";
+import { getComputedBrewWater } from "../features/brews/model";
 
 function defaultCalcRatio(dose, water) {
   if (!dose || !water || isNaN(dose) || isNaN(water)) return null;
@@ -58,10 +59,12 @@ function getEspressoOverviewLine(entry) {
 
 function getStatItems(entry, calcRatio, bloomRatio) {
   if (entry.method === "Pour Over") {
+    const derivedWater = entry?.numPours ? getComputedBrewWater(entry) : 0;
+    const effectiveWater = entry.water || derivedWater || "";
     return [
       { l: "Dose", v: entry.dose ? `${entry.dose}g` : null },
-      { l: "Water", v: entry.water ? `${entry.water}g` : null },
-      { l: "Ratio", v: calcRatio(entry.dose, entry.water) ? `1:${calcRatio(entry.dose, entry.water)}` : null },
+      { l: "Water", v: effectiveWater ? `${effectiveWater}g` : null },
+      { l: "Ratio", v: calcRatio(entry.dose, effectiveWater) ? `1:${calcRatio(entry.dose, effectiveWater)}` : null },
       { l: "Temp", v: entry.temperature ? `${entry.temperature}°C` : null },
       { l: "Grind", v: entry.grindSize || null },
       { l: "Time", v: entry.totalTime || null },

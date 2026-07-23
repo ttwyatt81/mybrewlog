@@ -153,7 +153,13 @@ export default function App() {
     setSaveError("");
     const token = await getAccessTokenOrFail();
     if (!token) return;
-    const saved = await saveRecipeData(token, editRecipe);
+    const recipeToSave = {
+      ...editRecipe,
+      water: editRecipe.method === "Pour Over"
+        ? (getComputedBrewWater(editRecipe) || "")
+        : (editRecipe.shotYield || editRecipe.water || ""),
+    };
+    const saved = await saveRecipeData(token, recipeToSave);
     if (!saved) {
       setSaveError("Failed to save recipe. Check your connection and try again.");
       return;
