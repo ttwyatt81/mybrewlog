@@ -30,7 +30,7 @@ export default function RecipesView({
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", marginBottom: "4px" }}>Recipes</div>
             <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.18em", textTransform: "uppercase" }}>Saved brew recipes</div>
           </div>
-          <button onClick={() => setEditRecipe({ ...defaultRecipe })}
+          <button onClick={() => setEditRecipe({ ...defaultRecipe, method_confirmed: null })}
             style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
             + New Recipe
           </button>
@@ -70,7 +70,7 @@ export default function RecipesView({
                       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "17px", marginBottom: "4px" }}>{recipe.name}</div>
                     </div>
                     <div style={{ display: "flex", gap: "6px" }}>
-                      <button onClick={() => setEditRecipe({ ...recipe })}
+                      <button onClick={() => setEditRecipe({ ...recipe, method_confirmed: recipe.method || "Pour Over" })}
                         style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}>Edit</button>
                       <button onClick={() => deleteRecipe(recipe.id)}
                         style={{ background: "none", border: "1px solid rgba(200,50,50,0.2)", borderRadius: "7px", color: "#8a4a4a", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}>Delete</button>

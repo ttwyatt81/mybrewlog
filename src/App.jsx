@@ -265,6 +265,7 @@ export default function App() {
     setEditRecipe({
       ...defaultRecipe,
       method: brew.method || "Pour Over",
+      method_confirmed: brew.method || "Pour Over",
       brewer: brew.brewer || "",
       filterPaper: brew.filterPaper || "",
       dose: brew.dose || "",
