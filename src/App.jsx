@@ -276,6 +276,17 @@ export default function App() {
       numPours: brew.numPours || "",
       totalTime: brew.totalTime || "",
       pourStructure: brew.pourStructure || "",
+      pours: Array.isArray(brew.pours) ? brew.pours : [],
+      machine: brew.machine || "",
+      grinder: brew.grinder || "",
+      preHeat: brew.preHeat || "",
+      preInfusionTime: brew.preInfusionTime || "",
+      preInfusionBar: brew.preInfusionBar || "",
+      maxPressureBar: brew.maxPressureBar || "",
+      maxPressureUntilG: brew.maxPressureUntilG || "",
+      finishPressureBar: brew.finishPressureBar || "",
+      shotYield: brew.shotYield || brew.water || "",
+      brewTime: brew.brewTime || "",
     });
     setTab("recipes");
     setView("beans");
@@ -401,7 +412,10 @@ export default function App() {
             brewMethods={brewMethods}
             pourOverBrewers={pourOverBrewers}
             filterPapers={filterPapers}
+            preHeatOptions={preHeatOptions}
             calcRatio={calcRatio}
+            bloomRatio={bloomRatio}
+            getTechniqueLinesFromBrew={getTechniqueLinesFromBrew}
             Tag={Tag}
             Field={Field}
             SectionHead={SectionHead}

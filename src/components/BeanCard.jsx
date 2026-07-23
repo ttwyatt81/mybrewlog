@@ -49,7 +49,7 @@ export default function BeanCard({
             fontSize: "12px",
             color: "#d0b69a"
           }}>
-            {[bean.roaster, bean.origin, bean.producer, bean.region]
+            {[bean.roaster, bean.producer, bean.origin, bean.region]
               .filter(Boolean)
               .join(" · ")}
           </div>
@@ -90,23 +90,14 @@ export default function BeanCard({
         {bean.process && <Tag>{bean.process}</Tag>}
         {bean.varietal && <Tag>{bean.varietal}</Tag>}
         {bean.altitude && <Tag>{bean.altitude}</Tag>}
-
         {bean.roastDate && (
-          <span style={{
-            fontSize: "11px",
-            color: "#c9b094",
-            marginLeft: "2px"
-          }}>
-            Roasted{" "}
-            {new Date(bean.roastDate).toLocaleDateString(
-              "en-GB",
-              {
-                day: "numeric",
-                month: "short",
-                year: "numeric"
-              }
-            )}
-          </span>
+          <Tag>
+            Roasted {new Date(bean.roastDate).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+              year: "numeric"
+            })}
+          </Tag>
         )}
       </div>
     </div>

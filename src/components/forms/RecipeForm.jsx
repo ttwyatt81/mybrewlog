@@ -5,6 +5,7 @@ export default function RecipeForm({
   brewMethods,
   pourOverBrewers,
   filterPapers,
+  preHeatOptions,
   calcRatio,
   Field,
   SectionHead,
@@ -81,7 +82,58 @@ export default function RecipeForm({
           </section>
         </>)}
 
-        {editRecipe.method !== "Pour Over" && (
+        {editRecipe.method === "Espresso" && (<>
+          <section>
+            <SectionHead>Equipment</SectionHead>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+              <Field label="Espresso Machine">
+                <input style={inp()} value={editRecipe.machine || ""} onChange={e => setEditRecipe(r => ({ ...r, machine: e.target.value }))} placeholder="e.g. Gaggia Classic" onFocus={onFoc} onBlur={onBlr} />
+              </Field>
+              <Field label="Pre-heat Setting" hint="Group head / machine temperature">
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                  {preHeatOptions.map(opt => (
+                    <button key={opt} onClick={() => setEditRecipe(r => ({ ...r, preHeat: r.preHeat === opt ? "" : opt }))}
+                      style={{ padding: "7px 16px", borderRadius: "20px", border: `1px solid ${editRecipe.preHeat === opt ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)"}`, background: editRecipe.preHeat === opt ? "rgba(200,137,58,0.18)" : "transparent", color: editRecipe.preHeat === opt ? "#c8a060" : "#5a4a3a", cursor: "pointer", fontSize: "13px", transition: "all 0.15s" }}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+              <Field label="Grinder">
+                <input style={inp()} value={editRecipe.grinder || ""} onChange={e => setEditRecipe(r => ({ ...r, grinder: e.target.value }))} placeholder="e.g. Niche Zero" onFocus={onFoc} onBlur={onBlr} />
+              </Field>
+              <Field label="Grind Setting">
+                <input style={inp()} value={editRecipe.grindSize} onChange={e => setEditRecipe(r => ({ ...r, grindSize: e.target.value }))} placeholder="e.g. 20 clicks" onFocus={onFoc} onBlur={onBlr} />
+              </Field>
+            </div>
+          </section>
+          <section>
+            <SectionHead>Recipe</SectionHead>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+              <Field label="Dose (g)"><input style={inp()} type="number" value={editRecipe.dose} onChange={e => setEditRecipe(r => ({ ...r, dose: e.target.value }))} placeholder="e.g. 18" onFocus={onFoc} onBlur={onBlr} /></Field>
+              <Field label="Temperature (°C)"><input style={inp()} type="number" value={editRecipe.temperature} onChange={e => setEditRecipe(r => ({ ...r, temperature: e.target.value }))} placeholder="e.g. 93" onFocus={onFoc} onBlur={onBlr} /></Field>
+            </div>
+            {editRecipe.dose && (editRecipe.shotYield || editRecipe.water) && (
+              <div style={{ marginTop: "9px", padding: "9px 13px", background: "rgba(200,137,58,0.07)", borderRadius: "7px", fontSize: "13px", color: "#c8893a" }}>
+                Brew ratio: 1:{calcRatio(editRecipe.dose, editRecipe.shotYield || editRecipe.water)}
+              </div>
+            )}
+          </section>
+          <section>
+            <SectionHead>Technique</SectionHead>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+              <Field label="Pre-Infusion (s)"><input style={inp()} type="number" value={editRecipe.preInfusionTime || ""} onChange={e => setEditRecipe(r => ({ ...r, preInfusionTime: e.target.value }))} placeholder="e.g. 12" onFocus={onFoc} onBlur={onBlr} /></Field>
+              <Field label="Pre-Infusion (Bar)"><input style={inp()} type="number" value={editRecipe.preInfusionBar || ""} onChange={e => setEditRecipe(r => ({ ...r, preInfusionBar: e.target.value }))} placeholder="e.g. 2" onFocus={onFoc} onBlur={onBlr} /></Field>
+              <Field label="Max Pressure (Bar)"><input style={inp()} type="number" value={editRecipe.maxPressureBar || ""} onChange={e => setEditRecipe(r => ({ ...r, maxPressureBar: e.target.value }))} placeholder="e.g. 9" onFocus={onFoc} onBlur={onBlr} /></Field>
+              <Field label="Max Pressure Until (g)"><input style={inp()} type="number" value={editRecipe.maxPressureUntilG || ""} onChange={e => setEditRecipe(r => ({ ...r, maxPressureUntilG: e.target.value }))} placeholder="e.g. 20" onFocus={onFoc} onBlur={onBlr} /></Field>
+              <Field label="Finish Pressure (Bar)"><input style={inp()} type="number" value={editRecipe.finishPressureBar || ""} onChange={e => setEditRecipe(r => ({ ...r, finishPressureBar: e.target.value }))} placeholder="e.g. 4.5" onFocus={onFoc} onBlur={onBlr} /></Field>
+              <Field label="Shot Yield (g)"><input style={inp()} type="number" value={editRecipe.shotYield || ""} onChange={e => setEditRecipe(r => ({ ...r, shotYield: e.target.value, water: e.target.value }))} placeholder="e.g. 36" onFocus={onFoc} onBlur={onBlr} /></Field>
+              <Field label="Brew Time (seconds)"><input style={inp()} type="number" value={editRecipe.brewTime || ""} onChange={e => setEditRecipe(r => ({ ...r, brewTime: e.target.value }))} placeholder="e.g. 28" onFocus={onFoc} onBlur={onBlr} /></Field>
+            </div>
+          </section>
+        </>)}
+
+        {editRecipe.method !== "Pour Over" && editRecipe.method !== "Espresso" && (
           <div style={{ textAlign: "center", padding: "32px 0", border: "1px dashed rgba(200,137,58,0.15)", borderRadius: "10px" }}>
             <div style={{ fontSize: "13px", color: "#4a3a2a" }}>{editRecipe.method} recipe fields coming soon</div>
           </div>

@@ -1,4 +1,5 @@
 import RecipeForm from "../forms/RecipeForm";
+import BrewLogCardContent from "../BrewLogCardContent";
 
 export default function RecipesView({
   recipes,
@@ -10,7 +11,10 @@ export default function RecipesView({
   brewMethods,
   pourOverBrewers,
   filterPapers,
+  preHeatOptions,
   calcRatio,
+  bloomRatio,
+  getTechniqueLinesFromBrew,
   Tag,
   Field,
   SectionHead,
@@ -41,6 +45,7 @@ export default function RecipesView({
           brewMethods={brewMethods}
           pourOverBrewers={pourOverBrewers}
           filterPapers={filterPapers}
+          preHeatOptions={preHeatOptions}
           calcRatio={calcRatio}
           Field={Field}
           SectionHead={SectionHead}
@@ -63,11 +68,6 @@ export default function RecipesView({
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
                     <div>
                       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "17px", marginBottom: "4px" }}>{recipe.name}</div>
-                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                        <Tag>{recipe.method}</Tag>
-                        {recipe.brewer && <Tag>{recipe.brewer}</Tag>}
-                        {recipe.filterPaper && <Tag>{recipe.filterPaper}</Tag>}
-                      </div>
                     </div>
                     <div style={{ display: "flex", gap: "6px" }}>
                       <button onClick={() => setEditRecipe({ ...recipe })}
@@ -76,30 +76,14 @@ export default function RecipesView({
                         style={{ background: "none", border: "1px solid rgba(200,50,50,0.2)", borderRadius: "7px", color: "#8a4a4a", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}>Delete</button>
                     </div>
                   </div>
-                  {recipe.method === "Pour Over" && (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px" }}>
-                      {[
-                        { l: "Dose", v: recipe.dose ? `${recipe.dose}g` : null },
-                        { l: "Water", v: recipe.water ? `${recipe.water}g` : null },
-                        { l: "Ratio", v: calcRatio(recipe.dose, recipe.water) ? `1:${calcRatio(recipe.dose, recipe.water)}` : null },
-                        { l: "Temp", v: recipe.temperature ? `${recipe.temperature}°C` : null },
-                        { l: "Grind", v: recipe.grindSize || null },
-                        { l: "Bloom", v: recipe.bloomWater ? `${recipe.bloomWater}g` : null },
-                        { l: "# Pours", v: recipe.numPours || null },
-                        { l: "Time", v: recipe.totalTime || null },
-                      ].filter(x => x.v).map(x => (
-                        <div key={x.l} style={{ background: "rgba(200,137,58,0.04)", borderRadius: "7px", padding: "7px 6px", textAlign: "center" }}>
-                          <div style={{ fontSize: "12px", color: "#e0cdb0", fontFamily: "'Playfair Display', serif" }}>{x.v}</div>
-                          <div style={{ fontSize: "9px", color: "#c3aa90", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: "2px" }}>{x.l}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {recipe.pourStructure && (
-                    <div style={{ marginTop: "10px", fontSize: "12px", color: "#d0b69a", lineHeight: 1.6, borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>
-                      {recipe.pourStructure}
-                    </div>
-                  )}
+                  <BrewLogCardContent
+                    entry={recipe}
+                    calcRatio={calcRatio}
+                    bloomRatio={bloomRatio}
+                    getTechniqueLinesFromBrew={getTechniqueLinesFromBrew}
+                    showRecipeSource={false}
+                    showTastingNotes={false}
+                  />
                 </div>
               ))}
             </div>

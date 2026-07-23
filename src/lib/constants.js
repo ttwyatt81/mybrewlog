@@ -2,7 +2,8 @@ export const defaultRecipe = {
   id: null, name: "", method: "Pour Over", brewer: "", filterPaper: "",
   dose: "", water: "", temperature: "", grindSize: "",
   bloomWater: "", bloomTime: "", numPours: "", totalTime: "",
-  pourStructure: "",
+  pours: [], pourStructure: "",
+  machine: "", grinder: "", preHeat: "", preInfusionTime: "", preInfusionBar: "", maxPressureBar: "", maxPressureUntilG: "", finishPressureBar: "", shotYield: "", brewTime: "",
 };
 
 export const processOptions = ["Natural", "Washed", "Honey", "Anaerobic", "Co-fermented", "Wet-hulled", "Other"];

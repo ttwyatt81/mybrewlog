@@ -1,4 +1,5 @@
 import Tag from "../ui/Tag";
+import BrewLogCardContent from "../BrewLogCardContent";
 
 export default function BeanDetailView({
   liveBean,
@@ -13,51 +14,6 @@ export default function BeanDetailView({
   getTechniqueLinesFromBrew,
   StarRating,
 }) {
-  const filteredTechniqueLines = (brew) =>
-    getTechniqueLinesFromBrew(brew).filter((line, index) => {
-      if (index !== 0) return true;
-      return !String(line?.text || "").includes(" pours · ");
-    });
-
-  const espressoOverviewLine = (brew) => {
-    if (brew?.method !== "Espresso") return "";
-
-    const parts = [];
-    if (brew.preInfusionTime || brew.preInfusionBar) {
-      const preInfusionPart = [
-        brew.preInfusionTime ? `Pre-infusion ${brew.preInfusionTime}s` : "Pre-infusion",
-        brew.preInfusionBar ? `at ${brew.preInfusionBar} bar` : "",
-      ].filter(Boolean).join(" ");
-      parts.push(preInfusionPart);
-    }
-
-    if (brew.maxPressureBar || brew.maxPressureUntilG || brew.finishPressureBar) {
-      const maxPart = brew.maxPressureBar ? `Max pressure ${brew.maxPressureBar} bar` : "Max pressure";
-      if (brew.maxPressureUntilG && brew.finishPressureBar) {
-        parts.push(`${maxPart} · At ${brew.maxPressureUntilG}g decline to ${brew.finishPressureBar} bar`);
-      } else if (brew.maxPressureUntilG) {
-        parts.push(`${maxPart} · At ${brew.maxPressureUntilG}g`);
-      } else if (brew.finishPressureBar) {
-        parts.push(`${maxPart} · Decline to ${brew.finishPressureBar} bar`);
-      } else {
-        parts.push(maxPart);
-      }
-    }
-
-    const totalLineParts = [];
-    if (brew.brewTime) {
-      totalLineParts.push(`Total shot time ${brew.brewTime}s`);
-    }
-    if (brew.shotYield || brew.water) {
-      totalLineParts.push(`Total yield ${brew.shotYield || brew.water}g`);
-    }
-    if (totalLineParts.length) {
-      parts.push(totalLineParts.join(" · "));
-    }
-
-    return parts.join("\n");
-  };
-
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
@@ -105,64 +61,12 @@ export default function BeanDetailView({
                   <button onClick={() => deleteBrew(brew.id)} style={{ background: "none", border: "none", color: "#3a2a1a", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#3a2a1a")}>✕</button>
                 </div>
               </div>
-
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "10px" }}>
-                {brew.method && <Tag>{brew.method}</Tag>}
-                {brew.method === "Espresso" && brew.machine && <Tag>{brew.machine}</Tag>}
-                {brew.method === "Espresso" && brew.grinder && <Tag>{brew.grinder}</Tag>}
-                {brew.brewer && <Tag>{brew.brewer}</Tag>}
-                {brew.filterPaper && <Tag>{brew.filterPaper}</Tag>}
-                {brew.recipeSource && brew.recipeSource !== "Manual" && (
-                  <span style={{ fontSize: "11px", color: "#7a9a7a", background: "rgba(100,160,100,0.08)", padding: "3px 9px", borderRadius: "20px", letterSpacing: "0.03em" }}>
-                    {brew.recipeSource}{brew.recipeName ? `: ${brew.recipeName}` : ""}
-                  </span>
-                )}
-              </div>
-
-              {(brew.method === "Pour Over" || brew.method === "Espresso") && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px", marginBottom: "10px" }}>
-                  {(brew.method === "Pour Over" ? [
-                    { l: "Dose", v: brew.dose ? `${brew.dose}g` : null },
-                    { l: "Water", v: brew.water ? `${brew.water}g` : null },
-                    { l: "Ratio", v: calcRatio(brew.dose, brew.water) ? `1:${calcRatio(brew.dose, brew.water)}` : null },
-                    { l: "Temp", v: brew.temperature ? `${brew.temperature}°C` : null },
-                    { l: "Grind", v: brew.grindSize || null },
-                    { l: "Time", v: brew.totalTime || null },
-                    { l: "Bloom", v: brew.bloomWater ? `${brew.bloomWater}g` : null },
-                    { l: "Bloom ×", v: bloomRatio(brew.bloomWater, brew.dose) ? `×${bloomRatio(brew.bloomWater, brew.dose)}` : null },
-                    { l: "# Pours", v: brew.numPours || null },
-                  ] : [
-                    { l: "Dose", v: brew.dose ? `${brew.dose}g` : null },
-                    { l: "Total Yield", v: brew.shotYield || brew.water ? `${brew.shotYield || brew.water}g` : null },
-                    { l: "Ratio", v: calcRatio(brew.dose, brew.shotYield || brew.water) ? `1:${calcRatio(brew.dose, brew.shotYield || brew.water)}` : null },
-                    { l: "Temp", v: brew.temperature ? `${brew.temperature}°C` : null },
-                    { l: "Pre-heat", v: brew.preHeat || null },
-                    { l: "Grind", v: brew.grindSize || null },
-                  ]).filter((x) => x.v).map((x) => (
-                    <div key={x.l} style={{ background: "rgba(200,137,58,0.04)", borderRadius: "7px", padding: "8px 6px", textAlign: "center", gridColumn: x.colStart ? `${x.colStart} / span 1` : undefined }}>
-                      <div style={{ fontSize: "13px", color: "#e0cdb0", fontFamily: "'Playfair Display', serif" }}>{x.v}</div>
-                      <div style={{ fontSize: "9px", color: "#c3aa90", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: "2px" }}>{x.l}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {brew.method === "Espresso" && espressoOverviewLine(brew) && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#d3b99c", lineHeight: 1.6, marginBottom: "10px", borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>
-                  <div style={{ whiteSpace: "pre-line" }}>{espressoOverviewLine(brew)}</div>
-                </div>
-              )}
-
-              {filteredTechniqueLines(brew).length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#d3b99c", lineHeight: 1.6, marginBottom: "7px", borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>
-                  {filteredTechniqueLines(brew).map((line, idx) => (
-                    <div key={`${line.text}-${idx}`}>{line.text}</div>
-                  ))}
-                </div>
-              )}
-              {brew.tastingNotes && (
-                <div style={{ fontSize: "12px", color: "#ccb294", fontStyle: "italic", lineHeight: 1.6 }}>{`"${brew.tastingNotes}"`}</div>
-              )}
+              <BrewLogCardContent
+                entry={brew}
+                calcRatio={calcRatio}
+                bloomRatio={bloomRatio}
+                getTechniqueLinesFromBrew={getTechniqueLinesFromBrew}
+              />
             </div>
           ))}
         </div>
