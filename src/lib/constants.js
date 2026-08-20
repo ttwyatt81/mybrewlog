@@ -3,6 +3,7 @@ export const defaultRecipe = {
   dose: "", water: "", temperature: "", grindSize: "",
   bloomWater: "", bloomTime: "", numPours: "", totalTime: "",
   pours: [], pourStructure: "",
+  archived: false,
   machine: "", grinder: "", preHeat: "", preInfusionTime: "", preInfusionBar: "", maxPressureBar: "", maxPressureUntilG: "", finishPressureBar: "", shotYield: "", brewTime: "",
 };
 

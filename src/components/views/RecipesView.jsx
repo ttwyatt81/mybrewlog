@@ -8,6 +8,9 @@ export default function RecipesView({
   defaultRecipe,
   deleteRecipe,
   saveRecipe,
+  recipeListMode,
+  setRecipeListMode,
+  onToggleArchive,
   brewMethods,
   pourOverBrewers,
   filterPapers,
@@ -37,6 +40,33 @@ export default function RecipesView({
         </div>
       )}
 
+      {!editRecipe && (
+        <div style={{ display: "inline-flex", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "999px", padding: "4px", marginBottom: "18px" }}>
+          {[
+            { id: "active", label: "Active" },
+            { id: "archived", label: "Archived" }
+          ].map((option) => (
+            <button
+              key={option.id}
+              onClick={() => setRecipeListMode(option.id)}
+              style={{
+                padding: "7px 16px",
+                borderRadius: "999px",
+                border: "none",
+                background: recipeListMode === option.id ? "rgba(200,137,58,0.18)" : "transparent",
+                color: recipeListMode === option.id ? "#e4bf82" : "#bca385",
+                cursor: "pointer",
+                fontSize: "12px",
+                fontWeight: recipeListMode === option.id ? 600 : 400,
+                transition: "all 0.15s"
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {editRecipe ? (
         <RecipeForm
           editRecipe={editRecipe}
@@ -58,8 +88,8 @@ export default function RecipesView({
           {recipes.length === 0 ? (
             <div style={{ textAlign: "center", marginTop: "60px" }}>
               <div style={{ fontSize: "44px", marginBottom: "14px", opacity: 0.2 }}>📋</div>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", color: "#5a4030", marginBottom: "8px" }}>No saved recipes yet</div>
-              <div style={{ fontSize: "13px", color: "#3a2a1a" }}>Hit "+ New Recipe" to save a reusable brew recipe</div>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", color: "#5a4030", marginBottom: "8px" }}>{recipeListMode === "archived" ? "No archived recipes yet" : "No saved recipes yet"}</div>
+              <div style={{ fontSize: "13px", color: "#3a2a1a" }}>{recipeListMode === "archived" ? "Archived recipes will show up here" : "Hit \"+ New Recipe\" to save a reusable brew recipe"}</div>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -70,6 +100,48 @@ export default function RecipesView({
                       <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "17px", marginBottom: "4px" }}>{recipe.name}</div>
                     </div>
                     <div style={{ display: "flex", gap: "6px" }}>
+                      <button
+                        onClick={() => onToggleArchive?.(recipe)}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          background: "rgba(255,255,255,0.03)",
+                          border: "1px solid rgba(200,137,58,0.2)",
+                          borderRadius: "999px",
+                          color: "#d9b98a",
+                          padding: "4px 8px",
+                          cursor: "pointer",
+                          fontSize: "9px",
+                          lineHeight: 1,
+                          height: "22px"
+                        }}
+                        aria-label={recipe.archived ? "Move recipe back to active" : "Archive recipe"}
+                        title={recipe.archived ? "Move back to active" : "Archive recipe"}
+                      >
+                        <span>{recipe.archived ? "Archived" : "Active"}</span>
+                        <span style={{
+                          display: "inline-block",
+                          width: "26px",
+                          height: "14px",
+                          borderRadius: "999px",
+                          background: recipe.archived ? "linear-gradient(135deg, rgba(200,137,58,0.7), rgba(160,104,40,0.9))" : "rgba(255,255,255,0.12)",
+                          position: "relative",
+                          boxShadow: recipe.archived ? "0 0 0 1px rgba(200,137,58,0.4), 0 4px 10px rgba(160,104,40,0.25)" : "inset 0 0 0 1px rgba(255,255,255,0.06)"
+                        }}>
+                          <span style={{
+                            position: "absolute",
+                            top: "2px",
+                            left: recipe.archived ? "14px" : "2px",
+                            width: "10px",
+                            height: "10px",
+                            borderRadius: "50%",
+                            background: "#f5f0e7",
+                            transition: "all 0.2s ease",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.28)"
+                          }} />
+                        </span>
+                      </button>
                       <button onClick={() => setEditRecipe({ ...recipe, method_confirmed: recipe.method || "Pour Over" })}
                         style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}>Edit</button>
                       <button onClick={() => deleteRecipe(recipe.id)}

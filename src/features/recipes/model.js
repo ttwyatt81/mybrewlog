@@ -3,6 +3,7 @@ export function normalizeRecipeRow(row) {
   const method = row.method || "Pour Over";
   const water = row.water ?? "";
   const shotYield = row.shot_yield ?? row.shotYield;
+  const archivedValue = row.archived ?? row.is_archived;
   return {
     id: row.id,
     name: row.name || "",
@@ -28,7 +29,8 @@ export function normalizeRecipeRow(row) {
     maxPressureUntilG: row.max_pressure_until_g ?? row.maxPressureUntilG ?? "",
     finishPressureBar: row.finish_pressure_bar ?? row.finishPressureBar ?? "",
     shotYield: shotYield ?? (method === "Espresso" ? water : ""),
-    brewTime: row.brew_time ?? row.brewTime ?? ""
+    brewTime: row.brew_time ?? row.brewTime ?? "",
+    archived: archivedValue === true || archivedValue === "true" || archivedValue === 1 || archivedValue === "1"
   };
 }
 
@@ -59,6 +61,7 @@ export function recipePayload(recipe) {
     max_pressure_until_g: recipe.maxPressureUntilG ? Number(recipe.maxPressureUntilG) : null,
     finish_pressure_bar: recipe.finishPressureBar ? Number(recipe.finishPressureBar) : null,
     shot_yield: recipe.shotYield ? Number(recipe.shotYield) : (recipe.method === "Espresso" && recipe.water ? Number(recipe.water) : null),
-    brew_time: recipe.brewTime ? Number(recipe.brewTime) : null
+    brew_time: recipe.brewTime ? Number(recipe.brewTime) : null,
+    archived: Boolean(recipe.archived)
   };
 }

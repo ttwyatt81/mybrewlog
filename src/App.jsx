@@ -112,6 +112,7 @@ export default function App() {
   const [beanTab, setBeanTab] = useState("beans");
   const [beanListMode, setBeanListMode] = useState("active"); // active | archived
   const [greenBeanListMode, setGreenBeanListMode] = useState("active"); // active | archived
+  const [recipeListMode, setRecipeListMode] = useState("active"); // active | archived
   const [selectedBrew, setSelectedBrew] = useState(null); // { brew, bean } for standalone detail
   const [editingBrewId, setEditingBrewId] = useState(null); // id of brew being edited
   const [showTransfer, setShowTransfer] = useState(null); // "export" | "import" | null
@@ -185,6 +186,27 @@ export default function App() {
     const deleted = await deleteRecipeData(token, id);
     if (deleted) {
       setEditRecipe(null);
+    }
+  };
+
+  const toggleArchiveRecipe = async (recipe) => {
+    if (!recipe?.id) return;
+    setSaveError("");
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
+
+    const nextValue = !Boolean(recipe.archived);
+    const saved = await saveRecipeData(token, { ...recipe, archived: nextValue });
+    if (!saved) {
+      setSaveError("Failed to update recipe status. Check your connection and try again.");
+      return;
+    }
+
+    if (recipeListMode === "active" && nextValue) {
+      setView("beans");
+    }
+    if (recipeListMode === "archived" && !nextValue) {
+      setView("beans");
     }
   };
 
@@ -411,6 +433,9 @@ export default function App() {
   });
 
   const activeFilterCount = [filterOrigin, filterType, filterRoaster].filter(Boolean).length;
+  const visibleRecipes = [...recipes].filter((recipe) => recipeListMode === "archived"
+    ? Boolean(recipe.archived)
+    : !Boolean(recipe.archived));
 
   const bestBrew = (bean) => bean.brews.length ? bean.brews.reduce((a, b) => b.rating > a.rating ? b : a, bean.brews[0]) : null;
 
@@ -503,12 +528,15 @@ export default function App() {
         {/* ── RECIPES TAB ── */}
         {view === "beans" && tab === "recipes" && (
           <RecipesView
-            recipes={recipes}
+            recipes={visibleRecipes}
             editRecipe={editRecipe}
             setEditRecipe={setEditRecipe}
             defaultRecipe={defaultRecipe}
             deleteRecipe={deleteRecipe}
             saveRecipe={saveRecipe}
+            recipeListMode={recipeListMode}
+            setRecipeListMode={setRecipeListMode}
+            onToggleArchive={toggleArchiveRecipe}
             brewMethods={brewMethods}
             pourOverBrewers={pourOverBrewers}
             filterPapers={filterPapers}
