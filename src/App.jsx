@@ -50,7 +50,7 @@ import BrewFormView from "./components/views/BrewFormView";
 import TransferImportView from "./components/views/TransferImportView";
 import { useAuthSession } from "./features/auth/useAuthSession";
 import { useImportExport } from "./features/transfer/useImportExport";
-import { beanPayload } from "./features/beans/model";
+import { beanPayload, getVisibleBeans, sortBeansByRecentActivity } from "./features/beans/model";
 import { brewPayload } from "./features/brews/model";
 import { recipePayload } from "./features/recipes/model";
 
@@ -106,6 +106,7 @@ export default function App() {
   const [filterType, setFilterType] = useState("");
   const [editRecipe, setEditRecipe] = useState(null);
   const [tab, setTab] = useState("beans"); // beans | recipes | brews
+  const [beanListMode, setBeanListMode] = useState("active"); // active | archived
   const [selectedBrew, setSelectedBrew] = useState(null); // { brew, bean } for standalone detail
   const [editingBrewId, setEditingBrewId] = useState(null); // id of brew being edited
   const [showTransfer, setShowTransfer] = useState(null); // "export" | "import" | null
@@ -209,6 +210,31 @@ export default function App() {
     }
   };
 
+  const toggleArchiveBean = async (bean) => {
+    if (!bean?.id) return;
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
+
+    const nextValue = !Boolean(bean.archived);
+    const updatedBean = { ...bean, archived: nextValue };
+    const saved = await saveBeanData(token, updatedBean);
+    if (!saved) {
+      setSaveError("Failed to update bean status. Check your connection and try again.");
+      return;
+    }
+
+    setBeans((current) => sortBeansByRecentActivity(
+      current.map((item) => item.id === bean.id ? { ...item, archived: nextValue } : item)
+    ));
+
+    if (beanListMode === "active" && nextValue) {
+      setView("beans");
+    }
+    if (beanListMode === "archived" && !nextValue) {
+      setView("beans");
+    }
+  };
+
   const saveBrew = async () => {
     if (!activeBean) return;
     setSaveError("");
@@ -308,11 +334,12 @@ export default function App() {
     return { ...f, pours };
   });
 
-  const allOrigins = [...new Set(beans.map(b => b.origin).filter(Boolean))].sort();
-  const allVarietals = [...new Set(beans.map(b => b.varietal).filter(Boolean))].sort();
-  const allRoasters = [...new Set(beans.map(b => b.roaster).filter(Boolean))].sort();
+  const visibleBeans = getVisibleBeans(beans, beanListMode);
+  const allOrigins = [...new Set(visibleBeans.map(b => b.origin).filter(Boolean))].sort();
+  const allVarietals = [...new Set(visibleBeans.map(b => b.varietal).filter(Boolean))].sort();
+  const allRoasters = [...new Set(visibleBeans.map(b => b.roaster).filter(Boolean))].sort();
 
-  const filtered = beans.filter(b => {
+  const filtered = visibleBeans.filter(b => {
     if (filter && ![b.name, b.roaster, b.origin, b.region, b.process, b.roastLevel].join(" ").toLowerCase().includes(filter.toLowerCase())) return false;
     if (filterOrigin && b.origin !== filterOrigin) return false;
     if (filterVarietal && b.varietal !== filterVarietal) return false;
@@ -404,6 +431,10 @@ export default function App() {
             Tag={Tag}
             defaultBean={defaultBean}
             filtered={filtered}
+            beanListMode={beanListMode}
+            setBeanListMode={setBeanListMode}
+            beansCount={visibleBeans.length}
+            onToggleArchive={toggleArchiveBean}
           />
         )}
 
@@ -498,6 +529,7 @@ export default function App() {
             bloomRatio={bloomRatio}
             getTechniqueLinesFromBrew={getTechniqueLinesFromBrew}
             StarRating={StarRating}
+            onToggleArchive={toggleArchiveBean}
           />
         )}
 

@@ -26,6 +26,10 @@ export default function BeansView({
   setActiveBean,
   Tag,
   filtered,
+  beanListMode,
+  setBeanListMode,
+  beansCount,
+  onToggleArchive,
 }) {
   return (
     <div>
@@ -48,11 +52,36 @@ export default function BeansView({
         <button onClick={() => { setEditBean({ ...defaultBean }); setView("beanForm"); }} style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>+ New Bean</button>
       </div>
 
-      {beans.length === 0 ? (
+      <div style={{ display: "inline-flex", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "999px", padding: "4px", marginBottom: "18px" }}>
+        {[
+          { id: "active", label: "Active" },
+          { id: "archived", label: "Archived" }
+        ].map((option) => (
+          <button
+            key={option.id}
+            onClick={() => setBeanListMode(option.id)}
+            style={{
+              padding: "7px 16px",
+              borderRadius: "999px",
+              border: "none",
+              background: beanListMode === option.id ? "rgba(200,137,58,0.18)" : "transparent",
+              color: beanListMode === option.id ? "#e4bf82" : "#bca385",
+              cursor: "pointer",
+              fontSize: "12px",
+              fontWeight: beanListMode === option.id ? 600 : 400,
+              transition: "all 0.15s"
+            }}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
+      {beansCount === 0 ? (
         <div style={{ textAlign: "center", marginTop: "80px" }}>
           <div style={{ fontSize: "44px", marginBottom: "14px", opacity: 0.2 }}>☕</div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "22px", color: "#5a4030", marginBottom: "8px" }}>No beans yet</div>
-          <div style={{ fontSize: "13px", color: "#3a2a1a" }}>Add your first bean to start dialling in</div>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "22px", color: "#5a4030", marginBottom: "8px" }}>{beanListMode === "archived" ? "No archived beans yet" : "No beans yet"}</div>
+          <div style={{ fontSize: "13px", color: "#3a2a1a" }}>{beanListMode === "archived" ? "Archived beans will show up here" : "Add your first bean to start dialling in"}</div>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -97,10 +126,18 @@ export default function BeansView({
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
             <div style={{ fontSize: "11px", color: "#c1a88c", letterSpacing: "0.04em" }}>{filtered.length} bean{filtered.length !== 1 ? "s" : ""}{activeFilterCount > 0 ? " matching filters" : ""}</div>
-            <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.06em", textTransform: "uppercase" }}>Sorted by latest activity</div>
+            <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.06em", textTransform: "uppercase" }}>{beanListMode === "archived" ? "Archived" : "Active"} view</div>
           </div>
           {filtered.map((bean) => (
-            <BeanCard key={bean.id} bean={bean} bestBrew={bestBrew} setActiveBean={setActiveBean} setView={setView} Tag={Tag} />
+            <BeanCard
+              key={bean.id}
+              bean={bean}
+              bestBrew={bestBrew}
+              setActiveBean={setActiveBean}
+              setView={setView}
+              Tag={Tag}
+              onToggleArchive={onToggleArchive}
+            />
           ))}
         </div>
       )}

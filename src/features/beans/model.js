@@ -8,6 +8,8 @@ function getValue(row, ...keys) {
 }
 
 export function normalizeBeanRow(row = {}) {
+  const archivedValue = getValue(row, "archived", "is_archived");
+
   return {
     id: row.id,
     createdAt: getValue(row, "createdAt", "created_at") || "",
@@ -23,6 +25,7 @@ export function normalizeBeanRow(row = {}) {
     type: getValue(row, "type") || "",
     roastDate: getValue(row, "roastDate", "roast_date") || "",
     notes: getValue(row, "notes") || "",
+    archived: archivedValue === true || archivedValue === "true" || archivedValue === 1 || archivedValue === "1",
     brews: Array.isArray(row.brews) ? row.brews.map((brew) => normalizeBrewRow(brew)) : []
   };
 }
@@ -40,7 +43,8 @@ export function beanPayload(bean) {
     altitude: bean.altitude || null,
     type: bean.type || null,
     roast_date: bean.roastDate || null,
-    notes: bean.notes || null
+    notes: bean.notes || null,
+    archived: Boolean(bean.archived)
   };
 }
 
@@ -59,6 +63,15 @@ export function getBeanSortTimestamp(bean) {
 
   if (latestBrew > 0) return latestBrew;
   return toTimestamp(bean?.createdAt);
+}
+
+export function isBeanArchived(bean = {}) {
+  return Boolean(bean?.archived === true || bean?.archived === "true" || bean?.archived === 1 || bean?.archived === "1");
+}
+
+export function getVisibleBeans(beans = [], mode = "active") {
+  const activeMode = mode !== "archived";
+  return [...beans].filter((bean) => activeMode ? !isBeanArchived(bean) : isBeanArchived(bean));
 }
 
 export function sortBeansByRecentActivity(beans = []) {

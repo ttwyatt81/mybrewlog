@@ -16,6 +16,7 @@ export const defaultBean = {
   id: null, name: "", roaster: "", origin: "", region: "",
   producer: "",
   process: "", roastLevel: "", varietal: "", altitude: "", type: "", roastDate: "", notes: "",
+  archived: false,
   brews: [],
 };
 

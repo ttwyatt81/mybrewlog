@@ -40,6 +40,7 @@ export function useImportExport({
         type: bean.type,
         roastDate: bean.roastDate,
         notes: bean.notes,
+        archived: Boolean(bean.archived),
         brews: (bean.brews || []).map((brew) => ({ ...brew, pours: brew.pours || [] })),
       }));
 
