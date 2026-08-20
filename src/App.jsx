@@ -8,6 +8,7 @@ import {
   roastLevels,
   beanTypes,
   defaultBean,
+  defaultGreenBeanRoast,
   brewMethods,
   preHeatOptions,
   pourOverBrewers,
@@ -103,6 +104,21 @@ export default function App() {
   const [editBean, setEditBean] = useState(null);
   const [activeBean, setActiveBean] = useState(null);
   const [brewForm, setBrewForm] = useState(defaultBrew);
+  const [greenBeanRoastForm, setGreenBeanRoastForm] = useState(defaultGreenBeanRoast);
+  const [editingGreenBeanRoastId, setEditingGreenBeanRoastId] = useState(null);
+  const [roastProfiles, setRoastProfiles] = useState(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = window.localStorage.getItem("mybrewlog-roast-profiles");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [roastProfileForm, setRoastProfileForm] = useState({
+    id: null,
+    name: "",
+  });
   const [showAI, setShowAI] = useState(false);
   const [filter, setFilter] = useState("");
   const [filterOrigin, setFilterOrigin] = useState("");
@@ -122,6 +138,12 @@ export default function App() {
   const [brewFilterMethod, setBrewFilterMethod] = useState("");
   const [brewFilterBean, setBrewFilterBean] = useState("");
   const [brewSort, setBrewSort] = useState("date");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("mybrewlog-roast-profiles", JSON.stringify(roastProfiles));
+    }
+  }, [roastProfiles]);
 
   useEffect(() => {
     if (tab === "beans" || tab === "greenBeans") {
@@ -364,6 +386,69 @@ export default function App() {
     setActiveBean(updated.find(b => b.id === activeBean.id));
   };
 
+  const saveGreenBeanRoast = async () => {
+    if (!activeBean || tab !== "greenBeans") return;
+    if (!greenBeanRoastForm.date || !greenBeanRoastForm.roastLevel) return;
+    setSaveError("");
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
+
+    const startWeight = greenBeanRoastForm.startWeight !== "" && greenBeanRoastForm.startWeight !== undefined && greenBeanRoastForm.startWeight !== null ? Number(greenBeanRoastForm.startWeight) : null;
+    const endWeight = greenBeanRoastForm.endWeight !== "" && greenBeanRoastForm.endWeight !== undefined && greenBeanRoastForm.endWeight !== null ? Number(greenBeanRoastForm.endWeight) : null;
+    const reductionPercent = startWeight && endWeight && startWeight > 0
+      ? (((startWeight - endWeight) / startWeight) * 100).toFixed(1)
+      : "";
+
+    const nextRoasts = [...(activeBean.roasts || [])];
+    const roastPayload = {
+      id: editingGreenBeanRoastId || null,
+      date: greenBeanRoastForm.date,
+      profile: greenBeanRoastForm.profile || "",
+      roastLevel: greenBeanRoastForm.roastLevel,
+      startWeight: greenBeanRoastForm.startWeight,
+      endWeight: greenBeanRoastForm.endWeight,
+      reductionPercent,
+      notes: greenBeanRoastForm.notes || "",
+    };
+
+    const existingIndex = nextRoasts.findIndex((item) => item.id === editingGreenBeanRoastId);
+    if (existingIndex >= 0) {
+      nextRoasts[existingIndex] = roastPayload;
+    } else {
+      nextRoasts.unshift(roastPayload);
+    }
+
+    const saved = await saveGreenBeanData(token, { ...activeBean, roasts: nextRoasts });
+    if (!saved) {
+      setSaveError("Failed to save green bean roast. Check your connection and try again.");
+      return;
+    }
+
+    const updatedList = greenBeans.map((bean) => bean.id === activeBean.id ? { ...bean, roasts: saved.roasts || nextRoasts } : bean);
+    setGreenBeans(updatedList);
+    setActiveBean({ ...activeBean, roasts: saved.roasts || nextRoasts });
+    setEditingGreenBeanRoastId(null);
+    setGreenBeanRoastForm(defaultGreenBeanRoast);
+    setView("beanDetail");
+  };
+
+  const deleteGreenBeanRoast = async (roastId) => {
+    if (!activeBean || tab !== "greenBeans") return;
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
+
+    const nextRoasts = (activeBean.roasts || []).filter((roast) => roast.id !== roastId);
+    const saved = await saveGreenBeanData(token, { ...activeBean, roasts: nextRoasts });
+    if (!saved) {
+      setSaveError("Failed to delete green bean roast. Check your connection and try again.");
+      return;
+    }
+
+    const updatedList = greenBeans.map((bean) => bean.id === activeBean.id ? { ...bean, roasts: saved.roasts || nextRoasts } : bean);
+    setGreenBeans(updatedList);
+    setActiveBean({ ...activeBean, roasts: saved.roasts || nextRoasts });
+  };
+
   const editBrew = (brew, bean) => {
     setActiveBean(bean);
     setBrewForm({
@@ -441,6 +526,55 @@ export default function App() {
 
   const liveBean = activeBean ? sheetBeans.find(b => b.id === activeBean.id) || activeBean : null;
 
+  const onLogRoast = () => {
+    setGreenBeanRoastForm({ ...defaultGreenBeanRoast, date: new Date().toISOString().split("T")[0] });
+    setEditingGreenBeanRoastId(null);
+    setView("greenBeanRoastForm");
+  };
+
+  const saveRoastProfile = () => {
+    const cleanName = roastProfileForm.name.trim();
+    if (!cleanName) return;
+
+    const nextPreset = {
+      id: roastProfileForm.id || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`),
+      name: cleanName,
+      profile: cleanName,
+    };
+
+    setRoastProfiles((current) => {
+      const existingIndex = current.findIndex((profile) => profile.id === nextPreset.id);
+      if (existingIndex >= 0) {
+        return current.map((profile) => profile.id === nextPreset.id ? nextPreset : profile);
+      }
+      return [nextPreset, ...current];
+    });
+
+    setRoastProfileForm({ id: null, name: "" });
+  };
+
+  const deleteRoastProfile = (id) => {
+    setRoastProfiles((current) => current.filter((profile) => profile.id !== id));
+    if (roastProfileForm.id === id) {
+      setRoastProfileForm({ id: null, name: "" });
+    }
+  };
+
+  const applyRoastPreset = (preset) => {
+    if (!preset) return;
+
+    setGreenBeanRoastForm((current) => ({
+      ...defaultGreenBeanRoast,
+      ...current,
+      profile: preset.profile || preset.name || current.profile,
+      roastLevel: preset.roastLevel || current.roastLevel || "Medium",
+      startWeight: preset.startWeight ?? current.startWeight,
+      endWeight: preset.endWeight ?? current.endWeight,
+      notes: preset.notes ?? current.notes,
+    }));
+    setView("greenBeanRoastForm");
+  };
+
   if (authState === "login" || authState === "verify") {
     return (
       <AuthView
@@ -478,7 +612,9 @@ export default function App() {
       setTab={setTab}
       setView={setView}
       canLogBrew={view === "beanDetail" && !!liveBean && tab !== "greenBeans"}
+      canLogRoast={view === "beanDetail" && !!liveBean && tab === "greenBeans"}
       onLogBrew={() => { setBrewForm({ ...defaultBrew, date: new Date().toISOString().split("T")[0] }); setView("brewForm"); }}
+      onLogRoast={onLogRoast}
       userEmail={currentUser?.email || session?.email}
       onSync={async () => {
         const token = await getAccessTokenOrFail();
@@ -607,6 +743,32 @@ export default function App() {
         )}
 
         {/* ── BEAN DETAIL ── */}
+        {view === "beans" && tab === "roastProfiles" && (
+          <div>
+            <div style={{ marginBottom: "22px" }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", letterSpacing: "0.02em", marginBottom: "4px" }}>Roast Profiles</div>
+              <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.18em", textTransform: "uppercase" }}>Saved roast name presets</div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {roastProfiles.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "32px 0", color: "#3a2a1a", fontSize: "13px" }}>No roast presets yet.</div>
+              ) : (
+                roastProfiles.map((profile) => (
+                  <div key={profile.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(200,137,58,0.15)", borderRadius: "10px", padding: "12px 14px" }}>
+                    <span style={{ color: "#d4bca0", fontSize: "13px" }}>{profile.name}</span>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      <button onClick={() => applyRoastPreset(profile)} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "6px", color: "#d4bca0", cursor: "pointer", padding: "5px 9px", fontSize: "11px" }}>Use</button>
+                      <button onClick={() => setRoastProfileForm(profile)} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "6px", color: "#d4bca0", cursor: "pointer", padding: "5px 9px", fontSize: "11px" }}>Edit</button>
+                      <button onClick={() => deleteRoastProfile(profile.id)} style={{ background: "none", border: "1px solid rgba(200,50,50,0.2)", borderRadius: "6px", color: "#8a4a4a", cursor: "pointer", padding: "5px 9px", fontSize: "11px" }}>Delete</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
         {view === "beanDetail" && liveBean && (
           <BeanDetailView
             liveBean={liveBean}
@@ -622,7 +784,96 @@ export default function App() {
             getTechniqueLinesFromBrew={getTechniqueLinesFromBrew}
             StarRating={StarRating}
             onToggleArchive={toggleArchiveBean}
+            onLogRoast={onLogRoast}
+            onEditRoast={(roast) => {
+              setGreenBeanRoastForm({
+                id: roast.id || null,
+                date: roast.date || new Date().toISOString().split("T")[0],
+                profile: roast.profile || "",
+                roastLevel: roast.roastLevel || "Medium",
+                startWeight: roast.startWeight || "",
+                endWeight: roast.endWeight || "",
+                reductionPercent: roast.reductionPercent || "",
+                notes: roast.notes || "",
+              });
+              setEditingGreenBeanRoastId(roast.id || null);
+              setView("greenBeanRoastForm");
+            }}
+            onDeleteRoast={deleteGreenBeanRoast}
           />
+        )}
+
+        {view === "greenBeanRoastForm" && liveBean && (
+          <div>
+            <button onClick={() => { setView("beanDetail"); setEditingGreenBeanRoastId(null); setGreenBeanRoastForm(defaultGreenBeanRoast); }} style={{ background: "none", border: "none", color: "#d4bca0", cursor: "pointer", fontSize: "13px", marginBottom: "18px", padding: 0 }}>← {liveBean.name}</button>
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "24px", marginBottom: "4px" }}>{editingGreenBeanRoastId ? "Edit Roast" : "Log Roast"}</div>
+                <div style={{ fontSize: "13px", color: "#c9b094", marginBottom: "18px" }}>{liveBean.name}</div>
+              </div>
+
+              <div style={{ display: "grid", gap: "14px" }}>
+                <Field label="Roast Date">
+                  <input style={inp()} type="date" value={greenBeanRoastForm.date} onChange={(e) => setGreenBeanRoastForm((f) => ({ ...f, date: e.target.value }))} onFocus={onFoc} onBlur={onBlr} />
+                </Field>
+
+                <Field label="Roast Profile">
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <input
+                      list="roast-profile-suggestions"
+                      style={{ ...inp(), flex: 1 }}
+                      value={greenBeanRoastForm.profile}
+                      onChange={(e) => setGreenBeanRoastForm((f) => ({ ...f, profile: e.target.value }))}
+                      placeholder="e.g. 12g charge, 1st crack at 1:20"
+                      onFocus={onFoc}
+                      onBlur={onBlr}
+                    />
+                    <datalist id="roast-profile-suggestions">
+                      {roastProfiles.map((profile) => (
+                        <option key={profile.id} value={profile.name} />
+                      ))}
+                    </datalist>
+                    <button onClick={() => { setTab("roastProfiles"); setView("beans"); }} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", padding: "7px 10px", fontSize: "12px", whiteSpace: "nowrap" }}>Profiles</button>
+                  </div>
+                </Field>
+
+                <Field label="Roast Level">
+                  <select style={inp({ cursor: "pointer" })} value={greenBeanRoastForm.roastLevel} onChange={(e) => setGreenBeanRoastForm((f) => ({ ...f, roastLevel: e.target.value }))} onFocus={onFoc} onBlur={onBlr}>
+                    <option value="">Select roast</option>
+                    {roastLevels.map((level) => <option key={level} value={level}>{level}</option>)}
+                  </select>
+                </Field>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <Field label="Start Weight (g)">
+                    <input style={inp()} type="number" min="0" step="0.1" value={greenBeanRoastForm.startWeight} onChange={(e) => setGreenBeanRoastForm((f) => ({ ...f, startWeight: e.target.value }))} onFocus={onFoc} onBlur={onBlr} />
+                  </Field>
+                  <Field label="End Weight (g)">
+                    <input style={inp()} type="number" min="0" step="0.1" value={greenBeanRoastForm.endWeight} onChange={(e) => setGreenBeanRoastForm((f) => ({ ...f, endWeight: e.target.value }))} onFocus={onFoc} onBlur={onBlr} />
+                  </Field>
+                </div>
+
+                {greenBeanRoastForm.startWeight && greenBeanRoastForm.endWeight && Number(greenBeanRoastForm.startWeight) > 0 && (
+                  <div style={{ background: "rgba(200,137,58,0.05)", border: "1px solid rgba(200,137,58,0.18)", borderRadius: "10px", padding: "10px 12px", color: "#d8b98c", fontSize: "12px" }}>
+                    Reduction %: {(((((Number(greenBeanRoastForm.startWeight) - Number(greenBeanRoastForm.endWeight)) / Number(greenBeanRoastForm.startWeight)) * 100) || 0).toFixed(1))}%
+                  </div>
+                )}
+
+                <Field label="Notes">
+                  <textarea style={inp({ resize: "vertical", minHeight: "90px", lineHeight: 1.6 })} value={greenBeanRoastForm.notes} onChange={(e) => setGreenBeanRoastForm((f) => ({ ...f, notes: e.target.value }))} placeholder="What stood out in the roast?" onFocus={onFoc} onBlur={onBlr} />
+                </Field>
+              </div>
+
+              <div style={{ display: "flex", gap: "10px", paddingBottom: "40px" }}>
+                <button onClick={saveGreenBeanRoast} style={{ flex: 1, background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "9px", color: "#fff", padding: "13px", fontSize: "15px", fontWeight: "500", cursor: "pointer" }}>
+                  {editingGreenBeanRoastId ? "Update Roast" : "Save Roast"}
+                </button>
+                <button onClick={() => { setView("beanDetail"); setEditingGreenBeanRoastId(null); setGreenBeanRoastForm(defaultGreenBeanRoast); }} style={{ padding: "13px 20px", background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "9px", color: "#c9b094", cursor: "pointer", fontSize: "14px" }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* ── BREW FORM ── */}

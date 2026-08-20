@@ -19,6 +19,18 @@ export const defaultBean = {
   process: "", roastLevel: "", varietal: "", altitude: "", type: "", roastDate: "", notes: "",
   archived: false,
   brews: [],
+  roasts: [],
+};
+
+export const defaultGreenBeanRoast = {
+  id: null,
+  date: new Date().toISOString().split("T")[0],
+  profile: "",
+  roastLevel: "Medium",
+  startWeight: "",
+  endWeight: "",
+  reductionPercent: "",
+  notes: "",
 };
 
 export const brewMethods = ["Pour Over", "Espresso", "Moka", "French Press"];

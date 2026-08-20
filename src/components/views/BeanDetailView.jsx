@@ -15,12 +15,18 @@ export default function BeanDetailView({
   getTechniqueLinesFromBrew,
   StarRating,
   onToggleArchive,
+  onLogRoast,
+  onEditRoast,
+  onDeleteRoast,
 }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
         <button onClick={() => setView("beans")} style={{ background: "none", border: "none", color: "#d4bca0", cursor: "pointer", fontSize: "13px", padding: 0 }}>← {isGreenBeanSheet ? "All Green Beans" : "All Roasted Beans"}</button>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {isGreenBeanSheet && (
+            <button onClick={onLogRoast} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", padding: "6px 12px", fontSize: "12px" }}>+ Roast</button>
+          )}
           <button onClick={() => { setEditBean({ ...liveBean }); setView("beanForm"); }} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", padding: "6px 12px", fontSize: "12px" }}>Edit</button>
           <button onClick={() => deleteBean(liveBean.id)} style={{ background: "none", border: "1px solid rgba(200,50,50,0.2)", borderRadius: "7px", color: "#8a4a4a", cursor: "pointer", padding: "6px 12px", fontSize: "12px" }}>Delete</button>
         </div>
@@ -98,7 +104,46 @@ export default function BeanDetailView({
         <div style={{ marginBottom: "20px", fontSize: "13px", color: "#d0b69a", fontStyle: "italic", lineHeight: 1.6, borderLeft: "2px solid rgba(200,137,58,0.22)", paddingLeft: "12px" }}>{liveBean.notes}</div>
       )}
 
-      {!isGreenBeanSheet && (
+      {isGreenBeanSheet ? (
+        <>
+          <div style={{ fontSize: "10px", letterSpacing: "0.12em", color: "#d4bca0", textTransform: "uppercase", marginBottom: "12px" }}>
+            Roast Log · {liveBean.roasts?.length || 0} roast{(liveBean.roasts?.length || 0) !== 1 ? "s" : ""}
+          </div>
+
+          {(liveBean.roasts?.length || 0) === 0 ? (
+            <div style={{ textAlign: "center", padding: "36px 0", color: "#3a2a1a", fontSize: "13px" }}>No roasts yet — hit "+ Roast" to log the first roast</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {liveBean.roasts.map((roast, i) => (
+                <div key={roast.id || `${roast.date}-${i}`} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(200,137,58,0.15)", borderRadius: "11px", padding: "15px 16px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "13px", color: "#c8893a" }}>#{(liveBean.roasts?.length || 0) - i}</span>
+                      <span style={{ fontSize: "11px", color: "#c1a88c" }}>{roast.date || "No date"}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
+                      <button onClick={() => onEditRoast?.(roast)} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "6px", color: "#d4bca0", cursor: "pointer", fontSize: "11px", padding: "3px 8px" }}>Edit</button>
+                      <button onClick={() => onDeleteRoast?.(roast.id)} style={{ background: "none", border: "none", color: "#3a2a1a", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#3a2a1a")}>✕</button>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "7px", flexWrap: "wrap", marginBottom: "8px" }}>
+                    {roast.profile && <span style={{ display: "inline-block", border: "1px solid rgba(200,137,58,0.18)", borderRadius: "999px", background: "rgba(255,255,255,0.02)", color: "#d0b69a", padding: "4px 8px", fontSize: "10px" }}>{roast.profile}</span>}
+                    {roast.roastLevel && <span style={{ display: "inline-block", border: "1px solid rgba(200,137,58,0.18)", borderRadius: "999px", background: "rgba(200,137,58,0.07)", color: "#d8b98c", padding: "4px 8px", fontSize: "10px" }}>{roast.roastLevel}</span>}
+                  </div>
+                  {(roast.startWeight || roast.endWeight || roast.reductionPercent) && (
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "8px", fontSize: "11px", color: "#d0b69a" }}>
+                      {roast.startWeight && <span>Start: {roast.startWeight}g</span>}
+                      {roast.endWeight && <span>End: {roast.endWeight}g</span>}
+                      {roast.reductionPercent && <span>Reduction: {roast.reductionPercent}%</span>}
+                    </div>
+                  )}
+                  {roast.notes && <div style={{ fontSize: "12px", color: "#d0b69a", lineHeight: 1.6 }}>{roast.notes}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
         <>
           <div style={{ fontSize: "10px", letterSpacing: "0.12em", color: "#d4bca0", textTransform: "uppercase", marginBottom: "12px" }}>
             Brew Log · {liveBean.brews.length} session{liveBean.brews.length !== 1 ? "s" : ""}
