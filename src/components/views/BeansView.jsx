@@ -10,14 +10,11 @@ export default function BeansView({
   setFilter,
   filterOrigin,
   setFilterOrigin,
-  filterVarietal,
-  setFilterVarietal,
   filterType,
   setFilterType,
   filterRoaster,
   setFilterRoaster,
   allOrigins,
-  allVarietals,
   allRoasters,
   activeFilterCount,
   setEditBean,
@@ -102,13 +99,6 @@ export default function BeansView({
                 </select>
               )}
 
-              {allVarietals.length > 0 && (
-                <select value={filterVarietal} onChange={(e) => setFilterVarietal(e.target.value)} style={{ width: "auto", fontSize: "12px", padding: "5px 10px", cursor: "pointer", borderColor: filterVarietal ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)", color: filterVarietal ? "#c8a060" : "#c4ab90" }}>
-                  <option value="">All Varietals</option>
-                  {allVarietals.map((v) => <option key={v} value={v}>{v}</option>)}
-                </select>
-              )}
-
               {allRoasters.length > 1 && (
                 <select value={filterRoaster} onChange={(e) => setFilterRoaster(e.target.value)} style={{ width: "auto", fontSize: "12px", padding: "5px 10px", cursor: "pointer", borderColor: filterRoaster ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)", color: filterRoaster ? "#c8a060" : "#c4ab90" }}>
                   <option value="">All Roasters</option>
@@ -117,7 +107,7 @@ export default function BeansView({
               )}
 
               {activeFilterCount > 0 && (
-                <button onClick={() => { setFilterOrigin(""); setFilterVarietal(""); setFilterType(""); setFilterRoaster(""); }} style={{ padding: "5px 10px", borderRadius: "20px", border: "1px solid rgba(200,80,80,0.3)", background: "transparent", color: "#8a5050", cursor: "pointer", fontSize: "12px" }}>
+                <button onClick={() => { setFilterOrigin(""); setFilterType(""); setFilterRoaster(""); }} style={{ padding: "5px 10px", borderRadius: "20px", border: "1px solid rgba(200,80,80,0.3)", background: "transparent", color: "#8a5050", cursor: "pointer", fontSize: "12px" }}>
                   Clear {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""} ✕
                 </button>
               )}

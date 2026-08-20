@@ -102,7 +102,6 @@ export default function App() {
   const [showAI, setShowAI] = useState(false);
   const [filter, setFilter] = useState("");
   const [filterOrigin, setFilterOrigin] = useState("");
-  const [filterVarietal, setFilterVarietal] = useState("");
   const [filterType, setFilterType] = useState("");
   const [editRecipe, setEditRecipe] = useState(null);
   const [tab, setTab] = useState("beans"); // beans | recipes | brews
@@ -338,19 +337,17 @@ export default function App() {
 
   const visibleBeans = getVisibleBeans(beans, beanListMode);
   const allOrigins = [...new Set(visibleBeans.map(b => b.origin).filter(Boolean))].sort();
-  const allVarietals = [...new Set(visibleBeans.map(b => b.varietal).filter(Boolean))].sort();
   const allRoasters = [...new Set(visibleBeans.map(b => b.roaster).filter(Boolean))].sort();
 
   const filtered = visibleBeans.filter(b => {
     if (filter && ![b.name, b.roaster, b.origin, b.region, b.process, b.roastLevel].join(" ").toLowerCase().includes(filter.toLowerCase())) return false;
     if (filterOrigin && b.origin !== filterOrigin) return false;
-    if (filterVarietal && b.varietal !== filterVarietal) return false;
     if (filterType && b.type !== filterType) return false;
     if (filterRoaster && b.roaster !== filterRoaster) return false;
     return true;
   });
 
-  const activeFilterCount = [filterOrigin, filterVarietal, filterType, filterRoaster].filter(Boolean).length;
+  const activeFilterCount = [filterOrigin, filterType, filterRoaster].filter(Boolean).length;
 
   const bestBrew = (bean) => bean.brews.length ? bean.brews.reduce((a, b) => b.rating > a.rating ? b : a, bean.brews[0]) : null;
 
@@ -416,14 +413,11 @@ export default function App() {
             setFilter={setFilter}
             filterOrigin={filterOrigin}
             setFilterOrigin={setFilterOrigin}
-            filterVarietal={filterVarietal}
-            setFilterVarietal={setFilterVarietal}
             filterType={filterType}
             setFilterType={setFilterType}
             filterRoaster={filterRoaster}
             setFilterRoaster={setFilterRoaster}
             allOrigins={allOrigins}
-            allVarietals={allVarietals}
             allRoasters={allRoasters}
             activeFilterCount={activeFilterCount}
             setEditBean={setEditBean}

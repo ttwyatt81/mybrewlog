@@ -2,7 +2,7 @@ import { sbGet, sbInsert, sbUpdate, sbDelete } from "../../lib/supabase";
 import { beanPayload } from "./model";
 
 export async function loadBeans(token) {
-  return sbGet("beans", token, "select=*&order=name.asc");
+  return sbGet("beans", token, "select=*&order=created_at.desc");
 }
 
 export async function saveBean(token, bean) {

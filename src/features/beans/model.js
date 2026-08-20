@@ -54,18 +54,7 @@ function toTimestamp(value) {
   return Number.isNaN(time) ? 0 : time;
 }
 
-function getBrewActivityTimestamp(brew = {}) {
-  return toTimestamp(brew?.createdAt || brew?.created_at || brew?.date);
-}
-
 export function getBeanSortTimestamp(bean) {
-  const brews = Array.isArray(bean?.brews) ? bean.brews : [];
-  const latestBrew = brews.reduce((max, brew) => {
-    const ts = getBrewActivityTimestamp(brew);
-    return ts > max ? ts : max;
-  }, 0);
-
-  if (latestBrew > 0) return latestBrew;
   return toTimestamp(bean?.createdAt);
 }
 
