@@ -2,10 +2,13 @@ import BeanCard from "../BeanCard";
 import { defaultBean } from "../../lib/constants";
 
 export default function BeansView({
+  title = "Bean & Brew",
+  isGreenBeanSheet = false,
   beans,
   saveError,
   setSaveError,
   setShowTransfer,
+  showTransferActions = true,
   filter,
   setFilter,
   filterOrigin,
@@ -31,7 +34,7 @@ export default function BeansView({
   return (
     <div>
       <div style={{ marginBottom: "22px" }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", letterSpacing: "0.02em", marginBottom: "4px" }}>Bean & Brew</div>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", letterSpacing: "0.02em", marginBottom: "4px" }}>{title}</div>
         <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.18em", textTransform: "uppercase" }}>Coffee Journal</div>
       </div>
 
@@ -43,8 +46,12 @@ export default function BeansView({
       )}
 
       <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
-        <button onClick={() => setShowTransfer("export")} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#c9b094", cursor: "pointer", padding: "7px 12px", fontSize: "12px" }}>↑ Export</button>
-        <button onClick={() => setShowTransfer("import")} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#c9b094", cursor: "pointer", padding: "7px 12px", fontSize: "12px" }}>↓ Import</button>
+        {showTransferActions && (
+          <>
+            <button onClick={() => setShowTransfer("export")} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#c9b094", cursor: "pointer", padding: "7px 12px", fontSize: "12px" }}>↑ Export</button>
+            <button onClick={() => setShowTransfer("import")} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#c9b094", cursor: "pointer", padding: "7px 12px", fontSize: "12px" }}>↓ Import</button>
+          </>
+        )}
         <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Search beans…" style={{ flex: 1, minWidth: "120px", fontSize: "13px", padding: "7px 11px" }} />
         <button onClick={() => { setEditBean({ ...defaultBean }); setView("beanForm"); }} style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>+ New Bean</button>
       </div>
@@ -125,6 +132,7 @@ export default function BeansView({
               bestBrew={bestBrew}
               setActiveBean={setActiveBean}
               setView={setView}
+              isGreenBeanSheet={isGreenBeanSheet}
               Tag={Tag}
               onToggleArchive={onToggleArchive}
             />

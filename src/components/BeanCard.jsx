@@ -3,11 +3,16 @@ export default function BeanCard({
   bestBrew,
   setActiveBean,
   setView,
+  isGreenBeanSheet = false,
   Tag,
   onToggleArchive,
 }) {
   const best = Array.isArray(bean.brews) ? bestBrew(bean) : null;
   const brewCount = Array.isArray(bean.brews) ? bean.brews.length : 0;
+  const price = parseFloat(bean.price);
+  const weightKg = parseFloat(bean.weightKg);
+  const hasValidPricePerKg = Number.isFinite(price) && Number.isFinite(weightKg) && weightKg > 0;
+  const pricePerKg = hasValidPricePerKg ? (price / weightKg) : null;
 
   return (
     <div
@@ -54,7 +59,7 @@ export default function BeanCard({
             color: "#d0b69a",
             lineHeight: 1.3
           }}>
-            {[bean.roaster, bean.producer, bean.origin, bean.region]
+            {[(isGreenBeanSheet ? null : bean.roaster), bean.producer, bean.origin, bean.region]
               .filter(Boolean)
               .join(" · ")}
           </div>
@@ -70,7 +75,7 @@ export default function BeanCard({
           gap: "3px"
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "6px" }}>
-            {best?.rating > 0 && (
+            {!isGreenBeanSheet && best?.rating > 0 && (
               <div style={{
                 fontSize: "11px",
                 color: "#c8893a",
@@ -133,7 +138,9 @@ export default function BeanCard({
             marginTop: "0px",
             lineHeight: 1.2
           }}>
-            {brewCount} brew{brewCount !== 1 ? "s" : ""}
+            {isGreenBeanSheet
+              ? (pricePerKg !== null ? `${pricePerKg.toFixed(2)} / kg` : "Add price + weight")
+              : `${brewCount} brew${brewCount !== 1 ? "s" : ""}`}
           </div>
         </div>
       </div>
@@ -144,12 +151,12 @@ export default function BeanCard({
         gap: "7px",
         flexWrap: "wrap"
       }}>
-        {bean.type && <Tag>{bean.type}</Tag>}
-        {bean.roastLevel && <Tag>{bean.roastLevel}</Tag>}
+        {!isGreenBeanSheet && bean.type && <Tag>{bean.type}</Tag>}
+        {!isGreenBeanSheet && bean.roastLevel && <Tag>{bean.roastLevel}</Tag>}
         {bean.process && <Tag>{bean.process}</Tag>}
         {bean.varietal && <Tag>{bean.varietal}</Tag>}
         {bean.altitude && <Tag>{bean.altitude}</Tag>}
-        {bean.roastDate && (
+        {!isGreenBeanSheet && bean.roastDate && (
           <Tag>
             Roasted {new Date(bean.roastDate).toLocaleDateString("en-GB", {
               day: "numeric",

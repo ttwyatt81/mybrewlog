@@ -13,10 +13,14 @@ const LAST_EMAIL_KEY = "last_auth_email";
 export function useAuthSession({
   loadBrewsData,
   loadBeansData,
+  loadGreenBeansData,
   loadRecipesData,
   setBeans,
+  setGreenBeans,
   setRecipes,
 }) {
+  const loadGreenBeans = typeof loadGreenBeansData === "function" ? loadGreenBeansData : async () => [];
+  const clearGreenBeans = typeof setGreenBeans === "function" ? setGreenBeans : () => {};
   const [session, setSession] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [authState, setAuthState] = useState("login"); // login | verify | app
@@ -114,12 +118,13 @@ export function useAuthSession({
     try {
       const brewRows = await loadBrewsData(token);
       await loadBeansData(token, brewRows);
+      await loadGreenBeans(token);
       await loadRecipesData(token);
     } catch (e) {
       console.error("Load data error:", e);
     }
     setLoading(false);
-  }, [loadBeansData, loadBrewsData, loadRecipesData]);
+  }, [loadBeansData, loadBrewsData, loadGreenBeans, loadRecipesData]);
 
   useEffect(() => {
     const lastEmail = localStorage.getItem(LAST_EMAIL_KEY);
@@ -240,8 +245,9 @@ export function useAuthSession({
     if (session) await sbSignOut(session.access_token);
     clearSession();
     setBeans([]);
+    clearGreenBeans([]);
     setRecipes([]);
-  }, [clearSession, session, setBeans, setRecipes]);
+  }, [clearGreenBeans, clearSession, session, setBeans, setRecipes]);
 
   return {
     session,

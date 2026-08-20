@@ -73,7 +73,7 @@ export default function BrewsView({
                 color: brewFilterBean ? "#c8a060" : "#c4ab90",
               }}
             >
-              <option value="">All Beans</option>
+              <option value="">All Roasted Beans</option>
               {beans.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.name}

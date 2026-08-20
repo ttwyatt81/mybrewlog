@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AIModal from "./components/modals/AIModal";
 import BeanCard from "./components/BeanCard";
 import { BrewCard, BrewDetail } from "./components/BrewCard";
@@ -53,6 +53,7 @@ import { useImportExport } from "./features/transfer/useImportExport";
 import { beanPayload, getVisibleBeans, sortBeansByRecentActivity } from "./features/beans/model";
 import { brewPayload } from "./features/brews/model";
 import { recipePayload } from "./features/recipes/model";
+import { useGreenBeans } from "./features/greenBeans/hooks";
 
 // Cache row IDs per table so we always update the same row
 
@@ -67,6 +68,7 @@ function bloomRatio(bloomWater, dose) {
 
 export default function App() {
   const { beans, setBeans, load: loadBeansData, save: saveBeanData, remove: deleteBeanData } = useBeans();
+  const { beans: greenBeans, setBeans: setGreenBeans, load: loadGreenBeansData, save: saveGreenBeanData, remove: deleteGreenBeanData } = useGreenBeans();
   const { load: loadBrewsData, save: saveBrewData, remove: deleteBrewData } = useBrews();
   const { recipes, setRecipes, load: loadRecipesData, save: saveRecipeData, remove: deleteRecipeData } = useRecipes();
   const {
@@ -91,8 +93,10 @@ export default function App() {
   } = useAuthSession({
     loadBrewsData,
     loadBeansData,
+    loadGreenBeansData,
     loadRecipesData,
     setBeans,
+    setGreenBeans,
     setRecipes,
   });
   const [view, setView] = useState("beans");
@@ -104,8 +108,10 @@ export default function App() {
   const [filterOrigin, setFilterOrigin] = useState("");
   const [filterType, setFilterType] = useState("");
   const [editRecipe, setEditRecipe] = useState(null);
-  const [tab, setTab] = useState("beans"); // beans | recipes | brews
+  const [tab, setTab] = useState("beans"); // beans | greenBeans | recipes | brews
+  const [beanTab, setBeanTab] = useState("beans");
   const [beanListMode, setBeanListMode] = useState("active"); // active | archived
+  const [greenBeanListMode, setGreenBeanListMode] = useState("active"); // active | archived
   const [selectedBrew, setSelectedBrew] = useState(null); // { brew, bean } for standalone detail
   const [editingBrewId, setEditingBrewId] = useState(null); // id of brew being edited
   const [showTransfer, setShowTransfer] = useState(null); // "export" | "import" | null
@@ -115,6 +121,12 @@ export default function App() {
   const [brewFilterMethod, setBrewFilterMethod] = useState("");
   const [brewFilterBean, setBrewFilterBean] = useState("");
   const [brewSort, setBrewSort] = useState("date");
+
+  useEffect(() => {
+    if (tab === "beans" || tab === "greenBeans") {
+      setBeanTab(tab);
+    }
+  }, [tab]);
 
   const {
     exportData,
@@ -189,6 +201,18 @@ export default function App() {
   const saveBean = async () => {
     if (!editBean?.name) return;
     setSaveError("");
+    if (tab === "greenBeans") {
+      const token = await getAccessTokenOrFail();
+      if (!token) return;
+      const saved = await saveGreenBeanData(token, editBean);
+      if (!saved) {
+        setSaveError("Failed to save green bean. Check your connection and try again.");
+        return;
+      }
+      setEditBean(null);
+      setView("beans");
+      return;
+    }
     const token = await getAccessTokenOrFail();
     if (!token) return;
     const saved = await saveBeanData(token, editBean);
@@ -201,6 +225,20 @@ export default function App() {
   };
 
   const deleteBean = async (id) => {
+    if (tab === "greenBeans") {
+      const token = await getAccessTokenOrFail();
+      if (!token) return;
+      const deleted = await deleteGreenBeanData(token, id);
+      if (!deleted) {
+        setSaveError("Failed to delete green bean. Check your connection and try again.");
+        return;
+      }
+      if (activeBean?.id === id) {
+        setActiveBean(null);
+      }
+      setView("beans");
+      return;
+    }
     const token = await getAccessTokenOrFail();
     if (!token) return;
     const deleted = await deleteBeanData(token, id);
@@ -211,6 +249,27 @@ export default function App() {
 
   const toggleArchiveBean = async (bean) => {
     if (!bean?.id) return;
+    if (tab === "greenBeans") {
+      const token = await getAccessTokenOrFail();
+      if (!token) return;
+      const nextValue = !Boolean(bean.archived);
+      const saved = await saveGreenBeanData(token, { ...bean, archived: nextValue });
+      if (!saved) {
+        setSaveError("Failed to update green bean status. Check your connection and try again.");
+        return;
+      }
+      if (activeBean?.id === bean.id) {
+        setActiveBean((current) => current ? { ...current, archived: nextValue } : current);
+      }
+
+      if (greenBeanListMode === "active" && nextValue) {
+        setView("beans");
+      }
+      if (greenBeanListMode === "archived" && !nextValue) {
+        setView("beans");
+      }
+      return;
+    }
     const token = await getAccessTokenOrFail();
     if (!token) return;
 
@@ -335,7 +394,11 @@ export default function App() {
     return { ...f, pours };
   });
 
-  const visibleBeans = getVisibleBeans(beans, beanListMode);
+  const sheetBeans = tab === "greenBeans" ? greenBeans : beans;
+  const sheetListMode = tab === "greenBeans" ? greenBeanListMode : beanListMode;
+  const sheetSetListMode = tab === "greenBeans" ? setGreenBeanListMode : setBeanListMode;
+
+  const visibleBeans = getVisibleBeans(sheetBeans, sheetListMode);
   const allOrigins = [...new Set(visibleBeans.map(b => b.origin).filter(Boolean))].sort();
   const allRoasters = [...new Set(visibleBeans.map(b => b.roaster).filter(Boolean))].sort();
 
@@ -351,7 +414,7 @@ export default function App() {
 
   const bestBrew = (bean) => bean.brews.length ? bean.brews.reduce((a, b) => b.rating > a.rating ? b : a, bean.brews[0]) : null;
 
-  const liveBean = activeBean ? beans.find(b => b.id === activeBean.id) || activeBean : null;
+  const liveBean = activeBean ? sheetBeans.find(b => b.id === activeBean.id) || activeBean : null;
 
   if (authState === "login" || authState === "verify") {
     return (
@@ -389,7 +452,7 @@ export default function App() {
       tab={tab}
       setTab={setTab}
       setView={setView}
-      canLogBrew={view === "beanDetail" && !!liveBean}
+      canLogBrew={view === "beanDetail" && !!liveBean && tab !== "greenBeans"}
       onLogBrew={() => { setBrewForm({ ...defaultBrew, date: new Date().toISOString().split("T")[0] }); setView("brewForm"); }}
       userEmail={currentUser?.email || session?.email}
       onSync={async () => {
@@ -403,12 +466,15 @@ export default function App() {
       <div style={{ maxWidth: "680px", margin: "0 auto", padding: "22px 16px" }}>
 
         {/* ── BEANS LIST ── */}
-        {view === "beans" && tab === "beans" && (
+        {view === "beans" && (tab === "beans" || tab === "greenBeans") && (
           <BeansView
-            beans={beans}
+            title={tab === "greenBeans" ? "Green Beans" : "Roasted Beans"}
+            isGreenBeanSheet={tab === "greenBeans"}
+            beans={sheetBeans}
             saveError={saveError}
             setSaveError={setSaveError}
             setShowTransfer={setShowTransfer}
+            showTransferActions={tab !== "greenBeans"}
             filter={filter}
             setFilter={setFilter}
             filterOrigin={filterOrigin}
@@ -427,8 +493,8 @@ export default function App() {
             Tag={Tag}
             defaultBean={defaultBean}
             filtered={filtered}
-            beanListMode={beanListMode}
-            setBeanListMode={setBeanListMode}
+            beanListMode={sheetListMode}
+            setBeanListMode={sheetSetListMode}
             beansCount={visibleBeans.length}
             onToggleArchive={toggleArchiveBean}
           />
@@ -487,7 +553,7 @@ export default function App() {
             onGoToBean={() => {
               setActiveBean(selectedBrew.bean);
               setSelectedBrew(null);
-              setTab("beans");
+              setTab(beanTab);
               setView("beanDetail");
             }}
           />
@@ -500,6 +566,7 @@ export default function App() {
             setB={setB}
             saveBean={saveBean}
             setView={setView}
+            isGreenBeanSheet={tab === "greenBeans"}
             SectionHead={SectionHead}
             Field={Field}
             inp={inp}
@@ -517,6 +584,7 @@ export default function App() {
             liveBean={liveBean}
             setEditBean={setEditBean}
             setView={setView}
+            isGreenBeanSheet={tab === "greenBeans"}
             deleteBean={deleteBean}
             editBrew={editBrew}
             copyBrewToRecipe={copyBrewToRecipe}

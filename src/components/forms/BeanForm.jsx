@@ -3,6 +3,7 @@ export default function BeanForm({
   setB,
   saveBean,
   setView,
+  isGreenBeanSheet = false,
   SectionHead,
   Field,
   inp,
@@ -25,9 +26,11 @@ export default function BeanForm({
             <Field label="Bean / Lot Name">
               <input style={inp()} value={editBean.name} onChange={e => setB("name", e.target.value)} placeholder="e.g. Sidra Las Flores" onFocus={onFoc} onBlur={onBlr} />
             </Field>
-            <Field label="Roaster">
-              <input style={inp()} value={editBean.roaster} onChange={e => setB("roaster", e.target.value)} placeholder="e.g. Nomad" onFocus={onFoc} onBlur={onBlr} />
-            </Field>
+            {!isGreenBeanSheet && (
+              <Field label="Roaster">
+                <input style={inp()} value={editBean.roaster} onChange={e => setB("roaster", e.target.value)} placeholder="e.g. Nomad" onFocus={onFoc} onBlur={onBlr} />
+              </Field>
+            )}
             <Field label="Country / Origin">
               <input style={inp()} value={editBean.origin} onChange={e => setB("origin", e.target.value)} placeholder="e.g. Colombia" onFocus={onFoc} onBlur={onBlr} />
             </Field>
@@ -37,31 +40,65 @@ export default function BeanForm({
             <Field label="Producer">
               <input style={inp()} value={editBean.producer || ""} onChange={e => setB("producer", e.target.value)} placeholder="e.g. Jose Ramirez" onFocus={onFoc} onBlur={onBlr} />
             </Field>
-            <Field label="Roast Date">
-              <input style={inp()} type="date" value={editBean.roastDate} onChange={e => setB("roastDate", e.target.value)} onFocus={onFoc} onBlur={onBlr} />
-            </Field>
+            {isGreenBeanSheet && (
+              <Field label="Importer">
+                <input
+                  style={inp()}
+                  value={editBean.importer || ""}
+                  onChange={e => setB("importer", e.target.value)}
+                  placeholder="e.g. Belco"
+                  onFocus={onFoc}
+                  onBlur={onBlr}
+                />
+              </Field>
+            )}
+            {isGreenBeanSheet && (
+              <Field label="Cupping score">
+                <input
+                  style={inp()}
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.25"
+                  value={editBean.cuppingScore || ""}
+                  onChange={e => setB("cuppingScore", e.target.value)}
+                  placeholder="e.g. 87.5"
+                  onFocus={onFoc}
+                  onBlur={onBlr}
+                />
+              </Field>
+            )}
+            {!isGreenBeanSheet && (
+              <Field label="Roast Date">
+                <input style={inp()} type="date" value={editBean.roastDate} onChange={e => setB("roastDate", e.target.value)} onFocus={onFoc} onBlur={onBlr} />
+              </Field>
+            )}
           </div>
         </section>
 
         <section>
           <SectionHead>Profile</SectionHead>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
-            <Field label="Type">
-              <div style={{ display: "flex", gap: "8px" }}>
-                {beanTypes.map(t => (
-                  <button key={t} onClick={() => setB("type", editBean.type === t ? "" : t)}
-                    style={{ flex: 1, padding: "9px", borderRadius: "7px", border: `1px solid ${editBean.type === t ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)"}`, background: editBean.type === t ? "rgba(200,137,58,0.18)" : "transparent", color: editBean.type === t ? "#c8a060" : "#5a4a3a", cursor: "pointer", fontSize: "13px", transition: "all 0.15s" }}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </Field>
-            <Field label="Roast Level">
-              <select style={inp({ cursor: "pointer" })} value={editBean.roastLevel} onChange={e => setB("roastLevel", e.target.value)} onFocus={onFoc} onBlur={onBlr}>
-                <option value="">Select…</option>
-                {roastLevels.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </Field>
+            {!isGreenBeanSheet && (
+              <Field label="Type">
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {beanTypes.map(t => (
+                    <button key={t} onClick={() => setB("type", editBean.type === t ? "" : t)}
+                      style={{ flex: 1, padding: "9px", borderRadius: "7px", border: `1px solid ${editBean.type === t ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)"}`, background: editBean.type === t ? "rgba(200,137,58,0.18)" : "transparent", color: editBean.type === t ? "#c8a060" : "#5a4a3a", cursor: "pointer", fontSize: "13px", transition: "all 0.15s" }}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+            )}
+            {!isGreenBeanSheet && (
+              <Field label="Roast Level">
+                <select style={inp({ cursor: "pointer" })} value={editBean.roastLevel} onChange={e => setB("roastLevel", e.target.value)} onFocus={onFoc} onBlur={onBlr}>
+                  <option value="">Select…</option>
+                  {roastLevels.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </Field>
+            )}
             <Field label="Process">
               <select style={inp({ cursor: "pointer" })} value={editBean.process} onChange={e => setB("process", e.target.value)} onFocus={onFoc} onBlur={onBlr}>
                 <option value="">Select…</option>
@@ -74,9 +111,51 @@ export default function BeanForm({
             <Field label="Altitude" hint="e.g. 1800m">
               <input style={inp()} value={editBean.altitude} onChange={e => setB("altitude", e.target.value)} placeholder="e.g. 1800m" onFocus={onFoc} onBlur={onBlr} />
             </Field>
+            {isGreenBeanSheet && (
+              <Field label="Bean density">
+                <input
+                  style={inp()}
+                  value={editBean.beanDensity || ""}
+                  onChange={e => setB("beanDensity", e.target.value)}
+                  placeholder="e.g. 700 g/L"
+                  onFocus={onFoc}
+                  onBlur={onBlr}
+                />
+              </Field>
+            )}
+            {isGreenBeanSheet && (
+              <Field label="Price">
+                <input
+                  style={inp()}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editBean.price || ""}
+                  onChange={e => setB("price", e.target.value)}
+                  placeholder="e.g. 28.50"
+                  onFocus={onFoc}
+                  onBlur={onBlr}
+                />
+              </Field>
+            )}
+            {isGreenBeanSheet && (
+              <Field label="Weight (kg)">
+                <input
+                  style={inp()}
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={editBean.weightKg || ""}
+                  onChange={e => setB("weightKg", e.target.value)}
+                  placeholder="e.g. 0.25"
+                  onFocus={onFoc}
+                  onBlur={onBlr}
+                />
+              </Field>
+            )}
           </div>
           <div style={{ marginTop: "11px" }}>
-            <Field label="Roaster's Tasting Notes" hint="Helps the AI tailor the recipe">
+            <Field label="Tasting Notes" hint="Helps the AI tailor the recipe">
               <textarea style={inp({ resize: "vertical", minHeight: "65px", lineHeight: 1.6 })}
                 value={editBean.notes} onChange={e => setB("notes", e.target.value)}
                 placeholder="e.g. Jasmine, tropical fruit, creamy body…" onFocus={onFoc} onBlur={onBlr} />
