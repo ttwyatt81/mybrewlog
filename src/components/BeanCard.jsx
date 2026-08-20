@@ -33,41 +33,26 @@ export default function BeanCard({
         e.currentTarget.style.borderColor = bean.archived ? "rgba(200,137,58,0.34)" : "rgba(200,137,58,0.18)";
       }}
     >
-      {bean.archived && (
-        <div style={{
-          position: "absolute",
-          top: "10px",
-          right: "12px",
-          padding: "3px 8px",
-          borderRadius: "999px",
-          background: "rgba(200,137,58,0.18)",
-          border: "1px solid rgba(200,137,58,0.28)",
-          color: "#d8b98c",
-          fontSize: "9px",
-          letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          fontWeight: 600
-        }}>
-          Archived
-        </div>
-      )}
       <div style={{
         display: "flex",
         justifyContent: "space-between",
-        alignItems: "flex-start"
+        alignItems: "flex-start",
+        gap: "8px"
       }}>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontFamily: "'Playfair Display', serif",
-            fontSize: "17px",
-            marginBottom: "3px"
+            fontSize: "16px",
+            marginBottom: "2px",
+            lineHeight: 1.2
           }}>
             {bean.name}
           </div>
 
           <div style={{
-            fontSize: "12px",
-            color: "#d0b69a"
+            fontSize: "11px",
+            color: "#d0b69a",
+            lineHeight: 1.3
           }}>
             {[bean.roaster, bean.producer, bean.origin, bean.region]
               .filter(Boolean)
@@ -78,59 +63,75 @@ export default function BeanCard({
         <div style={{
           textAlign: "right",
           flexShrink: 0,
-          marginLeft: "12px",
+          marginLeft: "0px",
           display: "flex",
           flexDirection: "column",
           alignItems: "flex-end",
-          gap: "8px"
+          gap: "3px"
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "6px" }}>
             {best?.rating > 0 && (
               <div style={{
-                fontSize: "12px",
-                color: "#c8893a"
+                fontSize: "11px",
+                color: "#c8893a",
+                lineHeight: 1
               }}>
                 {"★".repeat(best.rating)}
               </div>
             )}
+
             <button
               onClick={(event) => {
                 event.stopPropagation();
                 onToggleArchive?.(bean);
               }}
               style={{
-                position: "relative",
-                width: "42px",
-                height: "24px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(200,137,58,0.2)",
                 borderRadius: "999px",
-                border: "none",
-                background: bean.archived ? "linear-gradient(135deg, rgba(200,137,58,0.7), rgba(160,104,40,0.9))" : "rgba(255,255,255,0.1)",
+                color: "#d9b98a",
+                padding: "4px 8px",
                 cursor: "pointer",
-                padding: 0,
-                boxShadow: bean.archived ? "0 0 0 1px rgba(200,137,58,0.4), 0 4px 10px rgba(160,104,40,0.25)" : "inset 0 0 0 1px rgba(255,255,255,0.08)",
-                transition: "all 0.2s ease"
+                fontSize: "9px",
+                lineHeight: 1,
+                height: "22px"
               }}
               aria-label={bean.archived ? "Move bean back to active" : "Archive bean"}
               title={bean.archived ? "Move back to active" : "Archive bean"}
             >
+              <span>{bean.archived ? "Archived" : "Active"}</span>
               <span style={{
-                position: "absolute",
-                top: "3px",
-                left: bean.archived ? "22px" : "3px",
-                width: "17px",
-                height: "17px",
-                borderRadius: "50%",
-                background: "#f8f0e5",
-                transition: "all 0.2s ease",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.28)"
-              }} />
+                display: "inline-block",
+                width: "26px",
+                height: "14px",
+                borderRadius: "999px",
+                background: bean.archived ? "linear-gradient(135deg, rgba(200,137,58,0.7), rgba(160,104,40,0.9))" : "rgba(255,255,255,0.12)",
+                position: "relative",
+                boxShadow: bean.archived ? "0 0 0 1px rgba(200,137,58,0.4), 0 4px 10px rgba(160,104,40,0.25)" : "inset 0 0 0 1px rgba(255,255,255,0.06)"
+              }}>
+                <span style={{
+                  position: "absolute",
+                  top: "2px",
+                  left: bean.archived ? "14px" : "2px",
+                  width: "10px",
+                  height: "10px",
+                  borderRadius: "50%",
+                  background: "#f5f0e7",
+                  transition: "all 0.2s ease",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.28)"
+                }} />
+              </span>
             </button>
           </div>
 
           <div style={{
-            fontSize: "11px",
+            fontSize: "10px",
             color: "#c1a88c",
-            marginTop: "3px"
+            marginTop: "0px",
+            lineHeight: 1.2
           }}>
             {brewCount} brew{brewCount !== 1 ? "s" : ""}
           </div>
