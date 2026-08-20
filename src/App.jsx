@@ -257,13 +257,13 @@ export default function App() {
     }
 
     const savedWithPours = saved ? { ...saved, pours: brewForm.pours || [] } : saved;
-    const updated = beans.map(b => {
+    const updated = sortBeansByRecentActivity(beans.map(b => {
       if (b.id !== activeBean.id) return b;
       const nextBrews = editingBrewId
         ? b.brews.map(br => br.id === editingBrewId ? savedWithPours : br)
         : [savedWithPours, ...b.brews];
       return { ...b, brews: sortBrewsNewestFirst(nextBrews) };
-    });
+    }));
 
     setBeans(updated);
     setActiveBean(updated.find(b => b.id === activeBean.id));
@@ -277,7 +277,9 @@ export default function App() {
     const deleted = await deleteBrewData(token, brewId);
     if (!deleted) return;
     if (!activeBean) return;
-    const updated = beans.map(b => b.id === activeBean.id ? { ...b, brews: b.brews.filter(br => br.id !== brewId) } : b);
+    const updated = sortBeansByRecentActivity(
+      beans.map(b => b.id === activeBean.id ? { ...b, brews: b.brews.filter(br => br.id !== brewId) } : b)
+    );
     setBeans(updated);
     setActiveBean(updated.find(b => b.id === activeBean.id));
   };

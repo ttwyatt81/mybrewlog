@@ -54,10 +54,14 @@ function toTimestamp(value) {
   return Number.isNaN(time) ? 0 : time;
 }
 
+function getBrewActivityTimestamp(brew = {}) {
+  return toTimestamp(brew?.createdAt || brew?.created_at || brew?.date);
+}
+
 export function getBeanSortTimestamp(bean) {
   const brews = Array.isArray(bean?.brews) ? bean.brews : [];
   const latestBrew = brews.reduce((max, brew) => {
-    const ts = toTimestamp(brew?.date);
+    const ts = getBrewActivityTimestamp(brew);
     return ts > max ? ts : max;
   }, 0);
 
@@ -76,9 +80,7 @@ export function getVisibleBeans(beans = [], mode = "active") {
 
 export function sortBeansByRecentActivity(beans = []) {
   return [...beans].sort((a, b) => {
-    const delta = getBeanSortTimestamp(b) - getBeanSortTimestamp(a);
-    if (delta !== 0) return delta;
-    return (a?.name || "").localeCompare(b?.name || "");
+    return getBeanSortTimestamp(b) - getBeanSortTimestamp(a);
   });
 }
 

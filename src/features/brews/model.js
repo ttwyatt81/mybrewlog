@@ -11,6 +11,10 @@ function toTimestamp(value) {
   return Number.isNaN(ts) ? 0 : ts;
 }
 
+function getBrewSortTimestamp(brew = {}) {
+  return toTimestamp(brew?.createdAt || brew?.created_at || brew?.date);
+}
+
 export function compareBrewsNewestFirst(a, b) {
   const dateDelta = toTimestamp(b?.date) - toTimestamp(a?.date);
   if (dateDelta !== 0) return dateDelta;
@@ -22,7 +26,7 @@ export function sortBrewsNewestFirst(brews = []) {
 }
 
 export function splitPourStructure(pourStructure = "") {
-  return pourStructure
+  return String(pourStructure || "")
     .split("→")
     .map((chunk) => chunk.trim())
     .filter(Boolean);
@@ -122,6 +126,7 @@ export function normalizeBrewRow(row = {}) {
     id: row.id,
     bean_id: getValue(row, "bean_id", "beanId"),
     date: getValue(row, "date") || "",
+    createdAt: getValue(row, "createdAt", "created_at") || "",
     method,
     brewer: getValue(row, "brewer") || "",
     filterPaper: getValue(row, "filterPaper", "filter_paper") || "",
