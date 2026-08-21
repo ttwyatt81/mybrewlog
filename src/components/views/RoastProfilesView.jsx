@@ -2,6 +2,8 @@ export default function RoastProfilesView({
   startNewRoastProfile,
   roastProfileListMode,
   setRoastProfileListMode,
+  roastProfileSearch,
+  setRoastProfileSearch,
   visibleRoastProfiles,
   toggleArchiveRoastProfile,
   editRoastProfile,
@@ -16,6 +18,12 @@ export default function RoastProfilesView({
 
       <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
         <button onClick={startNewRoastProfile} style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>+ new profile</button>
+        <input
+          value={roastProfileSearch}
+          onChange={(e) => setRoastProfileSearch(e.target.value)}
+          placeholder="Search profiles…"
+          style={{ flex: 1, minWidth: "120px", fontSize: "13px", padding: "7px 11px" }}
+        />
       </div>
 
       <div style={{ display: "inline-flex", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "999px", padding: "4px", marginBottom: "18px" }}>

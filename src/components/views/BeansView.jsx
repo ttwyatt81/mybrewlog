@@ -46,14 +46,14 @@ export default function BeansView({
       )}
 
       <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
+        <button onClick={() => { setEditBean({ ...defaultBean }); setView("beanForm"); }} style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>+ New Bean</button>
+        <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Search beans…" style={{ flex: 1, minWidth: "120px", fontSize: "13px", padding: "7px 11px" }} />
         {showTransferActions && (
           <>
             <button onClick={() => setShowTransfer("export")} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#c9b094", cursor: "pointer", padding: "7px 12px", fontSize: "12px" }}>↑ Export</button>
             <button onClick={() => setShowTransfer("import")} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#c9b094", cursor: "pointer", padding: "7px 12px", fontSize: "12px" }}>↓ Import</button>
           </>
         )}
-        <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Search beans…" style={{ flex: 1, minWidth: "120px", fontSize: "13px", padding: "7px 11px" }} />
-        <button onClick={() => { setEditBean({ ...defaultBean }); setView("beanForm"); }} style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>+ New Bean</button>
       </div>
 
       <div style={{ display: "inline-flex", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "999px", padding: "4px", marginBottom: "18px" }}>
@@ -91,14 +91,6 @@ export default function BeansView({
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div style={{ marginBottom: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
-              <div style={{ display: "flex", gap: "4px" }}>
-                {['Filter', 'Espresso'].map((t) => (
-                  <button key={t} onClick={() => setFilterType(filterType === t ? "" : t)} style={{ padding: "5px 12px", borderRadius: "20px", border: `1px solid ${filterType === t ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)"}`, background: filterType === t ? "rgba(200,137,58,0.18)" : "transparent", color: filterType === t ? "#c8a060" : "#c4ab90", cursor: "pointer", fontSize: "12px", transition: "all 0.15s" }}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-
               {allOrigins.length > 0 && (
                 <select value={filterOrigin} onChange={(e) => setFilterOrigin(e.target.value)} style={{ width: "auto", fontSize: "12px", padding: "5px 10px", cursor: "pointer", borderColor: filterOrigin ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)", color: filterOrigin ? "#c8a060" : "#c4ab90" }}>
                   <option value="">All Origins</option>

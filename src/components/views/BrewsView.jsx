@@ -9,6 +9,8 @@ export default function BrewsView({
   setBrewFilterBean,
   brewSort,
   setBrewSort,
+  brewSearch,
+  setBrewSearch,
   setSelectedBrew,
   BrewCard,
   IS,
@@ -18,6 +20,13 @@ export default function BrewsView({
   const filteredBrews = allBrews.filter(({ brew, bean }) => {
     if (brewFilterMethod && brew.method !== brewFilterMethod) return false;
     if (brewFilterBean && bean.id !== brewFilterBean) return false;
+    if (brewSearch) {
+      const haystack = [bean.name, brew.method, brew.brewer, brew.notes, brew.machine, brew.grinder]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(brewSearch.toLowerCase())) return false;
+    }
     return true;
   });
 
@@ -38,6 +47,12 @@ export default function BrewsView({
 
       {allBrews.length > 0 && (
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginBottom: "16px" }}>
+          <input
+            value={brewSearch}
+            onChange={(e) => setBrewSearch(e.target.value)}
+            placeholder="Search brews…"
+            style={{ flex: 1, minWidth: "120px", fontSize: "13px", padding: "7px 11px" }}
+          />
           <div style={{ display: "flex", gap: "4px" }}>
             {brewMethods.map((m) => (
               <button

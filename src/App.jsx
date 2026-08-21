@@ -134,6 +134,9 @@ export default function App() {
     archived: false,
   });
   const [filter, setFilter] = useState("");
+  const [roastProfileSearch, setRoastProfileSearch] = useState("");
+  const [recipeSearch, setRecipeSearch] = useState("");
+  const [brewSearch, setBrewSearch] = useState("");
   const [filterOrigin, setFilterOrigin] = useState("");
   const [filterType, setFilterType] = useState("");
   const [editRecipe, setEditRecipe] = useState(null);
@@ -559,12 +562,26 @@ export default function App() {
   });
 
   const activeFilterCount = [filterOrigin, filterType, filterRoaster].filter(Boolean).length;
-  const visibleRecipes = [...recipes].filter((recipe) => recipeListMode === "archived"
-    ? Boolean(recipe.archived)
-    : !Boolean(recipe.archived));
-  const visibleRoastProfiles = [...roastProfiles].filter((profile) => roastProfileListMode === "archived"
-    ? Boolean(profile.archived)
-    : !Boolean(profile.archived));
+  const visibleRecipes = [...recipes]
+    .filter((recipe) => recipeListMode === "archived" ? Boolean(recipe.archived) : !Boolean(recipe.archived))
+    .filter((recipe) => {
+      if (!recipeSearch) return true;
+      const haystack = [recipe.name, recipe.method, recipe.brewer, recipe.machine, recipe.notes]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(recipeSearch.toLowerCase());
+    });
+  const visibleRoastProfiles = [...roastProfiles]
+    .filter((profile) => roastProfileListMode === "archived" ? Boolean(profile.archived) : !Boolean(profile.archived))
+    .filter((profile) => {
+      if (!roastProfileSearch) return true;
+      const haystack = [profile.name, profile.machine, profile.description, profile.lastUsed]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(roastProfileSearch.toLowerCase());
+    });
 
   const bestBrew = (bean) => bean.brews.length ? bean.brews.reduce((a, b) => b.rating > a.rating ? b : a, bean.brews[0]) : null;
 
@@ -777,6 +794,8 @@ export default function App() {
         {view === VIEW_KEYS.BEANS && tab === TAB_KEYS.RECIPES && (
           <RecipesView
             recipes={visibleRecipes}
+            recipeSearch={recipeSearch}
+            setRecipeSearch={setRecipeSearch}
             onCreateRecipe={openNewRecipeForm}
             onEditRecipe={openEditRecipeForm}
             deleteRecipe={deleteRecipe}
@@ -819,6 +838,8 @@ export default function App() {
             setBrewFilterBean={setBrewFilterBean}
             brewSort={brewSort}
             setBrewSort={setBrewSort}
+            brewSearch={brewSearch}
+            setBrewSearch={setBrewSearch}
             setSelectedBrew={setSelectedBrew}
             BrewCard={BrewCard}
             IS={IS}
@@ -882,6 +903,8 @@ export default function App() {
             startNewRoastProfile={startNewRoastProfile}
             roastProfileListMode={roastProfileListMode}
             setRoastProfileListMode={setRoastProfileListMode}
+            roastProfileSearch={roastProfileSearch}
+            setRoastProfileSearch={setRoastProfileSearch}
             visibleRoastProfiles={visibleRoastProfiles}
             toggleArchiveRoastProfile={toggleArchiveRoastProfile}
             editRoastProfile={editRoastProfile}

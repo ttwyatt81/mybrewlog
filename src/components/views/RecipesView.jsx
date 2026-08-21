@@ -2,6 +2,8 @@ import BrewLogCardContent from "../BrewLogCardContent";
 
 export default function RecipesView({
   recipes,
+  recipeSearch,
+  setRecipeSearch,
   onCreateRecipe,
   onEditRecipe,
   deleteRecipe,
@@ -14,15 +16,22 @@ export default function RecipesView({
 }) {
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
-        <div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", marginBottom: "4px" }}>Recipes</div>
-          <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.18em", textTransform: "uppercase" }}>Saved brew recipes</div>
-        </div>
+      <div style={{ marginBottom: "22px" }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", marginBottom: "4px" }}>Recipes</div>
+        <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.18em", textTransform: "uppercase" }}>Saved brew recipes</div>
+      </div>
+
+      <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
         <button onClick={onCreateRecipe}
           style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
           + New Recipe
         </button>
+        <input
+          value={recipeSearch}
+          onChange={(e) => setRecipeSearch(e.target.value)}
+          placeholder="Search recipes…"
+          style={{ flex: 1, minWidth: "120px", fontSize: "13px", padding: "7px 11px" }}
+        />
       </div>
 
       <div style={{ display: "inline-flex", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "999px", padding: "4px", marginBottom: "18px" }}>
