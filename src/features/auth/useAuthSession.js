@@ -15,12 +15,16 @@ export function useAuthSession({
   loadBeansData,
   loadGreenBeansData,
   loadRecipesData,
+  loadRoastProfilesData,
   setBeans,
   setGreenBeans,
   setRecipes,
+  setRoastProfiles,
 }) {
   const loadGreenBeans = typeof loadGreenBeansData === "function" ? loadGreenBeansData : async () => [];
+  const loadRoastProfiles = typeof loadRoastProfilesData === "function" ? loadRoastProfilesData : async () => [];
   const clearGreenBeans = typeof setGreenBeans === "function" ? setGreenBeans : () => {};
+  const clearRoastProfiles = typeof setRoastProfiles === "function" ? setRoastProfiles : () => {};
   const [session, setSession] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [authState, setAuthState] = useState("login"); // login | verify | app
@@ -120,11 +124,12 @@ export function useAuthSession({
       await loadBeansData(token, brewRows);
       await loadGreenBeans(token);
       await loadRecipesData(token);
+      await loadRoastProfiles(token);
     } catch (e) {
       console.error("Load data error:", e);
     }
     setLoading(false);
-  }, [loadBeansData, loadBrewsData, loadGreenBeans, loadRecipesData]);
+  }, [loadBeansData, loadBrewsData, loadGreenBeans, loadRecipesData, loadRoastProfiles]);
 
   useEffect(() => {
     const lastEmail = localStorage.getItem(LAST_EMAIL_KEY);
@@ -247,7 +252,8 @@ export function useAuthSession({
     setBeans([]);
     clearGreenBeans([]);
     setRecipes([]);
-  }, [clearGreenBeans, clearSession, session, setBeans, setRecipes]);
+    clearRoastProfiles([]);
+  }, [clearGreenBeans, clearRoastProfiles, clearSession, session, setBeans, setRecipes]);
 
   return {
     session,

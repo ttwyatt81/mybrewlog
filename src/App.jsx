@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AIModal from "./components/modals/AIModal";
 import BeanCard from "./components/BeanCard";
 import { BrewCard, BrewDetail } from "./components/BrewCard";
@@ -61,8 +61,11 @@ import { beanPayload, getVisibleBeans, sortBeansByRecentActivity } from "./featu
 import { brewPayload } from "./features/brews/model";
 import { recipePayload } from "./features/recipes/model";
 import { useGreenBeans } from "./features/greenBeans/hooks";
+import { useRoastProfiles } from "./features/roastProfiles/hooks";
+import { roastProfilePayload } from "./features/roastProfiles/model";
 
 // Cache row IDs per table so we always update the same row
+const LEGACY_ROAST_PROFILES_KEY = "mybrewlog-roast-profiles";
 
 function calcRatio(dose, water) {
   if (!dose || !water || isNaN(dose) || isNaN(water)) return null;
@@ -78,6 +81,7 @@ export default function App() {
   const { beans: greenBeans, setBeans: setGreenBeans, load: loadGreenBeansData, save: saveGreenBeanData, remove: deleteGreenBeanData } = useGreenBeans();
   const { load: loadBrewsData, save: saveBrewData, remove: deleteBrewData } = useBrews();
   const { recipes, setRecipes, load: loadRecipesData, save: saveRecipeData, remove: deleteRecipeData } = useRecipes();
+  const { roastProfiles, setRoastProfiles, load: loadRoastProfilesData, save: saveRoastProfileData, remove: deleteRoastProfileData } = useRoastProfiles();
   const {
     session,
     currentUser,
@@ -102,9 +106,11 @@ export default function App() {
     loadBeansData,
     loadGreenBeansData,
     loadRecipesData,
+    loadRoastProfilesData,
     setBeans,
     setGreenBeans,
     setRecipes,
+    setRoastProfiles,
   });
   const [view, setView] = useState(VIEW_KEYS.BEANS);
   const [editBean, setEditBean] = useState(null);
@@ -112,15 +118,6 @@ export default function App() {
   const [brewForm, setBrewForm] = useState(defaultBrew);
   const [greenBeanRoastForm, setGreenBeanRoastForm] = useState(defaultGreenBeanRoast);
   const [editingGreenBeanRoastId, setEditingGreenBeanRoastId] = useState(null);
-  const [roastProfiles, setRoastProfiles] = useState(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = window.localStorage.getItem("mybrewlog-roast-profiles");
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
   const [roastProfileForm, setRoastProfileForm] = useState({
     id: null,
     name: "",
@@ -150,18 +147,70 @@ export default function App() {
   const [brewFilterMethod, setBrewFilterMethod] = useState("");
   const [brewFilterBean, setBrewFilterBean] = useState("");
   const [brewSort, setBrewSort] = useState("date");
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("mybrewlog-roast-profiles", JSON.stringify(roastProfiles));
-    }
-  }, [roastProfiles]);
+  const legacyRoastProfileMigrationRef = useRef(false);
 
   useEffect(() => {
     if (tab === TAB_KEYS.BEANS || tab === TAB_KEYS.GREEN_BEANS) {
       setBeanTab(tab);
     }
   }, [tab]);
+
+  useEffect(() => {
+    if (legacyRoastProfileMigrationRef.current) return;
+    if (!session?.access_token) return;
+    if (roastProfiles.length > 0) {
+      legacyRoastProfileMigrationRef.current = true;
+      return;
+    }
+
+    let cancelled = false;
+
+    const migrateLegacyRoastProfiles = async () => {
+      try {
+        const raw = window.localStorage.getItem(LEGACY_ROAST_PROFILES_KEY);
+        if (!raw) {
+          legacyRoastProfileMigrationRef.current = true;
+          return;
+        }
+
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed) || parsed.length === 0) {
+          legacyRoastProfileMigrationRef.current = true;
+          window.localStorage.removeItem(LEGACY_ROAST_PROFILES_KEY);
+          return;
+        }
+
+        for (const profile of parsed) {
+          if (cancelled) return;
+          const cleanName = (profile?.name || profile?.profile || "").trim();
+          if (!cleanName) continue;
+
+          await saveRoastProfileData(session.access_token, {
+            name: cleanName,
+            profile: cleanName,
+            machine: profile.machine || "",
+            description: profile.description || "",
+            lastUsed: profile.lastUsed || "",
+            rating: Number(profile.rating) || 0,
+            archived: Boolean(profile.archived),
+          });
+        }
+
+        if (!cancelled) {
+          window.localStorage.removeItem(LEGACY_ROAST_PROFILES_KEY);
+          legacyRoastProfileMigrationRef.current = true;
+        }
+      } catch (error) {
+        console.error("Failed to migrate legacy roast profiles:", error);
+      }
+    };
+
+    migrateLegacyRoastProfiles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [roastProfiles.length, saveRoastProfileData, session?.access_token]);
 
   const {
     exportData,
@@ -176,7 +225,9 @@ export default function App() {
     getAccessToken: ensureValidAccessToken,
     beans,
     recipes,
+    roastProfiles,
     setBeans,
+    setRoastProfiles,
     loadData,
     setGlobalLoading: setLoading,
     setSaveError,
@@ -184,6 +235,7 @@ export default function App() {
     buildBeanPayload: beanPayload,
     buildBrewPayload: brewPayload,
     buildRecipePayload: recipePayload,
+    buildRoastProfilePayload: roastProfilePayload,
   });
 
   const getAccessTokenOrFail = async () => {
@@ -464,11 +516,10 @@ export default function App() {
 
     const cleanProfileName = (greenBeanRoastForm.profile || "").trim().toLowerCase();
     if (cleanProfileName && greenBeanRoastForm.date) {
-      setRoastProfiles((current) => current.map((profile) => {
-        const profileName = (profile.name || "").trim().toLowerCase();
-        if (profileName !== cleanProfileName) return profile;
-        return { ...profile, lastUsed: greenBeanRoastForm.date };
-      }));
+      const matchingProfiles = roastProfiles.filter((profile) => ((profile.name || "").trim().toLowerCase()) === cleanProfileName);
+      for (const profile of matchingProfiles) {
+        await saveRoastProfileData(token, { ...profile, lastUsed: greenBeanRoastForm.date });
+      }
     }
 
     setEditingGreenBeanRoastId(null);
@@ -594,12 +645,15 @@ export default function App() {
     notes: roast.notes || "",
   });
 
-  const saveRoastProfile = () => {
+  const saveRoastProfile = async () => {
     const cleanName = roastProfileForm.name.trim();
     if (!cleanName) return;
+    setSaveError("");
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
 
     const nextPreset = {
-      id: roastProfileForm.id || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`),
+      id: roastProfileForm.id || null,
       name: cleanName,
       profile: cleanName,
       machine: (roastProfileForm.machine || "").trim(),
@@ -609,29 +663,40 @@ export default function App() {
       archived: Boolean(roastProfileForm.archived),
     };
 
-    setRoastProfiles((current) => {
-      const existingIndex = current.findIndex((profile) => profile.id === nextPreset.id);
-      if (existingIndex >= 0) {
-        return current.map((profile) => profile.id === nextPreset.id ? nextPreset : profile);
-      }
-      return [nextPreset, ...current];
-    });
+    const saved = await saveRoastProfileData(token, nextPreset);
+    if (!saved) {
+      setSaveError("Failed to save roast profile. Check your connection and try again.");
+      return;
+    }
 
     setRoastProfileForm({ id: null, name: "", machine: "", description: "", lastUsed: "", rating: 0, archived: false });
     setView(VIEW_KEYS.BEANS);
   };
 
-  const deleteRoastProfile = (id) => {
-    setRoastProfiles((current) => current.filter((profile) => profile.id !== id));
+  const deleteRoastProfile = async (id) => {
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
+    const deleted = await deleteRoastProfileData(token, id);
+    if (!deleted) {
+      setSaveError("Failed to delete roast profile. Check your connection and try again.");
+      return;
+    }
     if (roastProfileForm.id === id) {
       setRoastProfileForm({ id: null, name: "", machine: "", description: "", lastUsed: "", rating: 0, archived: false });
     }
   };
 
-  const toggleArchiveRoastProfile = (profile) => {
+  const toggleArchiveRoastProfile = async (profile) => {
     if (!profile?.id) return;
+    setSaveError("");
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
     const nextArchived = !Boolean(profile.archived);
-    setRoastProfiles((current) => current.map((item) => item.id === profile.id ? { ...item, archived: nextArchived } : item));
+    const saved = await saveRoastProfileData(token, { ...profile, archived: nextArchived });
+    if (!saved) {
+      setSaveError("Failed to update roast profile status. Check your connection and try again.");
+      return;
+    }
 
     if (roastProfileForm.id === profile.id) {
       setRoastProfileForm((current) => ({ ...current, archived: nextArchived }));

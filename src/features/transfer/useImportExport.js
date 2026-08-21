@@ -5,7 +5,9 @@ export function useImportExport({
   getAccessToken,
   beans,
   recipes,
+  roastProfiles,
   setBeans,
+  setRoastProfiles,
   loadData,
   setGlobalLoading,
   setSaveError,
@@ -13,6 +15,7 @@ export function useImportExport({
   buildBeanPayload,
   buildBrewPayload,
   buildRecipePayload,
+  buildRoastProfilePayload,
 }) {
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -52,6 +55,7 @@ export function useImportExport({
         beans: exportedBeans,
         brews: allBrews,
         recipes: recipes.map((recipe) => ({ ...recipe })),
+        roastProfiles: roastProfiles.map((profile) => ({ ...profile })),
         exportedAt: new Date().toISOString(),
       };
 
@@ -59,7 +63,7 @@ export function useImportExport({
     } finally {
       setExporting(false);
     }
-  }, [beans, recipes]);
+  }, [beans, recipes, roastProfiles]);
 
   const importData = useCallback(async (rawImportText) => {
     const tokenResult = getAccessToken ? await getAccessToken() : { token: sessionToken };
@@ -83,6 +87,9 @@ export function useImportExport({
       }
       if (!Array.isArray(payload.recipes)) {
         throw new Error("Invalid export file: missing recipes array");
+      }
+      if (payload.roastProfiles !== undefined && !Array.isArray(payload.roastProfiles)) {
+        throw new Error("Invalid export file: roastProfiles must be an array when present");
       }
 
       const beanIdMap = {};
@@ -114,6 +121,11 @@ export function useImportExport({
       for (const rawRecipe of payload.recipes) {
         const recipePayloadToInsert = buildRecipePayload(rawRecipe);
         await insertRow("recipes", token, recipePayloadToInsert);
+      }
+
+      for (const rawRoastProfile of payload.roastProfiles || []) {
+        const roastProfilePayloadToInsert = buildRoastProfilePayload(rawRoastProfile);
+        await insertRow("roast_profiles", token, roastProfilePayloadToInsert);
       }
 
       await loadData(token);
@@ -148,8 +160,10 @@ export function useImportExport({
     insertRow,
     buildBrewPayload,
     buildRecipePayload,
+    buildRoastProfilePayload,
     loadData,
     setBeans,
+    setRoastProfiles,
   ]);
 
   return {
