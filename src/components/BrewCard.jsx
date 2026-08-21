@@ -30,15 +30,14 @@ export function BrewCard({ brew, bean, onClick }) {
       style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(200,137,58,0.18)", borderRadius: "12px", padding: "15px 18px", cursor: "pointer", transition: "all 0.18s" }}
       onMouseEnter={e => { e.currentTarget.style.background = "rgba(200,137,58,0.06)"; e.currentTarget.style.borderColor = "rgba(200,137,58,0.4)"; }}
       onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor = "rgba(200,137,58,0.18)"; }}>
-      {/* Bean info */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-        <div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", marginBottom: "2px" }}>{bean.name}</div>
-          <div style={{ fontSize: "11px", color: "#c9b094" }}>{[bean.roaster, bean.origin].filter(Boolean).join(" · ")}</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0, flex: 1 }}>
+          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "13px", color: "#c8893a", whiteSpace: "nowrap" }}>{bean.name}</span>
+          <span style={{ fontSize: "11px", color: "#c9b094", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{[bean.roaster, bean.origin].filter(Boolean).join(" · ")}</span>
         </div>
-        <div style={{ textAlign: "right" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
           <StarRating value={brew.rating} size={13} />
-          <div style={{ fontSize: "11px", color: "#c1a88c", marginTop: "3px" }}>{formatDateValue(brew.date)}</div>
+          <span style={{ fontSize: "11px", color: "#c1a88c", whiteSpace: "nowrap" }}>{formatDateValue(brew.date)}</span>
         </div>
       </div>
       <BrewLogCardContent

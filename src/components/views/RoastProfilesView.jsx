@@ -125,8 +125,29 @@ export default function RoastProfilesView({
                       }} />
                     </span>
                   </button>
-                  <button onClick={() => editRoastProfile(profile)} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}>Edit</button>
-                  <button onClick={() => deleteRoastProfile(profile.id)} style={{ background: "none", border: "1px solid rgba(200,50,50,0.2)", borderRadius: "7px", color: "#8a4a4a", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}>Delete</button>
+                  <button
+                    onClick={() => editRoastProfile(profile)}
+                    style={{ background: "none", border: "none", color: "#3a2a1a", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "#c8893a";
+                      const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
+                      const label = e.currentTarget.querySelector('[data-role="edit-label"]');
+                      if (icon) icon.style.transform = "translateX(1px)";
+                      if (label) label.style.opacity = "1";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = "#3a2a1a";
+                      const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
+                      const label = e.currentTarget.querySelector('[data-role="edit-label"]');
+                      if (icon) icon.style.transform = "translateX(0)";
+                      if (label) label.style.opacity = "0";
+                    }}
+                    aria-label={`Edit ${profile.name}`}
+                  >
+                    <span data-role="edit-label" style={{ fontSize: "11px", color: "#d4bca0", opacity: 0, width: "40px", overflow: "hidden", whiteSpace: "nowrap", transition: "opacity 0.15s ease" }}>Edit</span>
+                    <span data-role="edit-icon" style={{ fontSize: "14px", lineHeight: "1", display: "inline-block", transition: "transform 0.15s ease" }}>✎</span>
+                  </button>
+                  <button onClick={() => deleteRoastProfile(profile.id)} style={{ background: "none", border: "none", color: "#3a2a1a", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#3a2a1a")}>✕</button>
                 </div>
               </div>
             </div>
