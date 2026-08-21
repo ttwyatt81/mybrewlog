@@ -78,7 +78,15 @@ function bloomRatio(bloomWater, dose) {
 
 export default function App() {
   const { beans, setBeans, load: loadBeansData, save: saveBeanData, remove: deleteBeanData } = useBeans();
-  const { beans: greenBeans, setBeans: setGreenBeans, load: loadGreenBeansData, save: saveGreenBeanData, remove: deleteGreenBeanData } = useGreenBeans();
+  const {
+    beans: greenBeans,
+    setBeans: setGreenBeans,
+    load: loadGreenBeansData,
+    save: saveGreenBeanData,
+    remove: deleteGreenBeanData,
+    saveRoast: saveGreenBeanRoastData,
+    removeRoast: deleteGreenBeanRoastData,
+  } = useGreenBeans();
   const { load: loadBrewsData, save: saveBrewData, remove: deleteBrewData } = useBrews();
   const { recipes, setRecipes, load: loadRecipesData, save: saveRecipeData, remove: deleteRecipeData } = useRecipes();
   const { roastProfiles, setRoastProfiles, load: loadRoastProfilesData, save: saveRoastProfileData, remove: deleteRoastProfileData } = useRoastProfiles();
@@ -481,10 +489,11 @@ export default function App() {
       ? (((startWeight - endWeight) / startWeight) * 100).toFixed(1)
       : "";
 
-    const nextRoasts = [...(activeBean.roasts || [])];
     const roastPayload = {
       id: editingGreenBeanRoastId || null,
+      greenBeanId: activeBean.id,
       date: greenBeanRoastForm.date,
+      roastTime: greenBeanRoastForm.roastTime || "",
       profile: greenBeanRoastForm.profile || "",
       roastLevel: greenBeanRoastForm.roastLevel,
       restingFromDays: greenBeanRoastForm.restingFromDays,
@@ -497,22 +506,23 @@ export default function App() {
       notes: greenBeanRoastForm.notes || "",
     };
 
-    const existingIndex = nextRoasts.findIndex((item) => item.id === editingGreenBeanRoastId);
-    if (existingIndex >= 0) {
-      nextRoasts[existingIndex] = roastPayload;
-    } else {
-      nextRoasts.unshift(roastPayload);
-    }
-
-    const saved = await saveGreenBeanData(token, { ...activeBean, roasts: nextRoasts });
+    const saved = await saveGreenBeanRoastData(token, roastPayload);
     if (!saved) {
       setSaveError("Failed to save green bean roast. Check your connection and try again.");
       return;
     }
 
-    const updatedList = greenBeans.map((bean) => bean.id === activeBean.id ? { ...bean, roasts: saved.roasts || nextRoasts } : bean);
-    setGreenBeans(updatedList);
-    setActiveBean({ ...activeBean, roasts: saved.roasts || nextRoasts });
+    setActiveBean((current) => {
+      if (!current || current.id !== activeBean.id) return current;
+      const nextRoasts = Array.isArray(current.roasts) ? [...current.roasts] : [];
+      const existingIndex = nextRoasts.findIndex((item) => item.id === saved.id);
+      if (existingIndex >= 0) {
+        nextRoasts[existingIndex] = saved;
+      } else {
+        nextRoasts.unshift(saved);
+      }
+      return { ...current, roasts: nextRoasts };
+    });
 
     const cleanProfileName = (greenBeanRoastForm.profile || "").trim().toLowerCase();
     if (cleanProfileName && greenBeanRoastForm.date) {
@@ -532,16 +542,13 @@ export default function App() {
     const token = await getAccessTokenOrFail();
     if (!token) return;
 
-    const nextRoasts = (activeBean.roasts || []).filter((roast) => roast.id !== roastId);
-    const saved = await saveGreenBeanData(token, { ...activeBean, roasts: nextRoasts });
-    if (!saved) {
+    const deleted = await deleteGreenBeanRoastData(token, roastId, activeBean.id);
+    if (!deleted) {
       setSaveError("Failed to delete green bean roast. Check your connection and try again.");
       return;
     }
 
-    const updatedList = greenBeans.map((bean) => bean.id === activeBean.id ? { ...bean, roasts: saved.roasts || nextRoasts } : bean);
-    setGreenBeans(updatedList);
-    setActiveBean({ ...activeBean, roasts: saved.roasts || nextRoasts });
+    setActiveBean((current) => current ? { ...current, roasts: (current.roasts || []).filter((roast) => roast.id !== roastId) } : current);
   };
 
   const editBrew = (brew, bean) => {
@@ -625,7 +632,11 @@ export default function App() {
   const liveBean = activeBean ? sheetBeans.find(b => b.id === activeBean.id) || activeBean : null;
 
   const onLogRoast = () => {
-    setGreenBeanRoastForm({ ...defaultGreenBeanRoast, date: new Date().toISOString().split("T")[0] });
+    setGreenBeanRoastForm({
+      ...defaultGreenBeanRoast,
+      date: new Date().toISOString().split("T")[0],
+      roastTime: new Date().toTimeString().slice(0, 5),
+    });
     setEditingGreenBeanRoastId(null);
     setView(VIEW_KEYS.GREEN_BEAN_ROAST_FORM);
   };
@@ -633,6 +644,7 @@ export default function App() {
   const mapRoastToGreenBeanRoastForm = (roast) => ({
     id: roast.id || null,
     date: roast.date || new Date().toISOString().split("T")[0],
+    roastTime: roast.roastTime || "",
     profile: roast.profile || "",
     roastLevel: roast.roastLevel || "Medium",
     restingFromDays: roast.restingFromDays || "",

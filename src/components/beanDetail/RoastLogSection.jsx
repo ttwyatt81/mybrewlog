@@ -3,6 +3,107 @@ export default function RoastLogSection({
   onEditRoast,
   onDeleteRoast,
 }) {
+  const parseTimeToSeconds = (value) => {
+    if (value === null || value === undefined) return null;
+    const raw = String(value).trim();
+    if (!raw) return null;
+    if (!raw.includes(":")) {
+      const asNumber = Number(raw);
+      return Number.isFinite(asNumber) && asNumber >= 0 ? asNumber : null;
+    }
+
+    const parts = raw.split(":").map((part) => part.trim());
+    if (parts.some((part) => part === "" || Number.isNaN(Number(part)))) return null;
+    const nums = parts.map((part) => Number(part));
+    if (nums.some((num) => !Number.isFinite(num) || num < 0)) return null;
+
+    if (nums.length === 2) {
+      return (nums[0] * 60) + nums[1];
+    }
+    if (nums.length === 3) {
+      return (nums[0] * 3600) + (nums[1] * 60) + nums[2];
+    }
+    return null;
+  };
+
+  const formatSeconds = (seconds) => {
+    if (!Number.isFinite(seconds) || seconds < 0) return "";
+    const whole = Math.round(seconds);
+    const mins = Math.floor(whole / 60);
+    const secs = whole % 60;
+    return `${mins}:${String(secs).padStart(2, "0")}`;
+  };
+
+  const getDevelopmentTime = (firstCrack, totalRoast) => {
+    const firstCrackSeconds = parseTimeToSeconds(firstCrack);
+    const totalRoastSeconds = parseTimeToSeconds(totalRoast);
+    if (!Number.isFinite(firstCrackSeconds) || !Number.isFinite(totalRoastSeconds)) return "";
+    const delta = totalRoastSeconds - firstCrackSeconds;
+    if (delta < 0) return "";
+    return formatSeconds(delta);
+  };
+
+  const getDevelopmentPercent = (firstCrack, totalRoast) => {
+    const firstCrackSeconds = parseTimeToSeconds(firstCrack);
+    const totalRoastSeconds = parseTimeToSeconds(totalRoast);
+    if (!Number.isFinite(firstCrackSeconds) || !Number.isFinite(totalRoastSeconds) || totalRoastSeconds <= 0) return "";
+    const delta = totalRoastSeconds - firstCrackSeconds;
+    if (delta < 0) return "";
+    return `${((delta / totalRoastSeconds) * 100).toFixed(1)}%`;
+  };
+
+  const getRoastDateTime = (roast) => {
+    if (!roast?.date) return null;
+    const time = (roast.roastTime || "").trim() || "00:00";
+    const dateTime = new Date(`${roast.date}T${time}`);
+    return Number.isNaN(dateTime.getTime()) ? null : dateTime;
+  };
+
+  const getRestedDuration = (roast) => {
+    const roastDateTime = getRoastDateTime(roast);
+    if (!roastDateTime) return "";
+    const elapsedMs = Date.now() - roastDateTime.getTime();
+    if (elapsedMs < 0) return "0h";
+
+    const totalHours = Math.floor(elapsedMs / (1000 * 60 * 60));
+    const days = Math.floor(totalHours / 24);
+    const hours = totalHours % 24;
+    if (days > 0) return `${days}d ${hours}h`;
+    return `${hours}h`;
+  };
+
+  const getElapsedHours = (roast) => {
+    const roastDateTime = getRoastDateTime(roast);
+    if (!roastDateTime) return null;
+    const elapsedMs = Date.now() - roastDateTime.getTime();
+    if (elapsedMs < 0) return 0;
+    return elapsedMs / (1000 * 60 * 60);
+  };
+
+  const getRestReadiness = (roast) => {
+    const elapsedHours = getElapsedHours(roast);
+    if (!Number.isFinite(elapsedHours)) return { hasWindow: false, isReady: false };
+
+    const fromDays = roast?.restingFromDays !== "" && roast?.restingFromDays !== null && roast?.restingFromDays !== undefined
+      ? Number(roast.restingFromDays)
+      : null;
+    const toDays = roast?.restingToDays !== "" && roast?.restingToDays !== null && roast?.restingToDays !== undefined
+      ? Number(roast.restingToDays)
+      : null;
+
+    const hasFrom = Number.isFinite(fromDays);
+    const hasTo = Number.isFinite(toDays);
+    if (!hasFrom && !hasTo) return { hasWindow: false, isReady: false };
+
+    const fromHours = hasFrom ? fromDays * 24 : null;
+    const toHours = hasTo ? toDays * 24 : null;
+
+    const meetsFrom = !hasFrom || elapsedHours >= fromHours;
+    const meetsTo = !hasTo || elapsedHours <= toHours;
+
+    return { hasWindow: true, isReady: meetsFrom && meetsTo };
+  };
+
   const roastCount = roasts?.length || 0;
 
   return (
@@ -23,16 +124,66 @@ export default function RoastLogSection({
                   <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "15px", color: "#e4cfb1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {roast.profile || "Untitled Profile"}
                   </span>
-                  <span style={{ fontSize: "11px", color: "#c1a88c" }}>{roast.date || "No date"}</span>
+                  {roast.roastLevel && (
+                    <span style={{ fontSize: "11px", color: "#c1a88c", whiteSpace: "nowrap" }}>
+                      {`Level ${roast.roastLevel}`}
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
                   <button onClick={() => onEditRoast?.(roast)} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "6px", color: "#d4bca0", cursor: "pointer", fontSize: "11px", padding: "3px 8px" }}>Edit</button>
                   <button onClick={() => onDeleteRoast?.(roast.id)} style={{ background: "none", border: "none", color: "#3a2a1a", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#3a2a1a")}>✕</button>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: "7px", flexWrap: "wrap", marginBottom: roast.startWeight || roast.endWeight || roast.reductionPercent || roast.notes ? "10px" : "0" }}>
-                {roast.roastLevel && <span style={{ display: "inline-block", border: "1px solid rgba(200,137,58,0.18)", borderRadius: "999px", background: "rgba(200,137,58,0.07)", color: "#d8b98c", padding: "4px 8px", fontSize: "10px" }}>{roast.roastLevel}</span>}
+              <div style={{ marginBottom: roast.startWeight || roast.endWeight || roast.reductionPercent || roast.notes || roast.firstCrack || roast.totalRoast ? "10px" : "0" }}>
+                {(roast.date || getRestedDuration(roast)) && (
+                  <div style={{ fontSize: "10px", color: "#cbb18f", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                    {`Roast ${roast.date || "-"}`}
+                    {getRestedDuration(roast) && (
+                      <>
+                        {" · "}
+                        <span
+                          style={{
+                            color: getRestReadiness(roast).hasWindow
+                              ? (getRestReadiness(roast).isReady ? "#62c26b" : "#d66a6a")
+                              : "#cbb18f",
+                            marginRight: "4px"
+                          }}
+                          aria-label={getRestReadiness(roast).hasWindow ? (getRestReadiness(roast).isReady ? "Ready to drink" : "Not ready to drink") : "Rest status"}
+                          title={getRestReadiness(roast).hasWindow ? (getRestReadiness(roast).isReady ? "Ready to drink" : "Outside ready-to-drink window") : "No ready-to-drink window set"}
+                        >
+                          ☕
+                        </span>
+                        {`Rested ${getRestedDuration(roast)}`}
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
+              {(roast.firstCrack || roast.totalRoast || getDevelopmentTime(roast.firstCrack, roast.totalRoast)) && (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px", marginBottom: roast.startWeight || roast.endWeight || roast.reductionPercent || roast.notes ? "10px" : "0" }}>
+                  {roast.firstCrack && (
+                    <div style={{ background: "rgba(200,137,58,0.04)", borderRadius: "7px", padding: "8px 6px", textAlign: "center" }}>
+                      <div style={{ fontSize: "13px", color: "#e0cdb0", fontFamily: "'Playfair Display', serif" }}>{roast.firstCrack}</div>
+                      <div style={{ fontSize: "9px", color: "#c3aa90", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: "2px" }}>First Crack</div>
+                    </div>
+                  )}
+                  {roast.totalRoast && (
+                    <div style={{ background: "rgba(200,137,58,0.04)", borderRadius: "7px", padding: "8px 6px", textAlign: "center" }}>
+                      <div style={{ fontSize: "13px", color: "#e0cdb0", fontFamily: "'Playfair Display', serif" }}>{roast.totalRoast}</div>
+                      <div style={{ fontSize: "9px", color: "#c3aa90", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: "2px" }}>Total Roast</div>
+                    </div>
+                  )}
+                  {getDevelopmentPercent(roast.firstCrack, roast.totalRoast) && (
+                    <div style={{ background: "rgba(200,137,58,0.08)", borderRadius: "7px", padding: "8px 6px", textAlign: "center", border: "1px solid rgba(200,137,58,0.2)" }}>
+                      <div style={{ fontSize: "13px", color: "#e9d8be", fontFamily: "'Playfair Display', serif" }}>{getDevelopmentPercent(roast.firstCrack, roast.totalRoast)}</div>
+                      <div style={{ fontSize: "9px", color: "#c3aa90", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: "2px" }}>Development</div>
+                    </div>
+                  )}
+                  </div>
+                </>
+              )}
               {(roast.startWeight || roast.endWeight || roast.reductionPercent) && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px", marginBottom: roast.notes ? "10px" : "0" }}>
                   {roast.startWeight && (

@@ -8,6 +8,11 @@ function getValue(row, ...keys) {
 export function normalizeGreenBeanRoast(roast = {}) {
   const startWeight = getValue(roast, "startWeight", "start_weight");
   const endWeight = getValue(roast, "endWeight", "end_weight");
+  const roastTime = getValue(roast, "roastTime", "roast_time");
+  const restingFromDays = getValue(roast, "restingFromDays", "resting_from_days");
+  const restingToDays = getValue(roast, "restingToDays", "resting_to_days");
+  const firstCrack = getValue(roast, "firstCrack", "first_crack");
+  const totalRoast = getValue(roast, "totalRoast", "total_roast");
   const parsedStart = startWeight !== "" && startWeight !== null && startWeight !== undefined ? Number(startWeight) : null;
   const parsedEnd = endWeight !== "" && endWeight !== null && endWeight !== undefined ? Number(endWeight) : null;
   const reductionPercent = getValue(roast, "reductionPercent", "reduction_percent");
@@ -18,9 +23,15 @@ export function normalizeGreenBeanRoast(roast = {}) {
 
   return {
     id: roast.id || null,
+    greenBeanId: getValue(roast, "greenBeanId", "green_bean_id") || null,
     date: getValue(roast, "date", "roastDate", "roast_date") || "",
+    roastTime: roastTime || "",
     profile: getValue(roast, "profile") || "",
     roastLevel: getValue(roast, "roastLevel", "roast_level") || "",
+    restingFromDays: restingFromDays ?? "",
+    restingToDays: restingToDays ?? "",
+    firstCrack: firstCrack || "",
+    totalRoast: totalRoast || "",
     startWeight: startWeight !== undefined && startWeight !== null ? startWeight : "",
     endWeight: endWeight !== undefined && endWeight !== null ? endWeight : "",
     reductionPercent: reductionPercent !== undefined && reductionPercent !== null && reductionPercent !== "" ? reductionPercent : (computedReduction ?? ""),
@@ -89,10 +100,16 @@ export function greenBeanRoastPayload(roast = {}) {
     : null;
 
   return {
+    green_bean_id: roast.greenBeanId || roast.green_bean_id || null,
     id: roast.id || null,
     date: roast.date || null,
+    roast_time: roast.roastTime || null,
     profile: roast.profile || null,
     roast_level: roast.roastLevel || null,
+    resting_from_days: roast.restingFromDays === "" ? null : Number(roast.restingFromDays),
+    resting_to_days: roast.restingToDays === "" ? null : Number(roast.restingToDays),
+    first_crack: roast.firstCrack || null,
+    total_roast: roast.totalRoast || null,
     start_weight: startWeight,
     end_weight: endWeight,
     reduction_percent: reductionPercent,
@@ -115,10 +132,7 @@ export function greenBeanPayload(bean) {
     price: bean.price === "" ? null : bean.price,
     weight_kg: bean.weightKg === "" ? null : bean.weightKg,
     notes: bean.notes || null,
-    archived: Boolean(bean.archived),
-    roasts: Array.isArray(bean.roasts)
-      ? bean.roasts.map((roast) => greenBeanRoastPayload(roast))
-      : []
+    archived: Boolean(bean.archived)
   };
 }
 

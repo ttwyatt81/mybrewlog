@@ -44,9 +44,21 @@ export default function GreenBeanRoastFormView({
             </div>
           </Field>
 
-          <Field label="Roast Date">
-            <input style={inp()} type="date" value={greenBeanRoastForm.date} onChange={(e) => setGreenBeanRoastForm((f) => ({ ...f, date: e.target.value }))} onFocus={onFoc} onBlur={onBlr} />
-          </Field>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <Field label="Roast Date">
+              <input style={inp()} type="date" value={greenBeanRoastForm.date} onChange={(e) => setGreenBeanRoastForm((f) => ({ ...f, date: e.target.value }))} onFocus={onFoc} onBlur={onBlr} />
+            </Field>
+            <Field label="Roast Time">
+              <input
+                style={inp()}
+                type="time"
+                value={greenBeanRoastForm.roastTime || ""}
+                onChange={(e) => setGreenBeanRoastForm((f) => ({ ...f, roastTime: e.target.value }))}
+                onFocus={onFoc}
+                onBlur={onBlr}
+              />
+            </Field>
+          </div>
 
           <Field label="Roast Level">
             <input
