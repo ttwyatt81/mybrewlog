@@ -1,3 +1,21 @@
+function CoffeeMugIcon({ size = 18, color = "currentColor" }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 180 180"
+      fill="none"
+      aria-hidden="true"
+      style={{ display: "inline-block", verticalAlign: "middle" }}
+    >
+      <path
+        d="M22 36H100C112.15 36 122 45.85 122 58V103C122 124.539 104.539 142 83 142H39C17.461 142 0 124.539 0 103V58C0 45.85 9.85 36 22 36ZM22 53H100C102.761 53 105 55.239 105 58V103C105 112.389 97.389 120 88 120H34C24.611 120 17 112.389 17 103V58C17 55.239 19.239 53 22 53ZM124 62H143C156.255 62 167 72.745 167 86C167 99.255 156.255 110 143 110H124V62Z"
+        fill={color}
+      />
+    </svg>
+  );
+}
+
 export default function RoastLogSection({
   roasts,
   onEditRoast,
@@ -142,19 +160,21 @@ export default function RoastLogSection({
                     {getRestedDuration(roast) && (
                       <>
                         {" · "}
+                        {`Rested ${getRestedDuration(roast)}`}
                         <span
                           style={{
                             color: getRestReadiness(roast).hasWindow
                               ? (getRestReadiness(roast).isReady ? "#62c26b" : "#d66a6a")
                               : "#cbb18f",
-                            marginRight: "4px"
+                            marginLeft: "4px",
+                            display: "inline-flex",
+                            alignItems: "center"
                           }}
                           aria-label={getRestReadiness(roast).hasWindow ? (getRestReadiness(roast).isReady ? "Ready to drink" : "Not ready to drink") : "Rest status"}
                           title={getRestReadiness(roast).hasWindow ? (getRestReadiness(roast).isReady ? "Ready to drink" : "Outside ready-to-drink window") : "No ready-to-drink window set"}
                         >
-                          ☕
+                          <CoffeeMugIcon size={18} color={getRestReadiness(roast).hasWindow ? (getRestReadiness(roast).isReady ? "#62c26b" : "#d66a6a") : "#cbb18f"} />
                         </span>
-                        {`Rested ${getRestedDuration(roast)}`}
                       </>
                     )}
                   </div>
