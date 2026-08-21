@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import AIModal from "./components/modals/AIModal";
+import { useEffect, useState } from "react";
 import BeanCard from "./components/BeanCard";
 import { BrewCard, BrewDetail } from "./components/BrewCard";
 import {
@@ -65,7 +64,6 @@ import { useRoastProfiles } from "./features/roastProfiles/hooks";
 import { roastProfilePayload } from "./features/roastProfiles/model";
 
 // Cache row IDs per table so we always update the same row
-const LEGACY_ROAST_PROFILES_KEY = "mybrewlog-roast-profiles";
 
 function calcRatio(dose, water) {
   if (!dose || !water || isNaN(dose) || isNaN(water)) return null;
@@ -135,7 +133,6 @@ export default function App() {
     rating: 0,
     archived: false,
   });
-  const [showAI, setShowAI] = useState(false);
   const [filter, setFilter] = useState("");
   const [filterOrigin, setFilterOrigin] = useState("");
   const [filterType, setFilterType] = useState("");
@@ -155,70 +152,12 @@ export default function App() {
   const [brewFilterMethod, setBrewFilterMethod] = useState("");
   const [brewFilterBean, setBrewFilterBean] = useState("");
   const [brewSort, setBrewSort] = useState("date");
-  const legacyRoastProfileMigrationRef = useRef(false);
 
   useEffect(() => {
     if (tab === TAB_KEYS.BEANS || tab === TAB_KEYS.GREEN_BEANS) {
       setBeanTab(tab);
     }
   }, [tab]);
-
-  useEffect(() => {
-    if (legacyRoastProfileMigrationRef.current) return;
-    if (!session?.access_token) return;
-    if (roastProfiles.length > 0) {
-      legacyRoastProfileMigrationRef.current = true;
-      return;
-    }
-
-    let cancelled = false;
-
-    const migrateLegacyRoastProfiles = async () => {
-      try {
-        const raw = window.localStorage.getItem(LEGACY_ROAST_PROFILES_KEY);
-        if (!raw) {
-          legacyRoastProfileMigrationRef.current = true;
-          return;
-        }
-
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed) || parsed.length === 0) {
-          legacyRoastProfileMigrationRef.current = true;
-          window.localStorage.removeItem(LEGACY_ROAST_PROFILES_KEY);
-          return;
-        }
-
-        for (const profile of parsed) {
-          if (cancelled) return;
-          const cleanName = (profile?.name || profile?.profile || "").trim();
-          if (!cleanName) continue;
-
-          await saveRoastProfileData(session.access_token, {
-            name: cleanName,
-            profile: cleanName,
-            machine: profile.machine || "",
-            description: profile.description || "",
-            lastUsed: profile.lastUsed || "",
-            rating: Number(profile.rating) || 0,
-            archived: Boolean(profile.archived),
-          });
-        }
-
-        if (!cancelled) {
-          window.localStorage.removeItem(LEGACY_ROAST_PROFILES_KEY);
-          legacyRoastProfileMigrationRef.current = true;
-        }
-      } catch (error) {
-        console.error("Failed to migrate legacy roast profiles:", error);
-      }
-    };
-
-    migrateLegacyRoastProfiles();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [roastProfiles.length, saveRoastProfileData, session?.access_token]);
 
   const {
     exportData,
@@ -1006,7 +945,6 @@ export default function App() {
               setPourStep={setPourStep}
               editingBrewId={editingBrewId}
               recipes={recipes}
-              setShowAI={setShowAI}
               saveBrew={saveBrew}
               setView={setView}
               setEditingBrewId={setEditingBrewId}
@@ -1056,33 +994,6 @@ export default function App() {
         recipes={recipes}
       />
 
-      {/* AI Modal */}
-      {showAI && liveBean && (
-        <AIModal
-          bean={liveBean}
-          onClose={() => setShowAI(false)}
-          onApply={(recipe) => {
-            setBrewForm(f => ({
-              ...defaultBrew,
-              date: new Date().toISOString().split("T")[0],
-              dose: String(recipe.dose || ""),
-              water: String(recipe.water || ""),
-              temperature: String(recipe.temperature || ""),
-              grindSize: recipe.grindSize || "",
-              bloomWater: String(recipe.bloomWater || ""),
-              bloomTime: String(recipe.bloomTime || ""),
-              numPours: String(recipe.numPours || ""),
-              totalTime: recipe.totalTime || "",
-              pourStructure: recipe.pourStructure || "",
-              method_confirmed: f.method_confirmed,
-              recipeSource: "AI Generated",
-              recipeName: "",
-            }));
-            setShowAI(false);
-            setView(VIEW_KEYS.BREW_FORM);
-          }}
-        />
-      )}
     </AppShell>
   );
 }

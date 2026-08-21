@@ -25,8 +25,7 @@ export function useGreenBeans(initialBeans = []) {
       const tableRoasts = roastsByBeanId[bean.id] || [];
       return {
         ...bean,
-        // During migration, keep legacy JSON roasts if no rows exist yet.
-        roasts: tableRoasts.length ? sortGreenBeanRoasts(tableRoasts) : (bean.roasts || []),
+        roasts: sortGreenBeanRoasts(tableRoasts),
       };
     });
 

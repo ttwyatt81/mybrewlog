@@ -6,16 +6,16 @@ function getValue(row, ...keys) {
 }
 
 export function normalizeGreenBeanRoast(roast = {}) {
-  const startWeight = getValue(roast, "startWeight", "start_weight");
-  const endWeight = getValue(roast, "endWeight", "end_weight");
-  const roastTime = getValue(roast, "roastTime", "roast_time");
-  const restingFromDays = getValue(roast, "restingFromDays", "resting_from_days");
-  const restingToDays = getValue(roast, "restingToDays", "resting_to_days");
-  const firstCrack = getValue(roast, "firstCrack", "first_crack");
-  const totalRoast = getValue(roast, "totalRoast", "total_roast");
+  const startWeight = getValue(roast, "start_weight");
+  const endWeight = getValue(roast, "end_weight");
+  const roastTime = getValue(roast, "roast_time");
+  const restingFromDays = getValue(roast, "resting_from_days");
+  const restingToDays = getValue(roast, "resting_to_days");
+  const firstCrack = getValue(roast, "first_crack");
+  const totalRoast = getValue(roast, "total_roast");
   const parsedStart = startWeight !== "" && startWeight !== null && startWeight !== undefined ? Number(startWeight) : null;
   const parsedEnd = endWeight !== "" && endWeight !== null && endWeight !== undefined ? Number(endWeight) : null;
-  const reductionPercent = getValue(roast, "reductionPercent", "reduction_percent");
+  const reductionPercent = getValue(roast, "reduction_percent");
 
   const computedReduction = parsedStart && parsedEnd && parsedStart > 0
     ? (((parsedStart - parsedEnd) / parsedStart) * 100).toFixed(1)
@@ -23,11 +23,11 @@ export function normalizeGreenBeanRoast(roast = {}) {
 
   return {
     id: roast.id || null,
-    greenBeanId: getValue(roast, "greenBeanId", "green_bean_id") || null,
-    date: getValue(roast, "date", "roastDate", "roast_date") || "",
+    greenBeanId: getValue(roast, "green_bean_id") || null,
+    date: getValue(roast, "date") || "",
     roastTime: roastTime || "",
     profile: getValue(roast, "profile") || "",
-    roastLevel: getValue(roast, "roastLevel", "roast_level") || "",
+    roastLevel: getValue(roast, "roast_level") || "",
     restingFromDays: restingFromDays ?? "",
     restingToDays: restingToDays ?? "",
     firstCrack: firstCrack || "",
@@ -36,7 +36,7 @@ export function normalizeGreenBeanRoast(roast = {}) {
     endWeight: endWeight !== undefined && endWeight !== null ? endWeight : "",
     reductionPercent: reductionPercent !== undefined && reductionPercent !== null && reductionPercent !== "" ? reductionPercent : (computedReduction ?? ""),
     notes: getValue(roast, "notes") || "",
-    createdAt: getValue(roast, "createdAt", "created_at") || "",
+    createdAt: getValue(roast, "created_at") || "",
   };
 }
 
@@ -56,19 +56,6 @@ export function sortGreenBeanRoasts(roasts = []) {
 
 export function normalizeGreenBeanRow(row = {}) {
   const archivedValue = getValue(row, "archived", "is_archived");
-  const rawRoasts = (() => {
-    const value = row.roasts;
-    if (Array.isArray(value)) return value;
-    if (typeof value === "string") {
-      try {
-        const parsed = JSON.parse(value);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  })();
 
   return {
     id: row.id,
@@ -88,7 +75,7 @@ export function normalizeGreenBeanRow(row = {}) {
     notes: getValue(row, "notes") || "",
     archived: archivedValue === true || archivedValue === "true" || archivedValue === 1 || archivedValue === "1",
     brews: [],
-    roasts: sortGreenBeanRoasts(rawRoasts.map((roast) => normalizeGreenBeanRoast(roast)))
+    roasts: []
   };
 }
 
@@ -100,7 +87,7 @@ export function greenBeanRoastPayload(roast = {}) {
     : null;
 
   return {
-    green_bean_id: roast.greenBeanId || roast.green_bean_id || null,
+    green_bean_id: roast.greenBeanId || null,
     id: roast.id || null,
     date: roast.date || null,
     roast_time: roast.roastTime || null,

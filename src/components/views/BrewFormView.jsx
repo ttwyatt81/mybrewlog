@@ -8,7 +8,6 @@ export default function BrewFormView({
   setPourStep,
   editingBrewId,
   recipes,
-  setShowAI,
   saveBrew,
   setView,
   setEditingBrewId,
@@ -66,7 +65,6 @@ export default function BrewFormView({
 
           <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
             <div style={{ display: "flex", gap: "8px" }}>
-              <button onClick={() => { setBrewForm((f) => ({ ...f, recipeSource: "AI Generated", recipeName: "" })); setShowAI(true); }} style={{ flex: 1, background: "rgba(200,137,58,0.07)", border: "1px solid rgba(200,137,58,0.28)", borderRadius: "9px", color: "#c8a060", cursor: "pointer", padding: "10px 8px", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }} onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(200,137,58,0.14)")} onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(200,137,58,0.07)")}>✦ AI Suggestion</button>
               <button onClick={() => {
                 const last = liveBean.brews.find((b) => b.method === method);
                 if (!last) return;
