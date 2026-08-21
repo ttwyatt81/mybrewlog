@@ -5,6 +5,39 @@ import {
   parseTimeValue,
 } from "../../features/brews/model";
 
+const formatDateForInput = (value) => {
+  if (!value) return "";
+  const isoMatch = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    return `${day}-${month}-${year}`;
+  }
+
+  const inputMatch = String(value).match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (inputMatch) {
+    const [, day, month, year] = inputMatch;
+    return `${day.padStart(2, "0")}-${month.padStart(2, "0")}-${year}`;
+  }
+
+  return String(value);
+};
+
+const normalizeDateValue = (value) => {
+  if (!value) return "";
+
+  const isoMatch = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) return value;
+
+  const inputMatch = String(value).match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (!inputMatch) return "";
+
+  const [, day, month, year] = inputMatch;
+  const parsed = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+};
+
 export default function MethodFormSections({
   method,
   formState,
@@ -210,7 +243,20 @@ export default function MethodFormSections({
             <Field label="Finish Pressure (Bar)"><input style={inp()} type="number" value={formState.finishPressureBar || ""} onChange={(e) => setField("finishPressureBar", e.target.value)} placeholder="e.g. 4.5" onFocus={onFoc} onBlur={onBlr} /></Field>
             <Field label="Shot Yield (g)"><input style={inp()} type="number" value={formState.shotYield || ""} onChange={(e) => { setField("shotYield", e.target.value); setField("water", e.target.value); }} placeholder="e.g. 36" onFocus={onFoc} onBlur={onBlr} /></Field>
             <Field label="Brew Time (seconds)"><input style={inp()} type="number" value={formState.brewTime || ""} onChange={(e) => setField("brewTime", e.target.value)} placeholder="e.g. 28" onFocus={onFoc} onBlur={onBlr} /></Field>
-            {includeDateField && <Field label="Date"><input style={inp()} type="date" value={formState.date || ""} onChange={(e) => setField("date", e.target.value)} onFocus={onFoc} onBlur={onBlr} /></Field>}
+            {includeDateField && (
+              <Field label="Date">
+                <input
+                  style={inp()}
+                  type="text"
+                  inputMode="numeric"
+                  value={formatDateForInput(formState.date || "")}
+                  onChange={(e) => setField("date", normalizeDateValue(e.target.value))}
+                  placeholder="DD-MM-YYYY"
+                  onFocus={onFoc}
+                  onBlur={onBlr}
+                />
+              </Field>
+            )}
           </div>
         </section>
       </>

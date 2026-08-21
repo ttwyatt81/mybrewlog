@@ -16,6 +16,16 @@ function CoffeeMugIcon({ size = 18, color = "currentColor" }) {
   );
 }
 
+const formatDateValue = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
 export default function RoastLogSection({
   roasts,
   onEditRoast,
@@ -156,7 +166,7 @@ export default function RoastLogSection({
               <div style={{ marginBottom: roast.startWeight || roast.endWeight || roast.reductionPercent || roast.notes || roast.firstCrack || roast.totalRoast ? "10px" : "0" }}>
                 {(roast.date || getRestedDuration(roast)) && (
                   <div style={{ fontSize: "10px", color: "#cbb18f", letterSpacing: "0.05em", textTransform: "uppercase" }}>
-                    {`Roast ${roast.date || "-"}`}
+                    {`Roasted ${formatDateValue(roast.date) || "-"}`}
                     {getRestedDuration(roast) && (
                       <>
                         {" · "}

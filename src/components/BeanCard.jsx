@@ -1,3 +1,13 @@
+const formatDateValue = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
 export default function BeanCard({
   bean,
   bestBrew,
@@ -6,6 +16,8 @@ export default function BeanCard({
   isGreenBeanSheet = false,
   Tag,
   onToggleArchive,
+  onEditBean,
+  onDeleteBean,
 }) {
   const best = Array.isArray(bean.brews) ? bestBrew(bean) : null;
   const brewCount = Array.isArray(bean.brews) ? bean.brews.length : 0;
@@ -130,6 +142,52 @@ export default function BeanCard({
                 }} />
               </span>
             </button>
+
+            {!isGreenBeanSheet && (
+              <>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onEditBean?.(bean);
+                  }}
+                  style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDeleteBean?.(bean.id);
+                  }}
+                  style={{ background: "none", border: "1px solid rgba(200,50,50,0.2)", borderRadius: "7px", color: "#8a4a4a", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}
+                >
+                  Delete
+                </button>
+              </>
+            )}
+
+            {isGreenBeanSheet && (
+              <>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onEditBean?.(bean);
+                  }}
+                  style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDeleteBean?.(bean.id);
+                  }}
+                  style={{ background: "none", border: "1px solid rgba(200,50,50,0.2)", borderRadius: "7px", color: "#8a4a4a", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}
+                >
+                  Delete
+                </button>
+              </>
+            )}
           </div>
 
           <div style={{
@@ -158,11 +216,7 @@ export default function BeanCard({
         {bean.altitude && <Tag>{bean.altitude}</Tag>}
         {!isGreenBeanSheet && bean.roastDate && (
           <Tag>
-            Roasted {new Date(bean.roastDate).toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "short",
-              year: "numeric"
-            })}
+            Roasted {formatDateValue(bean.roastDate)}
           </Tag>
         )}
       </div>

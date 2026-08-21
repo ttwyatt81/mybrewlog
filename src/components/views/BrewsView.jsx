@@ -54,7 +54,7 @@ export default function BrewsView({
             style={{ flex: 1, minWidth: "120px", fontSize: "13px", padding: "7px 11px" }}
           />
           <div style={{ display: "flex", gap: "4px" }}>
-            {brewMethods.map((m) => (
+            {brewMethods.filter((m) => m !== "Moka" && m !== "French Press").map((m) => (
               <button
                 key={m}
                 onClick={() => setBrewFilterMethod(brewFilterMethod === m ? "" : m)}

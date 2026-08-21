@@ -30,6 +30,8 @@ export default function BeansView({
   setBeanListMode,
   beansCount,
   onToggleArchive,
+  onEditBean,
+  onDeleteBean,
 }) {
   return (
     <div>
@@ -127,6 +129,8 @@ export default function BeansView({
               isGreenBeanSheet={isGreenBeanSheet}
               Tag={Tag}
               onToggleArchive={onToggleArchive}
+              onEditBean={onEditBean}
+              onDeleteBean={onDeleteBean}
             />
           ))}
         </div>

@@ -17,7 +17,7 @@ export default function RoastProfilesView({
       </div>
 
       <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
-        <button onClick={startNewRoastProfile} style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>+ new profile</button>
+        <button onClick={startNewRoastProfile} style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>+ New Profile</button>
         <input
           value={roastProfileSearch}
           onChange={(e) => setRoastProfileSearch(e.target.value)}
@@ -82,7 +82,7 @@ export default function RoastProfilesView({
                   <div style={{ fontSize: "11px", color: "#d0b69a", lineHeight: 1.3 }}>{profile.machine || "No machine set"}</div>
                 </div>
 
-                <div style={{ textAlign: "right", flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px" }}>
+                <div style={{ textAlign: "right", flexShrink: 0, display: "flex", alignItems: "center", gap: "6px" }}>
                   <button
                     onClick={() => toggleArchiveRoastProfile(profile)}
                     style={{
@@ -125,12 +125,9 @@ export default function RoastProfilesView({
                       }} />
                     </span>
                   </button>
+                  <button onClick={() => editRoastProfile(profile)} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}>Edit</button>
+                  <button onClick={() => deleteRoastProfile(profile.id)} style={{ background: "none", border: "1px solid rgba(200,50,50,0.2)", borderRadius: "7px", color: "#8a4a4a", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}>Delete</button>
                 </div>
-              </div>
-
-              <div style={{ marginTop: "10px", display: "flex", gap: "7px", flexWrap: "wrap" }}>
-                <button onClick={() => editRoastProfile(profile)} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}>Edit</button>
-                <button onClick={() => deleteRoastProfile(profile.id)} style={{ background: "none", border: "1px solid rgba(200,50,50,0.2)", borderRadius: "7px", color: "#8a4a4a", cursor: "pointer", padding: "5px 10px", fontSize: "12px" }}>Delete</button>
               </div>
             </div>
           ))

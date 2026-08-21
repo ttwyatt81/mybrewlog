@@ -1,5 +1,15 @@
 import BrewLogCardContent from "../BrewLogCardContent";
 
+const formatDateValue = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
 export default function BrewLogSection({
   brews,
   liveBean,
@@ -27,7 +37,7 @@ export default function BrewLogSection({
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "13px", color: "#c8893a" }}>#{brews.length - i}</span>
                   <StarRating value={brew.rating} size={13} />
-                  <span style={{ fontSize: "11px", color: "#c1a88c" }}>{brew.date}</span>
+                  <span style={{ fontSize: "11px", color: "#c1a88c" }}>{formatDateValue(brew.date)}</span>
                 </div>
                 <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
                   <button onClick={() => editBrew(brew, liveBean)} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "6px", color: "#d4bca0", cursor: "pointer", fontSize: "11px", padding: "3px 8px" }}>Edit</button>

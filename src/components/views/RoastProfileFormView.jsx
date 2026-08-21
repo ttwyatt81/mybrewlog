@@ -1,3 +1,20 @@
+const formatDateForInput = (value) => {
+  if (!value) return "";
+  const isoMatch = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    return `${day}-${month}-${year}`;
+  }
+
+  const inputMatch = String(value).match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (inputMatch) {
+    const [, day, month, year] = inputMatch;
+    return `${day.padStart(2, "0")}-${month.padStart(2, "0")}-${year}`;
+  }
+
+  return String(value);
+};
+
 export default function RoastProfileFormView({
   setView,
   setRoastProfileForm,
@@ -56,10 +73,11 @@ export default function RoastProfileFormView({
             <Field label="Last Used">
               <input
                 style={inp({ color: "#8f755a", cursor: "default" })}
-                type="date"
-                value={roastProfileForm.lastUsed || ""}
+                type="text"
+                value={formatDateForInput(roastProfileForm.lastUsed || "")}
                 readOnly
                 disabled
+                placeholder="DD-MM-YYYY"
               />
             </Field>
             <Field label="Rating">

@@ -1,6 +1,16 @@
 import { getTechniqueLinesFromBrew } from "../features/brews/model";
 import BrewLogCardContent from "./BrewLogCardContent";
 
+const formatDateValue = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
 function StarRating({ value, size = 20 }) {
   return (
     <div style={{ display: "flex", gap: "3px" }}>
@@ -28,7 +38,7 @@ export function BrewCard({ brew, bean, onClick }) {
         </div>
         <div style={{ textAlign: "right" }}>
           <StarRating value={brew.rating} size={13} />
-          <div style={{ fontSize: "11px", color: "#c1a88c", marginTop: "3px" }}>{brew.date}</div>
+          <div style={{ fontSize: "11px", color: "#c1a88c", marginTop: "3px" }}>{formatDateValue(brew.date)}</div>
         </div>
       </div>
       <BrewLogCardContent
@@ -62,7 +72,7 @@ export function BrewDetail({ brew, bean, onBack, onEdit, onCopyToRecipe, onGoToB
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
         <div>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "22px", marginBottom: "4px" }}>Brew Session</div>
-          <div style={{ fontSize: "12px", color: "#c9b094" }}>{brew.date}</div>
+          <div style={{ fontSize: "12px", color: "#c9b094" }}>{formatDateValue(brew.date)}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
           <StarRating value={brew.rating} size={18} />

@@ -2,6 +2,16 @@ import Tag from "../ui/Tag";
 import RoastLogSection from "../beanDetail/RoastLogSection";
 import BrewLogSection from "../beanDetail/BrewLogSection";
 
+const formatDateValue = (value) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+
 export default function BeanDetailScreenView({
   liveBean,
   setEditBean,
@@ -98,7 +108,7 @@ export default function BeanDetailScreenView({
         {liveBean.process && <Tag>{liveBean.process}</Tag>}
         {liveBean.varietal && <Tag>{liveBean.varietal}</Tag>}
         {liveBean.altitude && <Tag>{liveBean.altitude}</Tag>}
-        {liveBean.roastDate && <Tag>{`Roasted ${new Date(liveBean.roastDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`}</Tag>}
+        {liveBean.roastDate && <Tag>{`Roasted ${formatDateValue(liveBean.roastDate)}`}</Tag>}
       </div>
 
       {liveBean.notes && (

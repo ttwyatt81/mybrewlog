@@ -787,6 +787,11 @@ export default function App() {
             setBeanListMode={sheetSetListMode}
             beansCount={visibleBeans.length}
             onToggleArchive={toggleArchiveBean}
+            onEditBean={(bean) => {
+              setEditBean({ ...bean });
+              setView(VIEW_KEYS.BEAN_FORM);
+            }}
+            onDeleteBean={deleteBean}
           />
         )}
 

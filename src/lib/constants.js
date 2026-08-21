@@ -38,7 +38,7 @@ export const defaultGreenBeanRoast = {
   notes: "",
 };
 
-export const brewMethods = ["Pour Over", "Espresso", "Moka", "French Press"];
+export const brewMethods = ["Pour Over", "Espresso"];
 export const preHeatOptions = ["None", "Low", "Medium", "Hot"];
 export const pourOverBrewers = ["V60", "Chemex", "Kalita Wave", "Origami", "Aeropress", "Clever Dripper", "Other"];
 export const filterPapers = ["Hario Tabbed (white)", "Hario Tabbed (natural)", "Hario Untabbed", "Chemex Bonded", "Kalita Wave", "Bleached", "Unbleached", "Metal filter", "Cloth filter", "Other"];
