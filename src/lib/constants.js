@@ -27,6 +27,10 @@ export const defaultGreenBeanRoast = {
   date: new Date().toISOString().split("T")[0],
   profile: "",
   roastLevel: "Medium",
+  restingFromDays: "",
+  restingToDays: "",
+  firstCrack: "",
+  totalRoast: "",
   startWeight: "",
   endWeight: "",
   reductionPercent: "",
@@ -37,6 +41,24 @@ export const brewMethods = ["Pour Over", "Espresso", "Moka", "French Press"];
 export const preHeatOptions = ["None", "Low", "Medium", "Hot"];
 export const pourOverBrewers = ["V60", "Chemex", "Kalita Wave", "Origami", "Aeropress", "Clever Dripper", "Other"];
 export const filterPapers = ["Hario Tabbed (white)", "Hario Tabbed (natural)", "Hario Untabbed", "Chemex Bonded", "Kalita Wave", "Bleached", "Unbleached", "Metal filter", "Cloth filter", "Other"];
+
+export const VIEW_KEYS = {
+  BEANS: "beans",
+  BEAN_FORM: "beanForm",
+  BEAN_DETAIL: "beanDetail",
+  BREW_FORM: "brewForm",
+  GREEN_BEAN_ROAST_FORM: "greenBeanRoastForm",
+  ROAST_PROFILE_FORM: "roastProfileForm",
+  RECIPE_FORM: "recipeForm",
+};
+
+export const TAB_KEYS = {
+  BEANS: "beans",
+  GREEN_BEANS: "greenBeans",
+  ROAST_PROFILES: "roastProfiles",
+  RECIPES: "recipes",
+  BREWS: "brews",
+};
 
 export const defaultBrew = {
   id: null, date: new Date().toISOString().split("T")[0],

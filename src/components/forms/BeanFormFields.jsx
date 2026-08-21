@@ -1,4 +1,4 @@
-export default function BeanForm({
+export default function BeanFormFields({
   editBean,
   setB,
   saveBean,
