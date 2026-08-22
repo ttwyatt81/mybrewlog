@@ -88,7 +88,6 @@ export function greenBeanRoastPayload(roast = {}) {
 
   return {
     green_bean_id: roast.greenBeanId || null,
-    id: roast.id || null,
     date: roast.date || null,
     roast_time: roast.roastTime || null,
     profile: roast.profile || null,

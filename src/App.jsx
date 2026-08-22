@@ -18,6 +18,7 @@ import {
 } from "./lib/constants";
 import {
   sbInsert,
+  getLastSupabaseErrorMessage,
 } from "./lib/supabase";
 import { useBeans } from "./features/beans/hooks";
 import {
@@ -72,6 +73,11 @@ function calcRatio(dose, water) {
 function bloomRatio(bloomWater, dose) {
   if (!bloomWater || !dose || isNaN(bloomWater) || isNaN(dose)) return null;
   return (parseFloat(bloomWater) / parseFloat(dose)).toFixed(1);
+}
+
+function withSupabaseError(baseMessage) {
+  const detail = getLastSupabaseErrorMessage();
+  return detail ? `${baseMessage} ${detail}` : baseMessage;
 }
 
 export default function App() {
@@ -228,7 +234,7 @@ export default function App() {
     };
     const saved = await saveRecipeData(token, recipeToSave);
     if (!saved) {
-      setSaveError("Failed to save recipe. Check your connection and try again.");
+      setSaveError(withSupabaseError("Failed to save recipe. Check your connection and try again."));
       return;
     }
     closeRecipeForm();
@@ -252,7 +258,7 @@ export default function App() {
     const nextValue = !Boolean(recipe.archived);
     const saved = await saveRecipeData(token, { ...recipe, archived: nextValue });
     if (!saved) {
-      setSaveError("Failed to update recipe status. Check your connection and try again.");
+      setSaveError(withSupabaseError("Failed to update recipe status. Check your connection and try again."));
       return;
     }
 
@@ -282,7 +288,7 @@ export default function App() {
       if (!token) return;
       const saved = await saveGreenBeanData(token, editBean);
       if (!saved) {
-        setSaveError("Failed to save green bean. Check your connection and try again.");
+        setSaveError(withSupabaseError("Failed to save green bean. Check your connection and try again."));
         return;
       }
       setEditBean(null);
@@ -293,7 +299,7 @@ export default function App() {
     if (!token) return;
     const saved = await saveBeanData(token, editBean);
     if (!saved) {
-      setSaveError("Failed to save bean. Check your connection and try again.");
+      setSaveError(withSupabaseError("Failed to save bean. Check your connection and try again."));
       return;
     }
     setEditBean(null);
@@ -306,7 +312,7 @@ export default function App() {
       if (!token) return;
       const deleted = await deleteGreenBeanData(token, id);
       if (!deleted) {
-        setSaveError("Failed to delete green bean. Check your connection and try again.");
+        setSaveError(withSupabaseError("Failed to delete green bean. Check your connection and try again."));
         return;
       }
       if (activeBean?.id === id) {
@@ -331,7 +337,7 @@ export default function App() {
       const nextValue = !Boolean(bean.archived);
       const saved = await saveGreenBeanData(token, { ...bean, archived: nextValue });
       if (!saved) {
-        setSaveError("Failed to update green bean status. Check your connection and try again.");
+        setSaveError(withSupabaseError("Failed to update green bean status. Check your connection and try again."));
         return;
       }
       if (activeBean?.id === bean.id) {
@@ -353,7 +359,7 @@ export default function App() {
     const updatedBean = { ...bean, archived: nextValue };
     const saved = await saveBeanData(token, updatedBean);
     if (!saved) {
-      setSaveError("Failed to update bean status. Check your connection and try again.");
+      setSaveError(withSupabaseError("Failed to update bean status. Check your connection and try again."));
       return;
     }
 
@@ -386,7 +392,7 @@ export default function App() {
     };
     const saved = await saveBrewData(token, brewToSave);
     if (!saved) {
-      setSaveError("Failed to save brew. Check your connection and try again.");
+      setSaveError(withSupabaseError("Failed to save brew. Check your connection and try again."));
       return;
     }
 
@@ -450,7 +456,7 @@ export default function App() {
 
     const saved = await saveGreenBeanRoastData(token, roastPayload);
     if (!saved) {
-      setSaveError("Failed to save green bean roast. Check your connection and try again.");
+      setSaveError(withSupabaseError("Failed to save green bean roast. Check your connection and try again."));
       return;
     }
 
@@ -486,7 +492,7 @@ export default function App() {
 
     const deleted = await deleteGreenBeanRoastData(token, roastId, activeBean.id);
     if (!deleted) {
-      setSaveError("Failed to delete green bean roast. Check your connection and try again.");
+      setSaveError(withSupabaseError("Failed to delete green bean roast. Check your connection and try again."));
       return;
     }
 
@@ -633,7 +639,7 @@ export default function App() {
 
     const saved = await saveRoastProfileData(token, nextPreset);
     if (!saved) {
-      setSaveError("Failed to save roast profile. Check your connection and try again.");
+      setSaveError(withSupabaseError("Failed to save roast profile. Check your connection and try again."));
       return;
     }
 
@@ -646,7 +652,7 @@ export default function App() {
     if (!token) return;
     const deleted = await deleteRoastProfileData(token, id);
     if (!deleted) {
-      setSaveError("Failed to delete roast profile. Check your connection and try again.");
+      setSaveError(withSupabaseError("Failed to delete roast profile. Check your connection and try again."));
       return;
     }
     if (roastProfileForm.id === id) {
@@ -662,7 +668,7 @@ export default function App() {
     const nextArchived = !Boolean(profile.archived);
     const saved = await saveRoastProfileData(token, { ...profile, archived: nextArchived });
     if (!saved) {
-      setSaveError("Failed to update roast profile status. Check your connection and try again.");
+      setSaveError(withSupabaseError("Failed to update roast profile status. Check your connection and try again."));
       return;
     }
 

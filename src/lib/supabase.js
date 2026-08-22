@@ -1,6 +1,7 @@
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const AUTH_DEBUG = import.meta.env.DEV;
+let lastSupabaseErrorMessage = "";
 
 const refreshInFlightByToken = new Map();
 
@@ -55,6 +56,39 @@ async function fetchJson(url, options = {}) {
     data = body;
   }
   return { ok: res.ok, status: res.status, data };
+}
+
+function extractSupabaseErrorMessage(data) {
+  if (!data) return "";
+  if (typeof data === "string") return data.trim();
+
+  const fields = [
+    data.message,
+    data.msg,
+    data.error_description,
+    data.details,
+    data.hint,
+    data.error,
+  ];
+
+  const text = fields.find((value) => typeof value === "string" && value.trim());
+  if (!text) return "";
+
+  const code = typeof data.code === "string" && data.code.trim() ? data.code.trim() : "";
+  return code ? `${text.trim()} (code: ${code})` : text.trim();
+}
+
+function setLastSupabaseError(status, data) {
+  const detail = extractSupabaseErrorMessage(data);
+  lastSupabaseErrorMessage = detail ? `${detail} [HTTP ${status}]` : `HTTP ${status}`;
+}
+
+function clearLastSupabaseError() {
+  lastSupabaseErrorMessage = "";
+}
+
+export function getLastSupabaseErrorMessage() {
+  return lastSupabaseErrorMessage;
 }
 
 export async function sbSendOtp(email) {
@@ -198,9 +232,11 @@ export async function sbGet(table, token, query = "select=*") {
   const url = `${SUPABASE_URL}/rest/v1/${table}?${query}`;
   const res = await fetchJson(url, { headers: authHeaders(token) });
   if (!res.ok) {
+    setLastSupabaseError(res.status, res.data);
     console.error(`Failed to fetch ${table}:`, res.status, res.data);
     return [];
   }
+  clearLastSupabaseError();
   return Array.isArray(res.data) ? res.data : [];
 }
 
@@ -225,9 +261,11 @@ export async function sbInsert(table, token, payload) {
     body: JSON.stringify(payload)
   });
   if (!res.ok) {
+    setLastSupabaseError(res.status, res.data);
     console.error(`Failed to insert into ${table}:`, res.status, res.data);
     return null;
   }
+  clearLastSupabaseError();
   return Array.isArray(res.data) ? res.data[0] : res.data;
 }
 
@@ -242,9 +280,11 @@ export async function sbUpsert(table, token, payload, conflictKeys = ["id"]) {
     body: JSON.stringify(payload)
   });
   if (!res.ok) {
+    setLastSupabaseError(res.status, res.data);
     console.error(`Failed to upsert into ${table}:`, res.status, res.data);
     return null;
   }
+  clearLastSupabaseError();
   return Array.isArray(res.data) ? res.data[0] : res.data;
 }
 
@@ -259,9 +299,11 @@ export async function sbUpdate(table, token, rowId, payload) {
     body: JSON.stringify(payload)
   });
   if (!res.ok) {
+    setLastSupabaseError(res.status, res.data);
     console.error(`Failed to update ${table} row ${rowId}:`, res.status, res.data);
     return null;
   }
+  clearLastSupabaseError();
   return Array.isArray(res.data) ? res.data[0] : res.data;
 }
 
@@ -274,9 +316,11 @@ export async function sbDelete(table, token, rowId) {
     headers: authHeaders(token)
   });
   if (!res.ok) {
+    setLastSupabaseError(res.status, res.data);
     console.error(`Failed to delete ${table} row ${rowId}:`, res.status, res.data);
     return false;
   }
+  clearLastSupabaseError();
   return true;
 }
 

@@ -1,6 +1,31 @@
 import BeanCard from "../BeanCard";
 import { defaultBean } from "../../lib/constants";
 
+function splitErrorMessage(errorText) {
+  const text = String(errorText || "").trim();
+  if (!text) return { friendly: "", technical: "" };
+
+  const httpMatch = text.match(/\[HTTP\s+\d+\]/i);
+  if (!httpMatch || typeof httpMatch.index !== "number") {
+    return { friendly: text, technical: "" };
+  }
+
+  const httpIndex = httpMatch.index;
+  const beforeHttp = text.slice(0, httpIndex).trim();
+  const httpDetail = text.slice(httpIndex).trim();
+  const lastSentenceBreak = beforeHttp.lastIndexOf(". ");
+
+  if (lastSentenceBreak < 0) {
+    return { friendly: beforeHttp || text, technical: httpDetail };
+  }
+
+  const friendly = beforeHttp.slice(0, lastSentenceBreak + 1).trim();
+  const technicalBody = beforeHttp.slice(lastSentenceBreak + 2).trim();
+  const technical = [technicalBody, httpDetail].filter(Boolean).join(" ").trim();
+
+  return { friendly: friendly || text, technical };
+}
+
 export default function BeansView({
   title = "Bean & Brew",
   isGreenBeanSheet = false,
@@ -33,6 +58,8 @@ export default function BeansView({
   onEditBean,
   onDeleteBean,
 }) {
+  const errorParts = splitErrorMessage(saveError);
+
   return (
     <div>
       <div style={{ marginBottom: "22px" }}>
@@ -41,9 +68,17 @@ export default function BeansView({
       </div>
 
       {saveError && (
-        <div style={{ background: "rgba(200,96,96,0.15)", border: "1px solid rgba(200,96,96,0.3)", borderRadius: "7px", color: "#d89090", fontSize: "13px", padding: "10px 12px", marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>{saveError}</span>
-          <button onClick={() => setSaveError("")} style={{ background: "none", border: "none", color: "#d89090", cursor: "pointer", fontSize: "16px", padding: "0" }}>✕</button>
+        <div style={{ background: "rgba(200,96,96,0.15)", border: "1px solid rgba(200,96,96,0.3)", borderRadius: "7px", color: "#d89090", fontSize: "13px", padding: "10px 12px", marginBottom: "16px", display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "flex-start" }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: "#efb2b2", fontWeight: 600, marginBottom: "4px" }}>{errorParts.friendly || saveError}</div>
+            {errorParts.technical && (
+              <div style={{ background: "rgba(24,10,10,0.35)", border: "1px solid rgba(216,144,144,0.25)", borderRadius: "6px", padding: "6px 8px", color: "#d8b0b0", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace", fontSize: "11px", lineHeight: 1.5, wordBreak: "break-word" }}>
+                <div style={{ textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "10px", marginBottom: "2px", color: "#ddb8b8" }}>Technical details</div>
+                <div>{errorParts.technical}</div>
+              </div>
+            )}
+          </div>
+          <button onClick={() => setSaveError("")} style={{ background: "none", border: "none", color: "#d89090", cursor: "pointer", fontSize: "16px", padding: "0", lineHeight: 1 }}>✕</button>
         </div>
       )}
 
