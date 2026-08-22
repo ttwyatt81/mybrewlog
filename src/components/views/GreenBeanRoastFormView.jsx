@@ -1,36 +1,3 @@
-const formatRoastDateForInput = (value) => {
-  if (!value) return "";
-  const isoMatch = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (isoMatch) {
-    const [, year, month, day] = isoMatch;
-    return `${day}-${month}-${year}`;
-  }
-
-  const inputMatch = String(value).match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
-  if (inputMatch) {
-    const [, day, month, year] = inputMatch;
-    return `${day.padStart(2, "0")}-${month.padStart(2, "0")}-${year}`;
-  }
-
-  return String(value);
-};
-
-const normalizeRoastDateValue = (value) => {
-  if (!value) return "";
-
-  const isoMatch = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (isoMatch) return value;
-
-  const inputMatch = String(value).match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
-  if (!inputMatch) return "";
-
-  const [, day, month, year] = inputMatch;
-  const parsed = new Date(`${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T12:00:00`);
-  if (Number.isNaN(parsed.getTime())) return "";
-
-  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-};
-
 export default function GreenBeanRoastFormView({
   liveBean,
   setView,
@@ -81,14 +48,9 @@ export default function GreenBeanRoastFormView({
             <Field label="Roast Date">
               <input
                 style={inp()}
-                type="text"
-                inputMode="numeric"
-                value={formatRoastDateForInput(greenBeanRoastForm.date)}
-                onChange={(e) => {
-                  const normalized = normalizeRoastDateValue(e.target.value);
-                  setGreenBeanRoastForm((f) => ({ ...f, date: normalized }));
-                }}
-                placeholder="DD-MM-YYYY"
+                type="date"
+                value={greenBeanRoastForm.date || ""}
+                onChange={(e) => setGreenBeanRoastForm((f) => ({ ...f, date: e.target.value }))}
                 onFocus={onFoc}
                 onBlur={onBlr}
               />
