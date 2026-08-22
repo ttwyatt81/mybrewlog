@@ -499,6 +499,67 @@ export default function App() {
     setActiveBean((current) => current ? { ...current, roasts: (current.roasts || []).filter((roast) => roast.id !== roastId) } : current);
   };
 
+  const exportGreenBeanRoastToRoastedBeans = async (roast) => {
+    if (!activeBean || tab !== TAB_KEYS.GREEN_BEANS || !roast) return;
+    setSaveError("");
+
+    const exportProfile = (roast.profile || "No Profile").trim();
+    const exportLevel = (roast.roastLevel || "No Level").trim();
+    const exportDate = (roast.date || "No Date").trim();
+    const exportTime = (roast.roastTime || "No Time").trim();
+    const exportName = [exportProfile, exportLevel, exportDate, exportTime].join(" | ");
+    const normalizedExportName = exportName.toLowerCase();
+
+    const duplicateExists = beans.some((bean) => (bean.name || "").trim().toLowerCase() === normalizedExportName);
+    if (duplicateExists) {
+      setSaveError(`Export blocked. A roasted bean with this name already exists: ${exportName}`);
+      return;
+    }
+
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
+
+    const profileLine = roast.profile ? `Roast Profile: ${roast.profile}` : "";
+    const crackLine = roast.firstCrack ? `First Crack: ${roast.firstCrack}` : "";
+    const totalLine = roast.totalRoast ? `Total Roast: ${roast.totalRoast}` : "";
+    const weightLine = roast.startWeight && roast.endWeight
+      ? `Weight: ${roast.startWeight}g -> ${roast.endWeight}g`
+      : "";
+    const reductionLine = roast.reductionPercent ? `Reduction: ${roast.reductionPercent}%` : "";
+
+    const roastSummary = [profileLine, crackLine, totalLine, weightLine, reductionLine]
+      .filter(Boolean)
+      .join("\n");
+
+    const exportedBean = {
+      id: null,
+      name: exportName,
+      roaster: activeBean.producer || activeBean.importer || "",
+      origin: activeBean.origin || "",
+      producer: activeBean.producer || "",
+      region: activeBean.region || "",
+      roastLevel: roast.roastLevel || "",
+      process: activeBean.process || "",
+      varietal: activeBean.varietal || "",
+      altitude: activeBean.altitude || "",
+      type: "Filter",
+      roastDate: roast.date || "",
+      notes: [roast.notes || "", roastSummary].filter(Boolean).join("\n\n"),
+      archived: false,
+      brews: [],
+    };
+
+    const saved = await saveBeanData(token, exportedBean);
+    if (!saved) {
+      setSaveError(withSupabaseError("Failed to export roast to roasted beans. Check your connection and try again."));
+      return;
+    }
+
+    setTab(TAB_KEYS.BEANS);
+    setView(VIEW_KEYS.BEANS);
+    setActiveBean(saved);
+  };
+
   const editBrew = (brew, bean) => {
     setActiveBean(bean);
     setBrewForm({
@@ -747,9 +808,7 @@ export default function App() {
       setTab={setTab}
       setView={setView}
       canLogBrew={view === VIEW_KEYS.BEAN_DETAIL && !!liveBean && tab !== TAB_KEYS.GREEN_BEANS}
-      canLogRoast={view === VIEW_KEYS.BEAN_DETAIL && !!liveBean && tab === TAB_KEYS.GREEN_BEANS}
       onLogBrew={() => { setBrewForm({ ...defaultBrew, date: new Date().toISOString().split("T")[0] }); setView(VIEW_KEYS.BREW_FORM); }}
-      onLogRoast={onLogRoast}
       userEmail={currentUser?.email || session?.email}
       onSync={async () => {
         const token = await getAccessTokenOrFail();
@@ -945,6 +1004,7 @@ export default function App() {
               setView(VIEW_KEYS.GREEN_BEAN_ROAST_FORM);
             }}
             onDeleteRoast={deleteGreenBeanRoast}
+            onExportRoast={exportGreenBeanRoastToRoastedBeans}
           />
         )}
 

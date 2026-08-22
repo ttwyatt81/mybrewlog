@@ -30,6 +30,7 @@ export default function RoastLogSection({
   roasts,
   onEditRoast,
   onDeleteRoast,
+  onExportRoast,
 }) {
   const parseTimeToSeconds = (value) => {
     if (value === null || value === undefined) return null;
@@ -160,8 +161,25 @@ export default function RoastLogSection({
                 </div>
                 <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
                   <button
+                    onClick={() => onExportRoast?.(roast)}
+                    style={{
+                      background: "none",
+                      border: "1px solid rgba(200,137,58,0.24)",
+                      color: "#d4bca0",
+                      borderRadius: "999px",
+                      cursor: "pointer",
+                      fontSize: "10px",
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      padding: "3px 8px"
+                    }}
+                    title="Export this roast to Roasted Beans"
+                  >
+                    Add to Roasted Beans
+                  </button>
+                  <button
                     onClick={() => onEditRoast?.(roast)}
-                    style={{ background: "none", border: "none", color: "#3a2a1a", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
+                    style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = "#c8893a";
                       const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
@@ -170,7 +188,7 @@ export default function RoastLogSection({
                       if (label) label.style.opacity = "1";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.color = "#3a2a1a";
+                      e.currentTarget.style.color = "#c9b094";
                       const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
                       const label = e.currentTarget.querySelector('[data-role="edit-label"]');
                       if (icon) icon.style.transform = "translateX(0)";
@@ -181,7 +199,7 @@ export default function RoastLogSection({
                     <span data-role="edit-label" style={{ fontSize: "11px", color: "#d4bca0", opacity: 0, width: "40px", overflow: "hidden", whiteSpace: "nowrap", transition: "opacity 0.15s ease" }}>Edit</span>
                     <span data-role="edit-icon" style={{ fontSize: "14px", lineHeight: "1", display: "inline-block", transition: "transform 0.15s ease" }}>✎</span>
                   </button>
-                  <button onClick={() => onDeleteRoast?.(roast.id)} style={{ background: "none", border: "none", color: "#3a2a1a", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#3a2a1a")}>✕</button>
+                  <button onClick={() => onDeleteRoast?.(roast.id)} style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#c9b094")}>✕</button>
                 </div>
               </div>
               <div style={{ marginBottom: roast.startWeight || roast.endWeight || roast.reductionPercent || roast.notes || roast.firstCrack || roast.totalRoast ? "10px" : "0" }}>

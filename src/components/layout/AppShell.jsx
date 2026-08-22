@@ -5,8 +5,6 @@ export default function AppShell({
   setView,
   canLogBrew,
   onLogBrew,
-  canLogRoast,
-  onLogRoast,
   userEmail,
   onSync,
   onSignOut,
@@ -32,12 +30,6 @@ export default function AppShell({
           )}
         </div>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          {canLogRoast && (
-            <button onClick={onLogRoast}
-              style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
-              + Log Roast
-            </button>
-          )}
           {canLogBrew && (
             <button onClick={onLogBrew}
               style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>

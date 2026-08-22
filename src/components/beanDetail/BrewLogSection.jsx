@@ -43,7 +43,7 @@ export default function BrewLogSection({
                   <button onClick={() => copyBrewToRecipe(brew)} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "6px", color: "#d4bca0", cursor: "pointer", fontSize: "11px", padding: "3px 8px" }}>→ Recipe</button>
                   <button
                     onClick={() => editBrew(brew, liveBean)}
-                    style={{ background: "none", border: "none", color: "#3a2a1a", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
+                    style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = "#c8893a";
                       const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
@@ -52,7 +52,7 @@ export default function BrewLogSection({
                       if (label) label.style.opacity = "1";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.color = "#3a2a1a";
+                      e.currentTarget.style.color = "#c9b094";
                       const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
                       const label = e.currentTarget.querySelector('[data-role="edit-label"]');
                       if (icon) icon.style.transform = "translateX(0)";
@@ -63,7 +63,7 @@ export default function BrewLogSection({
                     <span data-role="edit-label" style={{ fontSize: "11px", color: "#d4bca0", opacity: 0, width: "40px", overflow: "hidden", whiteSpace: "nowrap", transition: "opacity 0.15s ease" }}>Edit</span>
                     <span data-role="edit-icon" style={{ fontSize: "14px", lineHeight: "1", display: "inline-block", transition: "transform 0.15s ease" }}>✎</span>
                   </button>
-                  <button onClick={() => deleteBrew(brew.id)} style={{ background: "none", border: "none", color: "#3a2a1a", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#3a2a1a")}>✕</button>
+                  <button onClick={() => deleteBrew(brew.id)} style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#c9b094")}>✕</button>
                 </div>
               </div>
               <BrewLogCardContent

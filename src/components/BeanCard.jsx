@@ -150,7 +150,7 @@ export default function BeanCard({
                     event.stopPropagation();
                     onEditBean?.(bean);
                   }}
-                  style={{ background: "none", border: "none", color: "#3a2a1a", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
+                  style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.color = "#c8893a";
                     const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
@@ -159,7 +159,7 @@ export default function BeanCard({
                     if (label) label.style.opacity = "1";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.color = "#3a2a1a";
+                    e.currentTarget.style.color = "#c9b094";
                     const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
                     const label = e.currentTarget.querySelector('[data-role="edit-label"]');
                     if (icon) icon.style.transform = "translateX(0)";
@@ -175,9 +175,9 @@ export default function BeanCard({
                     event.stopPropagation();
                     onDeleteBean?.(bean.id);
                   }}
-                  style={{ background: "none", border: "none", color: "#3a2a1a", cursor: "pointer", fontSize: "14px", padding: "0 4px" }}
+                  style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px" }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#3a2a1a")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#c9b094")}
                   aria-label={`Delete ${bean.name}`}
                 >
                   ✕
@@ -192,7 +192,7 @@ export default function BeanCard({
                     event.stopPropagation();
                     onEditBean?.(bean);
                   }}
-                  style={{ background: "none", border: "none", color: "#3a2a1a", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
+                  style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.color = "#c8893a";
                     const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
@@ -201,7 +201,7 @@ export default function BeanCard({
                     if (label) label.style.opacity = "1";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.color = "#3a2a1a";
+                    e.currentTarget.style.color = "#c9b094";
                     const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
                     const label = e.currentTarget.querySelector('[data-role="edit-label"]');
                     if (icon) icon.style.transform = "translateX(0)";
@@ -217,9 +217,9 @@ export default function BeanCard({
                     event.stopPropagation();
                     onDeleteBean?.(bean.id);
                   }}
-                  style={{ background: "none", border: "none", color: "#3a2a1a", cursor: "pointer", fontSize: "14px", padding: "0 4px" }}
+                  style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px" }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#3a2a1a")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#c9b094")}
                 >
                   ✕
                 </button>
