@@ -52,6 +52,7 @@ import BeanDetailScreenView from "./components/views/BeanDetailScreenView";
 import BrewFormView from "./components/views/BrewFormView";
 import RecipeFormView from "./components/views/RecipeFormView";
 import TransferModalView from "./components/views/TransferModalView";
+import DeleteConfirmationModal from "./components/modals/DeleteConfirmationModal";
 import RoastProfilesView from "./components/views/RoastProfilesView";
 import GreenBeanRoastFormView from "./components/views/GreenBeanRoastFormView";
 import RoastProfileFormView from "./components/views/RoastProfileFormView";
@@ -155,6 +156,7 @@ export default function App() {
   const [selectedBrew, setSelectedBrew] = useState(null); // { brew, bean } for standalone detail
   const [editingBrewId, setEditingBrewId] = useState(null); // id of brew being edited
   const [showTransfer, setShowTransfer] = useState(null); // "export" | "import" | null
+  const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [importText, setImportText] = useState("");
   const [filterRoaster, setFilterRoaster] = useState("");
   const [saveError, setSaveError] = useState("");
@@ -203,6 +205,16 @@ export default function App() {
     return null;
   };
 
+  const confirmDeletion = (itemType) => new Promise((resolve) => {
+    setDeleteConfirmation({ itemType, resolve });
+  });
+
+  const respondToDeletionConfirmation = (confirmed) => {
+    if (!deleteConfirmation) return;
+    deleteConfirmation.resolve(confirmed);
+    setDeleteConfirmation(null);
+  };
+
   const closeRecipeForm = () => {
     setEditRecipe(null);
     setTab(TAB_KEYS.RECIPES);
@@ -241,6 +253,7 @@ export default function App() {
   };
 
   const deleteRecipe = async (id) => {
+    if (!await confirmDeletion("recipe")) return;
     const token = await getAccessTokenOrFail();
     if (!token) return;
     const deleted = await deleteRecipeData(token, id);
@@ -307,6 +320,8 @@ export default function App() {
   };
 
   const deleteBean = async (id) => {
+    const itemType = tab === TAB_KEYS.GREEN_BEANS ? "green bean" : "bean";
+    if (!await confirmDeletion(itemType)) return;
     if (tab === TAB_KEYS.GREEN_BEANS) {
       const token = await getAccessTokenOrFail();
       if (!token) return;
@@ -412,6 +427,7 @@ export default function App() {
   };
 
   const deleteBrew = async (brewId) => {
+    if (!await confirmDeletion("brew")) return;
     const token = await getAccessTokenOrFail();
     if (!token) return;
     const deleted = await deleteBrewData(token, brewId);
@@ -487,6 +503,7 @@ export default function App() {
 
   const deleteGreenBeanRoast = async (roastId) => {
     if (!activeBean || tab !== TAB_KEYS.GREEN_BEANS) return;
+    if (!await confirmDeletion("roast log")) return;
     const token = await getAccessTokenOrFail();
     if (!token) return;
 
@@ -709,6 +726,7 @@ export default function App() {
   };
 
   const deleteRoastProfile = async (id) => {
+    if (!await confirmDeletion("roast profile")) return;
     const token = await getAccessTokenOrFail();
     if (!token) return;
     const deleted = await deleteRoastProfileData(token, id);
@@ -807,8 +825,6 @@ export default function App() {
       tab={tab}
       setTab={setTab}
       setView={setView}
-      canLogBrew={view === VIEW_KEYS.BEAN_DETAIL && !!liveBean && tab !== TAB_KEYS.GREEN_BEANS}
-      onLogBrew={() => { setBrewForm({ ...defaultBrew, date: new Date().toISOString().split("T")[0] }); setView(VIEW_KEYS.BREW_FORM); }}
       userEmail={currentUser?.email || session?.email}
       onSync={async () => {
         const token = await getAccessTokenOrFail();
@@ -997,6 +1013,7 @@ export default function App() {
             getTechniqueLinesFromBrew={getTechniqueLinesFromBrew}
             StarRating={StarRating}
             onToggleArchive={toggleArchiveBean}
+            onLogBrew={() => { setBrewForm({ ...defaultBrew, date: new Date().toISOString().split("T")[0] }); setView(VIEW_KEYS.BREW_FORM); }}
             onLogRoast={onLogRoast}
             onEditRoast={(roast) => {
               setGreenBeanRoastForm(mapRoastToGreenBeanRoastForm(roast));
@@ -1087,6 +1104,14 @@ export default function App() {
         beans={beans}
         recipes={recipes}
       />
+
+      {deleteConfirmation && (
+        <DeleteConfirmationModal
+          itemType={deleteConfirmation.itemType}
+          onCancel={() => respondToDeletionConfirmation(false)}
+          onConfirm={() => respondToDeletionConfirmation(true)}
+        />
+      )}
 
     </AppShell>
   );

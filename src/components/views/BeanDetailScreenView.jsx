@@ -26,6 +26,7 @@ export default function BeanDetailScreenView({
   getTechniqueLinesFromBrew,
   StarRating,
   onToggleArchive,
+  onLogBrew,
   onLogRoast,
   onEditRoast,
   onDeleteRoast,
@@ -55,7 +56,7 @@ export default function BeanDetailScreenView({
             }}
             aria-label={`Edit ${liveBean.name}`}
           >
-            <span data-role="edit-label" style={{ fontSize: "11px", color: "#d4bca0", opacity: 0, width: "40px", overflow: "hidden", whiteSpace: "nowrap", transition: "opacity 0.15s ease" }}>Edit</span>
+            <span data-role="edit-label" style={{ fontSize: "11px", opacity: 0, width: "40px", overflow: "hidden", whiteSpace: "nowrap", transition: "opacity 0.15s ease" }}>Edit</span>
             <span data-role="edit-icon" style={{ fontSize: "14px", lineHeight: "1", display: "inline-block", transition: "transform 0.15s ease" }}>✎</span>
           </button>
           <button onClick={() => deleteBean(liveBean.id)} style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#c9b094")}>✕</button>
@@ -82,6 +83,11 @@ export default function BeanDetailScreenView({
           )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {!isGreenBeanSheet && (
+            <button onClick={onLogBrew} style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "7px 13px", fontSize: "12px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
+              + Log Brew
+            </button>
+          )}
           {isGreenBeanSheet && (
             <button onClick={onLogRoast} style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "7px 13px", fontSize: "12px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
               + Log Roast

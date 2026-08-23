@@ -3,8 +3,6 @@ export default function AppShell({
   tab,
   setTab,
   setView,
-  canLogBrew,
-  onLogBrew,
   userEmail,
   onSync,
   onSignOut,
@@ -30,12 +28,6 @@ export default function AppShell({
           )}
         </div>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          {canLogBrew && (
-            <button onClick={onLogBrew}
-              style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
-              + Log Brew
-            </button>
-          )}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "1px" }}>
             <div style={{ fontSize: "10px", color: "#d0b59a", letterSpacing: "0.03em", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail}</div>
             <div style={{ display: "flex", gap: "8px" }}>

@@ -108,13 +108,13 @@ export default function BeanFormFields({
                   type="text"
                   inputMode="numeric"
                   value={formatRoastDateForInput(editBean.roastDate)}
-                  onChange={(e) => {
-                    const normalized = normalizeRoastDateValue(e.target.value);
-                    setB("roastDate", normalized);
-                  }}
+                  onChange={(e) => setB("roastDate", e.target.value)}
                   placeholder="DD-MM-YYYY"
                   onFocus={onFoc}
-                  onBlur={onBlr}
+                  onBlur={(e) => {
+                    setB("roastDate", normalizeRoastDateValue(e.target.value));
+                    onBlr(e);
+                  }}
                 />
               </Field>
             )}
