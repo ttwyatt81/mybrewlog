@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import BeanCard from "./components/BeanCard";
 import { BrewCard, BrewDetail } from "./components/BrewCard";
 import {
@@ -1088,6 +1089,7 @@ export default function App() {
         recipes={recipes}
       />
 
+      <SpeedInsights />
     </AppShell>
   );
 }
