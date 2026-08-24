@@ -146,8 +146,9 @@ export default function BeanDetailScreenView({
 
       <div style={{ fontSize: "13px", color: "#d0b69a", marginBottom: "10px" }}>{[liveBean.roaster, liveBean.producer, liveBean.origin, liveBean.region].filter(Boolean).join(" · ")}</div>
       <div style={{ display: "flex", gap: "7px", flexWrap: "wrap", marginBottom: "18px" }}>
+        {!isGreenBeanSheet && <Tag>{liveBean.sourceRoastId ? "Self-roast" : "Commercial Roast"}</Tag>}
         {liveBean.type && <Tag>{liveBean.type}</Tag>}
-        {liveBean.roastLevel && <Tag>{liveBean.roastLevel}</Tag>}
+        {!isGreenBeanSheet && !liveBean.sourceRoastId && liveBean.roastLevel && <Tag>{liveBean.roastLevel}</Tag>}
         {liveBean.process && <Tag>{liveBean.process}</Tag>}
         {liveBean.varietal && <Tag>{liveBean.varietal}</Tag>}
         {liveBean.altitude && <Tag>{liveBean.altitude}</Tag>}

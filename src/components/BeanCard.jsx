@@ -246,8 +246,9 @@ export default function BeanCard({
         gap: "7px",
         flexWrap: "wrap"
       }}>
+        {!isGreenBeanSheet && <Tag>{bean.sourceRoastId ? "Self-roasted" : "Commercially roasted"}</Tag>}
         {!isGreenBeanSheet && bean.type && <Tag>{bean.type}</Tag>}
-        {!isGreenBeanSheet && bean.roastLevel && <Tag>{bean.roastLevel}</Tag>}
+        {!isGreenBeanSheet && !bean.sourceRoastId && bean.roastLevel && <Tag>{bean.roastLevel}</Tag>}
         {bean.process && <Tag>{bean.process}</Tag>}
         {bean.varietal && <Tag>{bean.varietal}</Tag>}
         {bean.altitude && <Tag>{bean.altitude}</Tag>}
