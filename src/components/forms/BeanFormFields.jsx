@@ -220,15 +220,14 @@ export default function BeanFormFields({
             )}
           </div>
           <div style={{ marginTop: "11px" }}>
-            <Field label="Tasting Notes" hint={isLinkedRoastBean ? "Synced from the source roast log" : "Helps the AI tailor the recipe"}>
+            <Field label="Tasting Notes" hint={isLinkedRoastBean ? "Adjust after export if needed" : "Helps the AI tailor the recipe"}>
               <textarea
-                style={inp({ resize: "vertical", minHeight: "65px", lineHeight: 1.6, background: isLinkedRoastBean ? "rgba(255,255,255,0.02)" : undefined, color: isLinkedRoastBean ? "#cbb18f" : undefined, cursor: isLinkedRoastBean ? "not-allowed" : "text" })}
+                style={inp({ resize: "vertical", minHeight: "65px", lineHeight: 1.6 })}
                 value={editBean.notes}
                 onChange={e => setB("notes", e.target.value)}
                 placeholder="e.g. Jasmine, tropical fruit, creamy body…"
                 onFocus={onFoc}
                 onBlur={onBlr}
-                readOnly={isLinkedRoastBean}
               />
             </Field>
           </div>

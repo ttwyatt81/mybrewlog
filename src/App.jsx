@@ -560,7 +560,9 @@ export default function App() {
     const linkedBean = await findBeanBySourceRoastId(token, roast.id);
     if (!linkedBean) return;
 
+    const greenBeanName = (activeBean?.name || "").trim() || "Unknown Green Bean";
     const nextName = [
+      greenBeanName,
       ((roast.profile || "No Profile").trim() || "No Profile"),
       ((roast.roastLevel || "No Level").trim() || "No Level")
     ].join(" | ");
@@ -588,9 +590,10 @@ export default function App() {
     if (!activeBean || tab !== TAB_KEYS.GREEN_BEANS || !roast) return;
     setSaveError("");
 
+    const greenBeanName = (activeBean.name || "Unknown Green Bean").trim();
     const exportProfile = (roast.profile || "No Profile").trim();
     const exportLevel = (roast.roastLevel || "No Level").trim();
-    const exportName = [exportProfile, exportLevel].join(" | ");
+    const exportName = [greenBeanName, exportProfile, exportLevel].join(" | ");
     const normalizedExportName = exportName.toLowerCase();
 
     const duplicateExists = beans.some((bean) => (bean.name || "").trim().toLowerCase() === normalizedExportName);
