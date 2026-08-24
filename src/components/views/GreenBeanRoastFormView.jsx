@@ -26,20 +26,18 @@ export default function GreenBeanRoastFormView({
         <div style={{ display: "grid", gap: "14px" }}>
           <Field label="Roast Profile">
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              <input
-                list="roast-profile-suggestions"
-                style={{ ...inp(), flex: 1 }}
+              <select
+                style={{ ...inp({ cursor: "pointer" }), flex: 1 }}
                 value={greenBeanRoastForm.profile}
                 onChange={(e) => setGreenBeanRoastForm((f) => ({ ...f, profile: e.target.value }))}
-                placeholder="e.g. 12g charge, 1st crack at 1:20"
                 onFocus={onFoc}
                 onBlur={onBlr}
-              />
-              <datalist id="roast-profile-suggestions">
+              >
+                <option value="">Select...</option>
                 {roastProfiles.map((profile) => (
-                  <option key={profile.id} value={profile.name} />
+                  <option key={profile.id} value={profile.name}>{profile.name}</option>
                 ))}
-              </datalist>
+              </select>
               <button onClick={() => { setTab("roastProfiles"); setView("beans"); }} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", padding: "7px 10px", fontSize: "12px", whiteSpace: "nowrap" }}>Profiles</button>
             </div>
           </Field>
@@ -67,7 +65,7 @@ export default function GreenBeanRoastFormView({
             </Field>
           </div>
 
-          <Field label="Roast Level">
+          <Field label="Roast duration level">
             <input
               style={inp()}
               type="text"

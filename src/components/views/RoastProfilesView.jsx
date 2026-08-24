@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 export default function RoastProfilesView({
   startNewRoastProfile,
   roastProfileListMode,
@@ -5,10 +7,66 @@ export default function RoastProfilesView({
   roastProfileSearch,
   setRoastProfileSearch,
   visibleRoastProfiles,
+  greenBeans,
+  roastedBeans,
   toggleArchiveRoastProfile,
   editRoastProfile,
   deleteRoastProfile,
 }) {
+  const [selectedProfile, setSelectedProfile] = useState(null);
+
+  if (selectedProfile) {
+    const profileName = (selectedProfile.name || "").trim().toLowerCase();
+    const profileRoasts = (greenBeans || []).flatMap((greenBean) => (
+      greenBean.roasts || []
+    ).filter((roast) => (roast.profile || "").trim().toLowerCase() === profileName).map((roast) => {
+      const roastedBean = (roastedBeans || []).find((bean) => bean.sourceRoastId === roast.id);
+      const brews = roastedBean?.brews || [];
+      const ratedBrews = brews.filter((brew) => Number(brew.rating) > 0);
+      const averageRating = ratedBrews.length
+        ? ratedBrews.reduce((total, brew) => total + Number(brew.rating), 0) / ratedBrews.length
+        : null;
+
+      return { greenBean, roast, brewCount: brews.length, averageRating };
+    }));
+
+    return (
+      <div>
+        <button onClick={() => setSelectedProfile(null)} style={{ background: "none", border: "none", color: "#d4bca0", cursor: "pointer", fontSize: "13px", marginBottom: "18px", padding: 0 }}>← Roast Profiles</button>
+        <div style={{ marginBottom: "22px" }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", letterSpacing: "0.02em", marginBottom: "4px" }}>{selectedProfile.name}</div>
+          <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.18em", textTransform: "uppercase" }}>Roast overview</div>
+        </div>
+
+        {profileRoasts.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "32px 0", color: "#3a2a1a", fontSize: "13px" }}>No roasts logged with this profile yet.</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "560px" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid rgba(200,137,58,0.25)" }}>
+                  {['The Green Bean', 'Roast duration level', 'Number of brews', 'Average rating'].map((heading) => (
+                    <th key={heading} style={{ textAlign: "left", padding: "0 12px 10px 0", color: "#9a7a5a", fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>{heading}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {profileRoasts.map(({ greenBean, roast, brewCount, averageRating }) => (
+                  <tr key={roast.id} style={{ borderBottom: "1px solid rgba(200,137,58,0.12)" }}>
+                    <td style={{ padding: "13px 12px 13px 0", color: "#e0c9a8", fontSize: "13px" }}>{greenBean.name}</td>
+                    <td style={{ padding: "13px 12px 13px 0", color: "#c9b094", fontSize: "13px" }}>{roast.roastLevel || "Not set"}</td>
+                    <td style={{ padding: "13px 12px 13px 0", color: "#c9b094", fontSize: "13px" }}>{brewCount}</td>
+                    <td style={{ padding: "13px 12px 13px 0", color: "#c9b094", fontSize: "13px" }}>{averageRating === null ? "Not rated" : averageRating.toFixed(1)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
       <div style={{ marginBottom: "22px" }}>
@@ -75,6 +133,7 @@ export default function RoastProfilesView({
                 e.currentTarget.style.background = profile.archived ? "rgba(200,137,58,0.05)" : "rgba(255,255,255,0.02)";
                 e.currentTarget.style.borderColor = profile.archived ? "rgba(200,137,58,0.34)" : "rgba(200,137,58,0.18)";
               }}
+              onClick={() => setSelectedProfile(profile)}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -82,9 +141,10 @@ export default function RoastProfilesView({
                   <div style={{ fontSize: "11px", color: "#d0b69a", lineHeight: 1.3 }}>{profile.machine || "No machine set"}</div>
                 </div>
 
-                <div style={{ textAlign: "right", flexShrink: 0, display: "flex", alignItems: "center", gap: "6px" }}>
+                <div style={{ textAlign: "right", flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "6px" }}>
                   <button
-                    onClick={() => toggleArchiveRoastProfile(profile)}
+                    onClick={(event) => { event.stopPropagation(); toggleArchiveRoastProfile(profile); }}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
@@ -126,7 +186,7 @@ export default function RoastProfilesView({
                     </span>
                   </button>
                   <button
-                    onClick={() => editRoastProfile(profile)}
+                    onClick={(event) => { event.stopPropagation(); editRoastProfile(profile); }}
                     style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = "#c8893a";
@@ -147,7 +207,11 @@ export default function RoastProfilesView({
                     <span data-role="edit-label" style={{ fontSize: "11px", opacity: 0, width: "40px", overflow: "hidden", whiteSpace: "nowrap", transition: "opacity 0.15s ease" }}>Edit</span>
                     <span data-role="edit-icon" style={{ fontSize: "14px", lineHeight: "1", display: "inline-block", transition: "transform 0.15s ease" }}>✎</span>
                   </button>
-                  <button onClick={() => deleteRoastProfile(profile.id)} style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#c9b094")}>✕</button>
+                  <button onClick={(event) => { event.stopPropagation(); deleteRoastProfile(profile.id); }} style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#c9b094")}>✕</button>
+                  </div>
+                  <div style={{ fontSize: "10px", color: "#c1a88c", marginTop: "0px", lineHeight: 1.2 }}>
+                    {profile.usageCount} roast{profile.usageCount !== 1 ? "s" : ""}
+                  </div>
                 </div>
               </div>
             </div>

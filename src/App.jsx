@@ -720,6 +720,13 @@ export default function App() {
         .toLowerCase();
       return haystack.includes(recipeSearch.toLowerCase());
     });
+  const roastProfileUsage = greenBeans.reduce((usage, bean) => {
+    (bean.roasts || []).forEach((roast) => {
+      const profileName = (roast.profile || "").trim().toLowerCase();
+      if (profileName) usage[profileName] = (usage[profileName] || 0) + 1;
+    });
+    return usage;
+  }, {});
   const visibleRoastProfiles = [...roastProfiles]
     .filter((profile) => roastProfileListMode === "archived" ? Boolean(profile.archived) : !Boolean(profile.archived))
     .filter((profile) => {
@@ -729,7 +736,11 @@ export default function App() {
         .join(" ")
         .toLowerCase();
       return haystack.includes(roastProfileSearch.toLowerCase());
-    });
+    })
+    .map((profile) => ({
+      ...profile,
+      usageCount: roastProfileUsage[(profile.name || "").trim().toLowerCase()] || 0,
+    }));
 
   const bestBrew = (bean) => bean.brews.length ? bean.brews.reduce((a, b) => b.rating > a.rating ? b : a, bean.brews[0]) : null;
 
@@ -1056,6 +1067,8 @@ export default function App() {
             roastProfileSearch={roastProfileSearch}
             setRoastProfileSearch={setRoastProfileSearch}
             visibleRoastProfiles={visibleRoastProfiles}
+            greenBeans={greenBeans}
+            roastedBeans={beans}
             toggleArchiveRoastProfile={toggleArchiveRoastProfile}
             editRoastProfile={editRoastProfile}
             deleteRoastProfile={deleteRoastProfile}

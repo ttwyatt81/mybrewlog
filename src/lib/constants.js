@@ -27,7 +27,7 @@ export const defaultGreenBeanRoast = {
   date: new Date().toISOString().split("T")[0],
   roastTime: new Date().toTimeString().slice(0, 5),
   profile: "",
-  roastLevel: "Medium",
+  roastLevel: "",
   restingFromDays: "",
   restingToDays: "",
   firstCrack: "",

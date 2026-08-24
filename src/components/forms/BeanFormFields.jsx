@@ -47,6 +47,7 @@ export default function BeanFormFields({
   beanTypes,
 }) {
   const isLinkedRoastBean = Boolean(editBean?.sourceRoastId);
+  const isUnlinkedRoastBean = Boolean(editBean?.id) && !isGreenBeanSheet && !isLinkedRoastBean;
 
   return (
     <div>
@@ -60,7 +61,7 @@ export default function BeanFormFields({
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
             <Field label="Bean / Lot Name">
               <input
-                style={inp({ background: isLinkedRoastBean ? "rgba(255,255,255,0.02)" : undefined, color: isLinkedRoastBean ? "#cbb18f" : undefined, cursor: isLinkedRoastBean ? "not-allowed" : "text" })}
+                style={inp({ background: isLinkedRoastBean || isGreenBeanSheet || isUnlinkedRoastBean ? "rgba(255,255,255,0.025)" : undefined, color: isLinkedRoastBean || isGreenBeanSheet || isUnlinkedRoastBean ? "#d8c3a5" : undefined, cursor: isLinkedRoastBean ? "not-allowed" : "text" })}
                 value={editBean.name}
                 onChange={e => setB("name", e.target.value)}
                 placeholder="e.g. Sidra Las Flores"
@@ -114,7 +115,7 @@ export default function BeanFormFields({
             {!isGreenBeanSheet && (
               <Field label="Roast Date">
                 <input
-                  style={inp({ background: isLinkedRoastBean ? "rgba(255,255,255,0.02)" : undefined, color: isLinkedRoastBean ? "#cbb18f" : undefined, cursor: isLinkedRoastBean ? "not-allowed" : "text" })}
+                  style={inp({ background: isLinkedRoastBean || isUnlinkedRoastBean ? "rgba(255,255,255,0.025)" : undefined, color: isLinkedRoastBean || isUnlinkedRoastBean ? "#d8c3a5" : undefined, cursor: isLinkedRoastBean ? "not-allowed" : "text" })}
                   type="text"
                   inputMode="numeric"
                   value={formatRoastDateForInput(editBean.roastDate)}
@@ -152,7 +153,7 @@ export default function BeanFormFields({
             {!isGreenBeanSheet && (
               <Field label="Roast Level">
                 <select
-                  style={inp({ cursor: isLinkedRoastBean ? "not-allowed" : "pointer", background: isLinkedRoastBean ? "rgba(255,255,255,0.02)" : undefined, color: isLinkedRoastBean ? "#cbb18f" : undefined })}
+                  style={inp({ cursor: isLinkedRoastBean ? "not-allowed" : "pointer", background: isLinkedRoastBean || isUnlinkedRoastBean ? "rgba(255,255,255,0.025)" : undefined, color: isLinkedRoastBean || isUnlinkedRoastBean ? "#d8c3a5" : undefined })}
                   value={editBean.roastLevel}
                   onChange={e => setB("roastLevel", e.target.value)}
                   onFocus={onFoc}
