@@ -28,6 +28,7 @@ const formatDateValue = (value) => {
 
 export default function RoastLogSection({
   roasts,
+  roastedBeans = [],
   onEditRoast,
   onDeleteRoast,
   onExportRoast,
@@ -147,6 +148,9 @@ export default function RoastLogSection({
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {roasts.map((roast, i) => (
             <div key={roast.id || `${roast.date}-${i}`} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(200,137,58,0.15)", borderRadius: "11px", padding: "15px 16px" }}>
+              {(() => {
+                const hasRoastedBean = roastedBeans.some((bean) => bean.sourceRoastId === roast.id);
+                return (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                   <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "13px", color: "#c8893a" }}>#{roastCount - i}</span>
@@ -162,20 +166,21 @@ export default function RoastLogSection({
                 <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
                   <button
                     onClick={() => onExportRoast?.(roast)}
+                    disabled={hasRoastedBean}
                     style={{
-                      background: "linear-gradient(135deg,#c8893a,#a06828)",
+                      background: hasRoastedBean ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg,#c8893a,#a06828)",
                       border: "none",
                       borderRadius: "8px",
-                      color: "#fff",
+                      color: hasRoastedBean ? "#8d7a67" : "#fff",
                       padding: "7px 13px",
                       fontSize: "12px",
                       fontWeight: "500",
-                      cursor: "pointer",
+                      cursor: hasRoastedBean ? "not-allowed" : "pointer",
                       whiteSpace: "nowrap"
                     }}
-                    title="Export this roast to Roasted Beans"
+                    title={hasRoastedBean ? "A roasted bean already exists for this roast" : "Export this roast to Roasted Beans"}
                   >
-                    + Roasted Beans
+                    {hasRoastedBean ? "Roasted Bean Created" : "+ Roasted Beans"}
                   </button>
                   <button
                     onClick={() => onEditRoast?.(roast)}
@@ -202,6 +207,8 @@ export default function RoastLogSection({
                   <button onClick={() => onDeleteRoast?.(roast.id)} style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#c9b094")}>✕</button>
                 </div>
               </div>
+                );
+              })()}
               <div style={{ marginBottom: roast.startWeight || roast.endWeight || roast.reductionPercent || roast.notes || roast.firstCrack || roast.totalRoast ? "10px" : "0" }}>
                 {(roast.date || getRestedDuration(roast)) && (
                   <div style={{ fontSize: "10px", color: "#cbb18f", letterSpacing: "0.05em", textTransform: "uppercase" }}>

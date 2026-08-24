@@ -590,6 +590,12 @@ export default function App() {
     if (!activeBean || tab !== TAB_KEYS.GREEN_BEANS || !roast) return;
     setSaveError("");
 
+    const linkedBeanExists = beans.some((bean) => bean.sourceRoastId === roast.id);
+    if (linkedBeanExists) {
+      setSaveError("Export blocked. This roast already has a roasted bean.");
+      return;
+    }
+
     const greenBeanName = (activeBean.name || "Unknown Green Bean").trim();
     const exportProfile = (roast.profile || "No Profile").trim();
     const exportLevel = (roast.roastLevel || "No Level").trim();
@@ -1080,6 +1086,7 @@ export default function App() {
             }}
             onDeleteRoast={deleteGreenBeanRoast}
             onExportRoast={exportGreenBeanRoastToRoastedBeans}
+            roastedBeans={beans}
             onGoToSourceRoast={goToSourceRoast}
           />
         )}

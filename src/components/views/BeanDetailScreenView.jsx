@@ -31,6 +31,7 @@ export default function BeanDetailScreenView({
   onEditRoast,
   onDeleteRoast,
   onExportRoast,
+  roastedBeans = [],
   onGoToSourceRoast,
 }) {
   return (
@@ -160,6 +161,7 @@ export default function BeanDetailScreenView({
       {isGreenBeanSheet ? (
         <RoastLogSection
           roasts={liveBean.roasts || []}
+          roastedBeans={roastedBeans}
           onEditRoast={onEditRoast}
           onDeleteRoast={onDeleteRoast}
           onExportRoast={onExportRoast}
