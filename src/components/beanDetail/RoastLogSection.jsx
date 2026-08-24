@@ -163,19 +163,19 @@ export default function RoastLogSection({
                   <button
                     onClick={() => onExportRoast?.(roast)}
                     style={{
-                      background: "none",
-                      border: "1px solid rgba(200,137,58,0.24)",
-                      color: "#d4bca0",
-                      borderRadius: "999px",
+                      background: "linear-gradient(135deg,#c8893a,#a06828)",
+                      border: "none",
+                      borderRadius: "8px",
+                      color: "#fff",
+                      padding: "7px 13px",
+                      fontSize: "12px",
+                      fontWeight: "500",
                       cursor: "pointer",
-                      fontSize: "10px",
-                      letterSpacing: "0.06em",
-                      textTransform: "uppercase",
-                      padding: "3px 8px"
+                      whiteSpace: "nowrap"
                     }}
                     title="Export this roast to Roasted Beans"
                   >
-                    Add to Roasted Beans
+                    + Roasted Beans
                   </button>
                   <button
                     onClick={() => onEditRoast?.(roast)}
@@ -268,8 +268,8 @@ export default function RoastLogSection({
                     </div>
                   )}
                   {roast.reductionPercent && (
-                    <div style={{ background: "rgba(200,137,58,0.04)", borderRadius: "7px", padding: "8px 6px", textAlign: "center" }}>
-                      <div style={{ fontSize: "13px", color: "#e0cdb0", fontFamily: "'Playfair Display', serif" }}>{roast.reductionPercent}%</div>
+                    <div style={{ background: "rgba(200,137,58,0.08)", borderRadius: "7px", padding: "8px 6px", textAlign: "center", border: "1px solid rgba(200,137,58,0.2)" }}>
+                      <div style={{ fontSize: "13px", color: "#e9d8be", fontFamily: "'Playfair Display', serif" }}>{roast.reductionPercent}%</div>
                       <div style={{ fontSize: "9px", color: "#c3aa90", letterSpacing: "0.06em", textTransform: "uppercase", marginTop: "2px" }}>Reduction</div>
                     </div>
                   )}
