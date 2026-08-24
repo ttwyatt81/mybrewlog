@@ -31,12 +31,21 @@ export default function BeanDetailScreenView({
   onEditRoast,
   onDeleteRoast,
   onExportRoast,
+  onGoToSourceRoast,
 }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
         <button onClick={() => setView("beans")} style={{ background: "none", border: "none", color: "#d4bca0", cursor: "pointer", fontSize: "13px", padding: 0 }}>← {isGreenBeanSheet ? "All Green Beans" : "All Roasted Beans"}</button>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {liveBean.sourceRoastId && onGoToSourceRoast && (
+            <button
+              onClick={() => onGoToSourceRoast(liveBean)}
+              style={{ background: "rgba(200,137,58,0.08)", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "999px", color: "#d8b98c", cursor: "pointer", fontSize: "11px", padding: "6px 10px", whiteSpace: "nowrap" }}
+            >
+              View Roast Log
+            </button>
+          )}
           <button
             onClick={() => { setEditBean({ ...liveBean }); setView("beanForm"); }}
             style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}

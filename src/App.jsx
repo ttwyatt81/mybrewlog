@@ -18,6 +18,7 @@ import {
 } from "./lib/constants";
 import {
   sbInsert,
+  sbGet,
   getLastSupabaseErrorMessage,
 } from "./lib/supabase";
 import { useBeans } from "./features/beans/hooks";
@@ -296,10 +297,20 @@ export default function App() {
   const saveBean = async () => {
     if (!editBean?.name) return;
     setSaveError("");
+    const beanToSave = editBean.sourceRoastId
+      ? {
+          ...editBean,
+          name: editBean.name,
+          roastLevel: editBean.roastLevel,
+          roastDate: editBean.roastDate,
+          notes: editBean.notes,
+        }
+      : editBean;
+
     if (tab === TAB_KEYS.GREEN_BEANS) {
       const token = await getAccessTokenOrFail();
       if (!token) return;
-      const saved = await saveGreenBeanData(token, editBean);
+      const saved = await saveGreenBeanData(token, beanToSave);
       if (!saved) {
         setSaveError(withSupabaseError("Failed to save green bean. Check your connection and try again."));
         return;
@@ -310,7 +321,7 @@ export default function App() {
     }
     const token = await getAccessTokenOrFail();
     if (!token) return;
-    const saved = await saveBeanData(token, editBean);
+    const saved = await saveBeanData(token, beanToSave);
     if (!saved) {
       setSaveError(withSupabaseError("Failed to save bean. Check your connection and try again."));
       return;
@@ -476,6 +487,8 @@ export default function App() {
       return;
     }
 
+    await syncLinkedRoastedBeanFromRoast(token, saved);
+
     setActiveBean((current) => {
       if (!current || current.id !== activeBean.id) return current;
       const nextRoasts = Array.isArray(current.roasts) ? [...current.roasts] : [];
@@ -501,6 +514,25 @@ export default function App() {
     setView(VIEW_KEYS.BEAN_DETAIL);
   };
 
+  const goToSourceRoast = async (bean) => {
+    if (!bean?.sourceRoastId) return;
+    const token = await getAccessTokenOrFail();
+    if (!token) return;
+
+    const roastRows = await sbGet("green_bean_roasts", token, "select=*");
+    const roast = (roastRows || []).find((item) => item.id === bean.sourceRoastId);
+    if (!roast) return;
+
+    const targetGreenBean = greenBeans.find((item) => item.id === roast.green_bean_id);
+    if (!targetGreenBean) return;
+
+    setActiveBean(targetGreenBean);
+    setTab(TAB_KEYS.GREEN_BEANS);
+    setView(VIEW_KEYS.BEAN_DETAIL);
+    setGreenBeanRoastForm(mapRoastToGreenBeanRoastForm(roast));
+    setEditingGreenBeanRoastId(roast.id || null);
+  };
+
   const deleteGreenBeanRoast = async (roastId) => {
     if (!activeBean || tab !== TAB_KEYS.GREEN_BEANS) return;
     if (!await confirmDeletion("roast log")) return;
@@ -516,14 +548,49 @@ export default function App() {
     setActiveBean((current) => current ? { ...current, roasts: (current.roasts || []).filter((roast) => roast.id !== roastId) } : current);
   };
 
+  const findBeanBySourceRoastId = async (token, sourceRoastId) => {
+    if (!token || !sourceRoastId) return null;
+    const rows = await sbGet("beans", token, "select=*");
+    return (rows || []).find((bean) => bean.source_roast_id === sourceRoastId) || null;
+  };
+
+  const syncLinkedRoastedBeanFromRoast = async (token, roast) => {
+    if (!token || !roast?.id) return;
+
+    const linkedBean = await findBeanBySourceRoastId(token, roast.id);
+    if (!linkedBean) return;
+
+    const nextName = [
+      ((roast.profile || "No Profile").trim() || "No Profile"),
+      ((roast.roastLevel || "No Level").trim() || "No Level")
+    ].join(" | ");
+
+    const updatedBean = {
+      ...linkedBean,
+      name: nextName,
+      roastLevel: roast.roastLevel || "",
+      roastDate: roast.date || "",
+      notes: roast.notes || "",
+      sourceRoastId: roast.id,
+    };
+
+    const saved = await saveBeanData(token, updatedBean);
+    if (!saved) {
+      setSaveError(withSupabaseError("Failed to sync linked roasted bean. Check your connection and try again."));
+    }
+
+    setBeans((current) => sortBeansByRecentActivity(
+      current.map((bean) => bean.id === saved?.id ? { ...bean, ...saved } : bean)
+    ));
+  };
+
   const exportGreenBeanRoastToRoastedBeans = async (roast) => {
     if (!activeBean || tab !== TAB_KEYS.GREEN_BEANS || !roast) return;
     setSaveError("");
 
     const exportProfile = (roast.profile || "No Profile").trim();
     const exportLevel = (roast.roastLevel || "No Level").trim();
-    const exportDate = (roast.date || "No Date").trim();
-    const exportName = [exportProfile, exportLevel, exportDate].join(" | ");
+    const exportName = [exportProfile, exportLevel].join(" | ");
     const normalizedExportName = exportName.toLowerCase();
 
     const duplicateExists = beans.some((bean) => (bean.name || "").trim().toLowerCase() === normalizedExportName);
@@ -535,21 +602,10 @@ export default function App() {
     const token = await getAccessTokenOrFail();
     if (!token) return;
 
-    const profileLine = roast.profile ? `Roast Profile: ${roast.profile}` : "";
-    const crackLine = roast.firstCrack ? `First Crack: ${roast.firstCrack}` : "";
-    const totalLine = roast.totalRoast ? `Total Roast: ${roast.totalRoast}` : "";
-    const weightLine = roast.startWeight && roast.endWeight
-      ? `Weight: ${roast.startWeight}g -> ${roast.endWeight}g`
-      : "";
-    const reductionLine = roast.reductionPercent ? `Reduction: ${roast.reductionPercent}%` : "";
-
-    const roastSummary = [profileLine, crackLine, totalLine, weightLine, reductionLine]
-      .filter(Boolean)
-      .join("\n");
-
     const exportedBean = {
       id: null,
       name: exportName,
+      sourceRoastId: roast.id || null,
       roaster: "",
       origin: activeBean.origin || "",
       producer: activeBean.producer || "",
@@ -560,7 +616,7 @@ export default function App() {
       altitude: activeBean.altitude || "",
       type: "Filter",
       roastDate: roast.date || "",
-      notes: [roast.notes || "", roastSummary].filter(Boolean).join("\n\n"),
+      notes: roast.notes || "",
       archived: false,
       brews: [],
     };
@@ -1021,6 +1077,7 @@ export default function App() {
             }}
             onDeleteRoast={deleteGreenBeanRoast}
             onExportRoast={exportGreenBeanRoastToRoastedBeans}
+            onGoToSourceRoast={goToSourceRoast}
           />
         )}
 

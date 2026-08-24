@@ -42,6 +42,7 @@ export function useImportExport({
         altitude: bean.altitude,
         type: bean.type,
         roastDate: bean.roastDate,
+        sourceRoastId: bean.sourceRoastId,
         notes: bean.notes,
         archived: Boolean(bean.archived),
         brews: (bean.brews || []).map((brew) => ({ ...brew, pours: brew.pours || [] })),

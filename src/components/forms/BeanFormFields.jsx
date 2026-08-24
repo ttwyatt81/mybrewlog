@@ -46,6 +46,8 @@ export default function BeanFormFields({
   processOptions,
   beanTypes,
 }) {
+  const isLinkedRoastBean = Boolean(editBean?.sourceRoastId);
+
   return (
     <div>
       <button onClick={() => setView("beans")} style={{ background: "none", border: "none", color: "#9a7a5a", cursor: "pointer", fontSize: "13px", marginBottom: "18px", padding: 0 }}>← Back</button>
@@ -57,7 +59,15 @@ export default function BeanFormFields({
           <SectionHead>Identity</SectionHead>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
             <Field label="Bean / Lot Name">
-              <input style={inp()} value={editBean.name} onChange={e => setB("name", e.target.value)} placeholder="e.g. Sidra Las Flores" onFocus={onFoc} onBlur={onBlr} />
+              <input
+                style={inp({ background: isLinkedRoastBean ? "rgba(255,255,255,0.02)" : undefined, color: isLinkedRoastBean ? "#cbb18f" : undefined, cursor: isLinkedRoastBean ? "not-allowed" : "text" })}
+                value={editBean.name}
+                onChange={e => setB("name", e.target.value)}
+                placeholder="e.g. Sidra Las Flores"
+                onFocus={onFoc}
+                onBlur={onBlr}
+                readOnly={isLinkedRoastBean}
+              />
             </Field>
             {!isGreenBeanSheet && (
               <Field label="Roaster">
@@ -104,7 +114,7 @@ export default function BeanFormFields({
             {!isGreenBeanSheet && (
               <Field label="Roast Date">
                 <input
-                  style={inp()}
+                  style={inp({ background: isLinkedRoastBean ? "rgba(255,255,255,0.02)" : undefined, color: isLinkedRoastBean ? "#cbb18f" : undefined, cursor: isLinkedRoastBean ? "not-allowed" : "text" })}
                   type="text"
                   inputMode="numeric"
                   value={formatRoastDateForInput(editBean.roastDate)}
@@ -112,9 +122,12 @@ export default function BeanFormFields({
                   placeholder="DD-MM-YYYY"
                   onFocus={onFoc}
                   onBlur={(e) => {
-                    setB("roastDate", normalizeRoastDateValue(e.target.value));
+                    if (!isLinkedRoastBean) {
+                      setB("roastDate", normalizeRoastDateValue(e.target.value));
+                    }
                     onBlr(e);
                   }}
+                  readOnly={isLinkedRoastBean}
                 />
               </Field>
             )}
@@ -138,7 +151,14 @@ export default function BeanFormFields({
             )}
             {!isGreenBeanSheet && (
               <Field label="Roast Level">
-                <select style={inp({ cursor: "pointer" })} value={editBean.roastLevel} onChange={e => setB("roastLevel", e.target.value)} onFocus={onFoc} onBlur={onBlr}>
+                <select
+                  style={inp({ cursor: isLinkedRoastBean ? "not-allowed" : "pointer", background: isLinkedRoastBean ? "rgba(255,255,255,0.02)" : undefined, color: isLinkedRoastBean ? "#cbb18f" : undefined })}
+                  value={editBean.roastLevel}
+                  onChange={e => setB("roastLevel", e.target.value)}
+                  onFocus={onFoc}
+                  onBlur={onBlr}
+                  disabled={isLinkedRoastBean}
+                >
                   <option value="">Select…</option>
                   {roastLevels.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
@@ -200,10 +220,16 @@ export default function BeanFormFields({
             )}
           </div>
           <div style={{ marginTop: "11px" }}>
-            <Field label="Tasting Notes" hint="Helps the AI tailor the recipe">
-              <textarea style={inp({ resize: "vertical", minHeight: "65px", lineHeight: 1.6 })}
-                value={editBean.notes} onChange={e => setB("notes", e.target.value)}
-                placeholder="e.g. Jasmine, tropical fruit, creamy body…" onFocus={onFoc} onBlur={onBlr} />
+            <Field label="Tasting Notes" hint={isLinkedRoastBean ? "Synced from the source roast log" : "Helps the AI tailor the recipe"}>
+              <textarea
+                style={inp({ resize: "vertical", minHeight: "65px", lineHeight: 1.6, background: isLinkedRoastBean ? "rgba(255,255,255,0.02)" : undefined, color: isLinkedRoastBean ? "#cbb18f" : undefined, cursor: isLinkedRoastBean ? "not-allowed" : "text" })}
+                value={editBean.notes}
+                onChange={e => setB("notes", e.target.value)}
+                placeholder="e.g. Jasmine, tropical fruit, creamy body…"
+                onFocus={onFoc}
+                onBlur={onBlr}
+                readOnly={isLinkedRoastBean}
+              />
             </Field>
           </div>
         </section>

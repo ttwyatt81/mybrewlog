@@ -24,6 +24,7 @@ export function normalizeBeanRow(row = {}) {
     altitude: getValue(row, "altitude") || "",
     type: getValue(row, "type") || "",
     roastDate: getValue(row, "roastDate", "roast_date") || "",
+    sourceRoastId: getValue(row, "sourceRoastId", "source_roast_id") || "",
     notes: getValue(row, "notes") || "",
     archived: archivedValue === true || archivedValue === "true" || archivedValue === 1 || archivedValue === "1",
     brews: Array.isArray(row.brews) ? row.brews.map((brew) => normalizeBrewRow(brew)) : []
@@ -43,6 +44,7 @@ export function beanPayload(bean) {
     altitude: bean.altitude || null,
     type: bean.type || null,
     roast_date: bean.roastDate || null,
+    source_roast_id: bean.sourceRoastId || null,
     notes: bean.notes || null,
     archived: Boolean(bean.archived)
   };
