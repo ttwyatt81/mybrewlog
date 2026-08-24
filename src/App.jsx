@@ -523,8 +523,7 @@ export default function App() {
     const exportProfile = (roast.profile || "No Profile").trim();
     const exportLevel = (roast.roastLevel || "No Level").trim();
     const exportDate = (roast.date || "No Date").trim();
-    const exportTime = (roast.roastTime || "No Time").trim();
-    const exportName = [exportProfile, exportLevel, exportDate, exportTime].join(" | ");
+    const exportName = [exportProfile, exportLevel, exportDate].join(" | ");
     const normalizedExportName = exportName.toLowerCase();
 
     const duplicateExists = beans.some((bean) => (bean.name || "").trim().toLowerCase() === normalizedExportName);
@@ -551,7 +550,7 @@ export default function App() {
     const exportedBean = {
       id: null,
       name: exportName,
-      roaster: activeBean.producer || activeBean.importer || "",
+      roaster: "",
       origin: activeBean.origin || "",
       producer: activeBean.producer || "",
       region: activeBean.region || "",
