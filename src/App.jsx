@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import BeanCard from "./components/BeanCard";
-import { BrewCard, BrewDetail } from "./components/BrewCard";
 import {
   defaultRecipe,
   processOptions,
@@ -42,12 +41,11 @@ import Field from "./components/ui/Field";
 import SectionHead from "./components/ui/SectionHead";
 import StatBox from "./components/ui/StatBox";
 import StarRating from "./components/ui/StarRating";
-import { IS, inp, onFoc, onBlr } from "./components/ui/formStyles";
+import { inp, onFoc, onBlr } from "./components/ui/formStyles";
 import AppShell from "./components/layout/AppShell";
 import AuthView from "./components/views/AuthView";
 import BeanFormView from "./components/views/BeanFormView";
 import BeansView from "./components/views/BeansView";
-import BrewsView from "./components/views/BrewsView";
 import RecipesView from "./components/views/RecipesView";
 import BeanDetailScreenView from "./components/views/BeanDetailScreenView";
 import BrewFormView from "./components/views/BrewFormView";
@@ -144,33 +142,20 @@ export default function App() {
   const [filter, setFilter] = useState("");
   const [roastProfileSearch, setRoastProfileSearch] = useState("");
   const [recipeSearch, setRecipeSearch] = useState("");
-  const [brewSearch, setBrewSearch] = useState("");
   const [filterOrigin, setFilterOrigin] = useState("");
   const [filterType, setFilterType] = useState("");
   const [editRecipe, setEditRecipe] = useState(null);
-  const [tab, setTab] = useState(TAB_KEYS.BEANS); // beans | greenBeans | recipes | brews
-  const [beanTab, setBeanTab] = useState(TAB_KEYS.BEANS);
+  const [tab, setTab] = useState(TAB_KEYS.BEANS); // beans | greenBeans | recipes
   const [beanListMode, setBeanListMode] = useState("active"); // active | archived
   const [greenBeanListMode, setGreenBeanListMode] = useState("active"); // active | archived
   const [recipeListMode, setRecipeListMode] = useState("active"); // active | archived
   const [roastProfileListMode, setRoastProfileListMode] = useState("active"); // active | archived
-  const [selectedBrew, setSelectedBrew] = useState(null); // { brew, bean } for standalone detail
   const [editingBrewId, setEditingBrewId] = useState(null); // id of brew being edited
   const [showTransfer, setShowTransfer] = useState(null); // "export" | "import" | null
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [importText, setImportText] = useState("");
   const [filterRoaster, setFilterRoaster] = useState("");
   const [saveError, setSaveError] = useState("");
-  const [brewFilterMethod, setBrewFilterMethod] = useState("");
-  const [brewFilterBean, setBrewFilterBean] = useState("");
-  const [brewSort, setBrewSort] = useState("date");
-
-  useEffect(() => {
-    if (tab === TAB_KEYS.BEANS || tab === TAB_KEYS.GREEN_BEANS) {
-      setBeanTab(tab);
-    }
-  }, [tab]);
-
   const {
     exportData,
     importData,
@@ -648,7 +633,6 @@ export default function App() {
       pours: brew.pours && brew.pours.length ? brew.pours : parsePourStepsFromStructure(brew.pourStructure, brew.numPours),
     });
     setEditingBrewId(brew.id);
-    setSelectedBrew(null);
     setView(VIEW_KEYS.BREW_FORM);
   };
 
@@ -682,7 +666,6 @@ export default function App() {
     });
     setTab(TAB_KEYS.RECIPES);
     setView(VIEW_KEYS.RECIPE_FORM);
-    setSelectedBrew(null);
   };
 
   const setB = (k, v) => setEditBean(f => ({ ...f, [k]: v }));
@@ -920,7 +903,7 @@ export default function App() {
             saveError={saveError}
             setSaveError={setSaveError}
             setShowTransfer={setShowTransfer}
-            showTransferActions={tab !== TAB_KEYS.GREEN_BEANS}
+            showTransferActions={false}
             filter={filter}
             setFilter={setFilter}
             filterOrigin={filterOrigin}
@@ -985,42 +968,6 @@ export default function App() {
             inp={inp}
             onFoc={onFoc}
             onBlr={onBlr}
-          />
-        )}
-
-        {/* ── BREWS TAB ── */}
-        {view === VIEW_KEYS.BEANS && tab === TAB_KEYS.BREWS && !selectedBrew && (
-          <BrewsView
-            beans={beans}
-            brewMethods={brewMethods}
-            brewFilterMethod={brewFilterMethod}
-            setBrewFilterMethod={setBrewFilterMethod}
-            brewFilterBean={brewFilterBean}
-            setBrewFilterBean={setBrewFilterBean}
-            brewSort={brewSort}
-            setBrewSort={setBrewSort}
-            brewSearch={brewSearch}
-            setBrewSearch={setBrewSearch}
-            setSelectedBrew={setSelectedBrew}
-            BrewCard={BrewCard}
-            IS={IS}
-          />
-        )}
-
-        {/* ── BREW DETAIL (standalone) ── */}
-        {view === VIEW_KEYS.BEANS && tab === TAB_KEYS.BREWS && selectedBrew && (
-          <BrewDetail
-            brew={selectedBrew.brew}
-            bean={selectedBrew.bean}
-            onBack={() => setSelectedBrew(null)}
-            onEdit={() => editBrew(selectedBrew.brew, selectedBrew.bean)}
-            onCopyToRecipe={() => copyBrewToRecipe(selectedBrew.brew)}
-            onGoToBean={() => {
-              setActiveBean(selectedBrew.bean);
-              setSelectedBrew(null);
-              setTab(beanTab);
-              setView(VIEW_KEYS.BEAN_DETAIL);
-            }}
           />
         )}
 

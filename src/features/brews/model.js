@@ -11,18 +11,12 @@ function toTimestamp(value) {
   return Number.isNaN(ts) ? 0 : ts;
 }
 
-function getBrewSortTimestamp(brew = {}) {
-  return toTimestamp(brew?.createdAt || brew?.created_at || brew?.date);
-}
-
-export function compareBrewsNewestFirst(a, b) {
-  const dateDelta = toTimestamp(b?.date) - toTimestamp(a?.date);
-  if (dateDelta !== 0) return dateDelta;
-  return toTimestamp(b?.created_at || b?.createdAt) - toTimestamp(a?.created_at || a?.createdAt);
-}
-
 export function sortBrewsNewestFirst(brews = []) {
-  return [...brews].sort(compareBrewsNewestFirst);
+  return [...brews].sort((a, b) => {
+    const dateDelta = toTimestamp(b?.date) - toTimestamp(a?.date);
+    if (dateDelta !== 0) return dateDelta;
+    return toTimestamp(b?.created_at || b?.createdAt) - toTimestamp(a?.created_at || a?.createdAt);
+  });
 }
 
 export function splitPourStructure(pourStructure = "") {

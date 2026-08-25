@@ -58,7 +58,6 @@ export const TAB_KEYS = {
   GREEN_BEANS: "greenBeans",
   ROAST_PROFILES: "roastProfiles",
   RECIPES: "recipes",
-  BREWS: "brews",
 };
 
 export const defaultBrew = {

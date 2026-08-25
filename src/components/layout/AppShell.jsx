@@ -15,7 +15,7 @@ export default function AppShell({
 
       <div style={{ borderBottom: "1px solid rgba(200,137,58,0.13)", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "rgba(12,9,5,0.93)", backdropFilter: "blur(14px)", zIndex: 10 }}>
         <div style={{ display: "flex" }}>
-          {view === "beans" && [{ id: "beans", label: "Roasted Beans" }, { id: "greenBeans", label: "Green Beans" }, { id: "roastProfiles", label: "Roast Profiles" }, { id: "recipes", label: "Recipes" }, { id: "brews", label: "Brews" }].map((item) => (
+          {view === "beans" && [{ id: "beans", label: "Roasted Beans" }, { id: "greenBeans", label: "Green Beans" }, { id: "roastProfiles", label: "Roast Profiles" }, { id: "recipes", label: "Recipes" }].map((item) => (
             <button key={item.id} onClick={() => setTab(item.id)}
               style={{ padding: "14px 20px", background: "none", border: "none", borderBottom: `2px solid ${tab === item.id ? "#c8893a" : "transparent"}`, color: tab === item.id ? "#e2bc7f" : "#c2a587", cursor: "pointer", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s", marginBottom: "-1px" }}>
               {item.label}
