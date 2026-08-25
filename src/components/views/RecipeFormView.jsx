@@ -21,7 +21,6 @@ export default function RecipeFormView({
     <div>
       {!editRecipe.id && !editRecipe.method_confirmed && (
         <div>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "#d4bca0", cursor: "pointer", fontSize: "13px", marginBottom: "18px", padding: 0 }}>← Recipes</button>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "24px", marginBottom: "4px" }}>New Recipe</div>
           <div style={{ fontSize: "13px", color: "#c9b094", marginBottom: "32px" }}>Select your brewing method</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
@@ -41,15 +40,7 @@ export default function RecipeFormView({
 
       {(editRecipe.id || editRecipe.method_confirmed) && (
         <div>
-          <button onClick={() => {
-            if (editRecipe.id) {
-              onClose();
-              return;
-            }
-            setEditRecipe((recipe) => ({ ...recipe, method_confirmed: null }));
-          }} style={{ background: "none", border: "none", color: "#d4bca0", cursor: "pointer", fontSize: "13px", marginBottom: "14px", padding: 0 }}>
-            {editRecipe.id ? "← Recipes" : "← Change method"}
-          </button>
+          {!editRecipe.id && <button onClick={() => setEditRecipe((recipe) => ({ ...recipe, method_confirmed: null }))} style={{ background: "none", border: "none", color: "#d4bca0", cursor: "pointer", fontSize: "13px", marginBottom: "14px", padding: 0 }}>← Change method</button>}
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "24px" }}>{editRecipe.id ? "Edit Recipe" : method}</div>
             <span style={{ fontSize: "11px", color: "#d4bca0", background: "rgba(200,137,58,0.08)", padding: "3px 10px", borderRadius: "20px" }}>{method}</span>

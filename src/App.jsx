@@ -150,6 +150,7 @@ export default function App() {
   const [greenBeanListMode, setGreenBeanListMode] = useState("active"); // active | archived
   const [recipeListMode, setRecipeListMode] = useState("active"); // active | archived
   const [roastProfileListMode, setRoastProfileListMode] = useState("active"); // active | archived
+  const [selectedRoastProfile, setSelectedRoastProfile] = useState(null);
   const [editingBrewId, setEditingBrewId] = useState(null); // id of brew being edited
   const [showTransfer, setShowTransfer] = useState(null); // "export" | "import" | null
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
@@ -883,6 +884,11 @@ export default function App() {
       tab={tab}
       setTab={setTab}
       setView={setView}
+      isDetailView={Boolean(selectedRoastProfile)}
+      onBack={() => {
+        if (selectedRoastProfile) setSelectedRoastProfile(null);
+        setView("beans");
+      }}
       userEmail={currentUser?.email || session?.email}
       onSync={async () => {
         const token = await getAccessTokenOrFail();
@@ -898,6 +904,7 @@ export default function App() {
         {view === VIEW_KEYS.BEANS && (tab === TAB_KEYS.BEANS || tab === TAB_KEYS.GREEN_BEANS) && (
           <BeansView
             title={tab === TAB_KEYS.GREEN_BEANS ? "Green Beans" : "Roasted Beans"}
+            subtitle={tab === TAB_KEYS.GREEN_BEANS ? "Green Bean Journal" : "Coffee Journal"}
             isGreenBeanSheet={tab === TAB_KEYS.GREEN_BEANS}
             beans={sheetBeans}
             saveError={saveError}
@@ -1016,6 +1023,8 @@ export default function App() {
             visibleRoastProfiles={visibleRoastProfiles}
             greenBeans={greenBeans}
             roastedBeans={beans}
+            selectedProfile={selectedRoastProfile}
+            setSelectedProfile={setSelectedRoastProfile}
             toggleArchiveRoastProfile={toggleArchiveRoastProfile}
             editRoastProfile={editRoastProfile}
             deleteRoastProfile={deleteRoastProfile}

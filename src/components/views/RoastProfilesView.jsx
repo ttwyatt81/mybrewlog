@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 export default function RoastProfilesView({
   startNewRoastProfile,
   roastProfileListMode,
@@ -9,12 +7,12 @@ export default function RoastProfilesView({
   visibleRoastProfiles,
   greenBeans,
   roastedBeans,
+  selectedProfile,
+  setSelectedProfile,
   toggleArchiveRoastProfile,
   editRoastProfile,
   deleteRoastProfile,
 }) {
-  const [selectedProfile, setSelectedProfile] = useState(null);
-
   if (selectedProfile) {
     const profileName = (selectedProfile.name || "").trim().toLowerCase();
     const profileRoasts = (greenBeans || []).flatMap((greenBean) => (
@@ -32,7 +30,6 @@ export default function RoastProfilesView({
 
     return (
       <div>
-        <button onClick={() => setSelectedProfile(null)} style={{ background: "none", border: "none", color: "#d4bca0", cursor: "pointer", fontSize: "13px", marginBottom: "18px", padding: 0 }}>← Roast Profiles</button>
         <div style={{ marginBottom: "22px" }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", letterSpacing: "0.02em", marginBottom: "4px" }}>{selectedProfile.name}</div>
           <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.18em", textTransform: "uppercase" }}>Roast overview</div>
@@ -71,42 +68,44 @@ export default function RoastProfilesView({
     <div>
       <div style={{ marginBottom: "22px" }}>
         <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", letterSpacing: "0.02em", marginBottom: "4px" }}>Roast Profiles</div>
-        <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.18em", textTransform: "uppercase" }}>Saved roast name presets</div>
+        <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.18em", textTransform: "uppercase" }}>Saved roast profiles</div>
       </div>
 
       <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
         <button onClick={startNewRoastProfile} style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>+ New Profile</button>
+        <div style={{ display: "inline-flex", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "999px", padding: "4px" }}>
+          {[
+            { id: "active", label: "Active" },
+            { id: "archived", label: "Archived" }
+          ].map((option) => (
+            <button
+              key={option.id}
+              onClick={() => setRoastProfileListMode(option.id)}
+              style={{
+                padding: "7px 16px",
+                borderRadius: "999px",
+                border: "none",
+                background: roastProfileListMode === option.id ? "rgba(200,137,58,0.18)" : "transparent",
+                color: roastProfileListMode === option.id ? "#e4bf82" : "#bca385",
+                cursor: "pointer",
+                fontSize: "12px",
+                fontWeight: roastProfileListMode === option.id ? 600 : 400,
+                transition: "all 0.15s"
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "18px", flexWrap: "wrap" }}>
         <input
           value={roastProfileSearch}
           onChange={(e) => setRoastProfileSearch(e.target.value)}
           placeholder="Search profiles…"
-          style={{ flex: 1, minWidth: "120px", fontSize: "13px", padding: "7px 11px" }}
+          style={{ flex: 1, minWidth: "160px", width: "auto", fontSize: "12px", padding: "5px 10px", color: "#c4ab90", boxSizing: "border-box" }}
         />
-      </div>
-
-      <div style={{ display: "inline-flex", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "999px", padding: "4px", marginBottom: "18px" }}>
-        {[
-          { id: "active", label: "Active" },
-          { id: "archived", label: "Archived" }
-        ].map((option) => (
-          <button
-            key={option.id}
-            onClick={() => setRoastProfileListMode(option.id)}
-            style={{
-              padding: "7px 16px",
-              borderRadius: "999px",
-              border: "none",
-              background: roastProfileListMode === option.id ? "rgba(200,137,58,0.18)" : "transparent",
-              color: roastProfileListMode === option.id ? "#e4bf82" : "#bca385",
-              cursor: "pointer",
-              fontSize: "12px",
-              fontWeight: roastProfileListMode === option.id ? 600 : 400,
-              transition: "all 0.15s"
-            }}
-          >
-            {option.label}
-          </button>
-        ))}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>

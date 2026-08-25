@@ -34,65 +34,46 @@ export default function BeanDetailScreenView({
   roastedBeans = [],
   onGoToSourceRoast,
 }) {
+  const editDeleteActions = (
+    <div style={{ display: "flex", gap: "8px", flexWrap: "nowrap", justifyContent: "flex-end", alignItems: "center", marginLeft: "auto" }}>
+      <button
+        onClick={() => { setEditBean({ ...liveBean }); setView("beanForm"); }}
+        style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "#c8893a"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "#c9b094"; }}
+        aria-label={`Edit ${liveBean.name}`}
+      >
+        <span style={{ fontSize: "11px", width: "40px", whiteSpace: "nowrap" }}>Edit</span>
+        <span style={{ fontSize: "14px", lineHeight: "1" }}>✎</span>
+      </button>
+      <button onClick={() => deleteBean(liveBean.id)} style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#c9b094")} aria-label={`Delete ${liveBean.name}`}>✕</button>
+    </div>
+  );
+
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px" }}>
-        <button onClick={() => setView("beans")} style={{ background: "none", border: "none", color: "#d4bca0", cursor: "pointer", fontSize: "13px", padding: 0 }}>← {isGreenBeanSheet ? "All Green Beans" : "All Roasted Beans"}</button>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-          {liveBean.sourceRoastId && onGoToSourceRoast && (
-            <button
-              onClick={() => onGoToSourceRoast(liveBean)}
-              style={{ background: "rgba(200,137,58,0.08)", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "999px", color: "#d8b98c", cursor: "pointer", fontSize: "11px", padding: "6px 10px", whiteSpace: "nowrap" }}
-            >
-              View Roast Log
-            </button>
-          )}
-          <button
-            onClick={() => { setEditBean({ ...liveBean }); setView("beanForm"); }}
-            style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#c8893a";
-              const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
-              const label = e.currentTarget.querySelector('[data-role="edit-label"]');
-              if (icon) icon.style.transform = "translateX(1px)";
-              if (label) label.style.opacity = "1";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "#c9b094";
-              const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
-              const label = e.currentTarget.querySelector('[data-role="edit-label"]');
-              if (icon) icon.style.transform = "translateX(0)";
-              if (label) label.style.opacity = "0";
-            }}
-            aria-label={`Edit ${liveBean.name}`}
-          >
-            <span data-role="edit-label" style={{ fontSize: "11px", opacity: 0, width: "40px", overflow: "hidden", whiteSpace: "nowrap", transition: "opacity 0.15s ease" }}>Edit</span>
-            <span data-role="edit-icon" style={{ fontSize: "14px", lineHeight: "1", display: "inline-block", transition: "transform 0.15s ease" }}>✎</span>
-          </button>
-          <button onClick={() => deleteBean(liveBean.id)} style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#c9b094")}>✕</button>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "12px", marginBottom: "8px" }}>
+        <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "26px", display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+            <span>{liveBean.name}</span>
+            {liveBean.archived && (
+              <span style={{
+                padding: "4px 8px",
+                borderRadius: "999px",
+                background: "rgba(200,137,58,0.18)",
+                border: "1px solid rgba(200,137,58,0.28)",
+                color: "#d8b98c",
+                fontSize: "9px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                fontWeight: 600
+              }}>
+                Archived
+              </span>
+            )}
         </div>
-      </div>
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "26px", display: "flex", alignItems: "center", gap: "8px" }}>
-          <span>{liveBean.name}</span>
-          {liveBean.archived && (
-            <span style={{
-              padding: "4px 8px",
-              borderRadius: "999px",
-              background: "rgba(200,137,58,0.18)",
-              border: "1px solid rgba(200,137,58,0.28)",
-              color: "#d8b98c",
-              fontSize: "9px",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              fontWeight: 600
-            }}>
-              Archived
-            </span>
-          )}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", width: "100%" }}>
           {!isGreenBeanSheet && (
             <button onClick={onLogBrew} style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "7px 13px", fontSize: "12px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
               + Log Brew
@@ -141,6 +122,15 @@ export default function BeanDetailScreenView({
               }} />
             </span>
           </button>
+          {!isGreenBeanSheet && liveBean.sourceRoastId && onGoToSourceRoast && (
+            <button
+              onClick={() => onGoToSourceRoast(liveBean)}
+              style={{ background: "rgba(200,137,58,0.08)", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "999px", color: "#d8b98c", cursor: "pointer", fontSize: "11px", padding: "6px 10px", whiteSpace: "nowrap" }}
+            >
+              View Roast Log
+            </button>
+          )}
+          {editDeleteActions}
         </div>
       </div>
 

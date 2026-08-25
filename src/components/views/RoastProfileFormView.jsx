@@ -29,16 +29,6 @@ export default function RoastProfileFormView({
 }) {
   return (
     <div>
-      <button
-        onClick={() => {
-          setView("beans");
-          setRoastProfileForm({ id: null, name: "", machine: "", description: "", lastUsed: "", rating: 0, archived: false });
-        }}
-        style={{ background: "none", border: "none", color: "#9a7a5a", cursor: "pointer", fontSize: "13px", marginBottom: "18px", padding: 0 }}
-      >
-        ← Back
-      </button>
-
       <div style={{ display: "flex", flexDirection: "column", gap: "26px" }}>
         <div>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "24px", marginBottom: "4px" }}>{roastProfileForm.id ? "Edit Profile" : "New Profile"}</div>

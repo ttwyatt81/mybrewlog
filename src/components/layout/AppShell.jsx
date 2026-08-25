@@ -3,6 +3,8 @@ export default function AppShell({
   tab,
   setTab,
   setView,
+  onBack,
+  isDetailView = false,
   userEmail,
   onSync,
   onSignOut,
@@ -14,20 +16,20 @@ export default function AppShell({
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
 
       <div style={{ borderBottom: "1px solid rgba(200,137,58,0.13)", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "rgba(12,9,5,0.93)", backdropFilter: "blur(14px)", zIndex: 10 }}>
-        <div style={{ display: "flex" }}>
-          {view === "beans" && [{ id: "beans", label: "Roasted Beans" }, { id: "greenBeans", label: "Green Beans" }, { id: "roastProfiles", label: "Roast Profiles" }, { id: "recipes", label: "Recipes" }].map((item) => (
+        <div style={{ display: "flex", transform: view !== "beans" || isDetailView ? "translateX(max(-16px, calc((100vw - 680px) / 2 - 32px)))" : undefined }}>
+          {view === "beans" && !isDetailView && [{ id: "beans", label: "Roasted Beans" }, { id: "greenBeans", label: "Green Beans" }, { id: "roastProfiles", label: "Roast Profiles" }, { id: "recipes", label: "Recipes" }].map((item) => (
             <button key={item.id} onClick={() => setTab(item.id)}
               style={{ padding: "14px 20px", background: "none", border: "none", borderBottom: `2px solid ${tab === item.id ? "#c8893a" : "transparent"}`, color: tab === item.id ? "#e2bc7f" : "#c2a587", cursor: "pointer", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s", marginBottom: "-1px" }}>
               {item.label}
             </button>
           ))}
-          {view !== "beans" && (
+          {(view !== "beans" || isDetailView) && (
             <div style={{ display: "flex", alignItems: "center", padding: "0 4px" }}>
-              <button onClick={() => setView("beans")} style={{ background: "none", border: "none", color: "#ccb396", cursor: "pointer", fontSize: "13px", padding: "14px 8px" }}>← Back</button>
+              <button onClick={onBack || (() => setView("beans"))} style={{ background: "none", border: "none", color: "#ccb396", cursor: "pointer", fontSize: "13px", padding: "14px 8px" }}>← Back</button>
             </div>
           )}
         </div>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center", transform: view !== "beans" || isDetailView ? "translateX(min(4px, calc((720px - 100vw) / 2)))" : undefined }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "1px" }}>
             <div style={{ fontSize: "10px", color: "#d0b59a", letterSpacing: "0.03em", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail}</div>
             <div style={{ display: "flex", gap: "8px" }}>
