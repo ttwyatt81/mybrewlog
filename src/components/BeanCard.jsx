@@ -18,6 +18,7 @@ export default function BeanCard({
   onToggleArchive,
   onEditBean,
   onDeleteBean,
+  greenBeans = [],
 }) {
   const best = Array.isArray(bean.brews) ? bestBrew(bean) : null;
   const brewCount = Array.isArray(bean.brews) ? bean.brews.length : 0;
@@ -26,6 +27,9 @@ export default function BeanCard({
   const weightKg = parseFloat(bean.weightKg);
   const hasValidPricePerKg = Number.isFinite(price) && Number.isFinite(weightKg) && weightKg > 0;
   const pricePerKg = hasValidPricePerKg ? (price / weightKg) : null;
+  const linkedRoast = !isGreenBeanSheet && bean.sourceRoastId
+    ? greenBeans.flatMap((greenBean) => greenBean.roasts || []).find((roast) => roast.id === bean.sourceRoastId)
+    : null;
   const archiveToggle = (
     <button
       onClick={(event) => {
@@ -147,6 +151,11 @@ export default function BeanCard({
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", marginBottom: "2px", lineHeight: 1.2 }}>{bean.name}</div>
+          {bean.sourceRoastId && linkedRoast && (linkedRoast.profile || linkedRoast.roastLevel) && (
+            <div style={{ fontSize: "13px", color: "#c9b094", lineHeight: 1.3, marginBottom: "2px" }}>
+              {[linkedRoast?.profile, linkedRoast?.roastLevel].filter(Boolean).join(" · ")}
+            </div>
+          )}
           <div style={{ fontSize: "11px", color: "#d0b69a", lineHeight: 1.3 }}>
             {[(isGreenBeanSheet ? null : bean.roaster), bean.producer, bean.origin, bean.region].filter(Boolean).join(" · ")}
           </div>

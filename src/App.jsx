@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import BeanCard from "./components/BeanCard";
 import {
   defaultRecipe,
@@ -157,6 +157,7 @@ export default function App() {
   const [importText, setImportText] = useState("");
   const [filterRoaster, setFilterRoaster] = useState("");
   const [saveError, setSaveError] = useState("");
+  const migratedSelfRoastNamesForUser = useRef(null);
   const {
     exportData,
     importData,
@@ -191,6 +192,42 @@ export default function App() {
     }
     return null;
   };
+
+  useEffect(() => {
+    const userId = session?.user?.id || currentUser?.id || currentUser?.email;
+    if (!userId || !beans.length || !greenBeans.length || migratedSelfRoastNamesForUser.current === userId) return;
+
+    const roastSources = new Map();
+    greenBeans.forEach((greenBean) => {
+      (greenBean.roasts || []).forEach((roast) => {
+        roastSources.set(roast.id, greenBean.name);
+      });
+    });
+
+    const updates = beans.filter((bean) => {
+      const greenBeanName = roastSources.get(bean.sourceRoastId);
+      return greenBeanName && bean.name !== greenBeanName;
+    });
+
+    migratedSelfRoastNamesForUser.current = userId;
+    if (!updates.length) return;
+
+    const migrateNames = async () => {
+      const token = await getAccessTokenOrFail();
+      if (!token) return;
+
+      for (const bean of updates) {
+        const greenBeanName = roastSources.get(bean.sourceRoastId);
+        const saved = await saveBeanData(token, { ...bean, name: greenBeanName });
+        if (!saved) {
+          setSaveError(withSupabaseError("Some self-roasted bean names could not be updated. Please try again."));
+          return;
+        }
+      }
+    };
+
+    migrateNames();
+  }, [beans, greenBeans, session, currentUser, ensureValidAccessToken, saveBeanData]);
 
   const confirmDeletion = (itemType) => new Promise((resolve) => {
     setDeleteConfirmation({ itemType, resolve });
@@ -547,11 +584,7 @@ export default function App() {
     if (!linkedBean) return;
 
     const greenBeanName = (activeBean?.name || "").trim() || "Unknown Green Bean";
-    const nextName = [
-      greenBeanName,
-      ((roast.profile || "No Profile").trim() || "No Profile"),
-      ((roast.roastLevel || "No Level").trim() || "No Level")
-    ].join(" | ");
+    const nextName = greenBeanName;
 
     const updatedBean = {
       ...linkedBean,
@@ -583,12 +616,10 @@ export default function App() {
     }
 
     const greenBeanName = (activeBean.name || "Unknown Green Bean").trim();
-    const exportProfile = (roast.profile || "No Profile").trim();
-    const exportLevel = (roast.roastLevel || "No Level").trim();
-    const exportName = [greenBeanName, exportProfile, exportLevel].join(" | ");
+    const exportName = greenBeanName;
     const normalizedExportName = exportName.toLowerCase();
 
-    const duplicateExists = beans.some((bean) => (bean.name || "").trim().toLowerCase() === normalizedExportName);
+    const duplicateExists = beans.some((bean) => !bean.sourceRoastId && (bean.name || "").trim().toLowerCase() === normalizedExportName);
     if (duplicateExists) {
       setSaveError(`Export blocked. A roasted bean with this name already exists: ${exportName}`);
       return;
@@ -907,6 +938,7 @@ export default function App() {
             subtitle={tab === TAB_KEYS.GREEN_BEANS ? "Green Bean Journal" : "Coffee Journal"}
             isGreenBeanSheet={tab === TAB_KEYS.GREEN_BEANS}
             beans={sheetBeans}
+            greenBeans={greenBeans}
             saveError={saveError}
             setSaveError={setSaveError}
             setShowTransfer={setShowTransfer}

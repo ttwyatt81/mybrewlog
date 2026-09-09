@@ -58,6 +58,7 @@ export default function BeansView({
   onToggleArchive,
   onEditBean,
   onDeleteBean,
+  greenBeans,
 }) {
   const errorParts = splitErrorMessage(saveError);
 
@@ -167,6 +168,7 @@ export default function BeansView({
               onToggleArchive={onToggleArchive}
               onEditBean={onEditBean}
               onDeleteBean={onDeleteBean}
+              greenBeans={greenBeans}
             />
           ))}
         </div>
