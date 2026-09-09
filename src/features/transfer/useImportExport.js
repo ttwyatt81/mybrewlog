@@ -98,7 +98,7 @@ export function useImportExport({
 
       for (const rawBean of payload.beans) {
         const beanPayloadToInsert = buildBeanPayload(rawBean);
-        const record = await insertRow("beans", token, beanPayloadToInsert);
+        const record = await insertRow("roasted_beans", token, beanPayloadToInsert);
         if (record) {
           beanIdMap[rawBean.id] = record.id;
         }

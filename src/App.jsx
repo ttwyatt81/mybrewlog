@@ -573,7 +573,7 @@ export default function App() {
 
   const findBeanBySourceRoastId = async (token, sourceRoastId) => {
     if (!token || !sourceRoastId) return null;
-    const rows = await sbGet("beans", token, "select=*");
+    const rows = await sbGet("roasted_beans", token, "select=*");
     return (rows || []).find((bean) => bean.source_roast_id === sourceRoastId) || null;
   };
 
