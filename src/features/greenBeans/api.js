@@ -6,7 +6,7 @@ export async function loadGreenBeans(token) {
 }
 
 export async function loadGreenBeanRoasts(token) {
-  return sbGet("green_bean_roasts", token, "select=*&order=date.desc,created_at.desc");
+  return sbGet("roasts", token, "select=*&order=date.desc,created_at.desc");
 }
 
 export async function saveGreenBean(token, bean) {
@@ -21,8 +21,8 @@ export async function saveGreenBeanRoast(token, roast) {
   if (!token) return null;
   const payload = greenBeanRoastPayload(roast);
   return roast.id
-    ? await sbUpdate("green_bean_roasts", token, roast.id, payload)
-    : await sbInsert("green_bean_roasts", token, payload);
+    ? await sbUpdate("roasts", token, roast.id, payload)
+    : await sbInsert("roasts", token, payload);
 }
 
 export async function deleteGreenBean(token, id) {
@@ -32,5 +32,5 @@ export async function deleteGreenBean(token, id) {
 
 export async function deleteGreenBeanRoast(token, id) {
   if (!token) return false;
-  return sbDelete("green_bean_roasts", token, id);
+  return sbDelete("roasts", token, id);
 }

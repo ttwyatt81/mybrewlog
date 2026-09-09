@@ -542,7 +542,7 @@ export default function App() {
     const token = await getAccessTokenOrFail();
     if (!token) return;
 
-    const roastRows = await sbGet("green_bean_roasts", token, "select=*");
+    const roastRows = await sbGet("roasts", token, "select=*");
     const roast = (roastRows || []).find((item) => item.id === bean.sourceRoastId);
     if (!roast) return;
 
