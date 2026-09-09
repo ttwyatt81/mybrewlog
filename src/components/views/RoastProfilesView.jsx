@@ -14,10 +14,9 @@ export default function RoastProfilesView({
   deleteRoastProfile,
 }) {
   if (selectedProfile) {
-    const profileName = (selectedProfile.name || "").trim().toLowerCase();
     const profileRoasts = (greenBeans || []).flatMap((greenBean) => (
       greenBean.roasts || []
-    ).filter((roast) => (roast.profile || "").trim().toLowerCase() === profileName).map((roast) => {
+    ).filter((roast) => roast.roastProfileId === selectedProfile.id || (!roast.roastProfileId && (roast.profile || "").trim().toLowerCase() === (selectedProfile.name || "").trim().toLowerCase())).map((roast) => {
       const roastedBean = (roastedBeans || []).find((bean) => bean.sourceRoastId === roast.id);
       const brews = roastedBean?.brews || [];
       const ratedBrews = brews.filter((brew) => Number(brew.rating) > 0);

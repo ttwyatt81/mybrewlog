@@ -6,7 +6,7 @@ export async function loadGreenBeans(token) {
 }
 
 export async function loadGreenBeanRoasts(token) {
-  return sbGet("roasts", token, "select=*&order=date.desc,created_at.desc");
+  return sbGet("roasts", token, "select=*,roast_profiles(name)&order=date.desc,created_at.desc");
 }
 
 export async function saveGreenBean(token, bean) {

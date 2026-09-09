@@ -24,6 +24,7 @@ export const defaultBean = {
 
 export const defaultGreenBeanRoast = {
   id: null,
+  roastProfileId: "",
   date: new Date().toISOString().split("T")[0],
   roastTime: new Date().toTimeString().slice(0, 5),
   profile: "",

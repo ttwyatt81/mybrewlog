@@ -28,8 +28,15 @@ export default function GreenBeanRoastFormView({
             <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               <select
                 style={{ ...inp({ cursor: "pointer" }), flex: 1 }}
-                value={greenBeanRoastForm.profile}
-                onChange={(e) => setGreenBeanRoastForm((f) => ({ ...f, profile: e.target.value }))}
+                value={greenBeanRoastForm.roastProfileId || ""}
+                onChange={(e) => {
+                  const selectedProfile = roastProfiles.find((profile) => profile.id === e.target.value);
+                  setGreenBeanRoastForm((f) => ({
+                    ...f,
+                    roastProfileId: e.target.value,
+                    profile: selectedProfile?.name || "",
+                  }));
+                }}
                 onFocus={onFoc}
                 onBlur={onBlr}
               >

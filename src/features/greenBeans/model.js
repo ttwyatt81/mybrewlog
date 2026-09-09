@@ -24,9 +24,10 @@ export function normalizeGreenBeanRoast(roast = {}) {
   return {
     id: roast.id || null,
     greenBeanId: getValue(roast, "green_bean_id") || null,
+    roastProfileId: getValue(roast, "roast_profile_id", "roastProfileId") || "",
     date: getValue(roast, "date") || "",
     roastTime: roastTime || "",
-    profile: getValue(roast, "profile") || "",
+    profile: getValue(roast, "profile") || roast.roast_profiles?.name || roast.roastProfile?.name || "",
     roastLevel: getValue(roast, "roast_level") || "",
     restingFromDays: restingFromDays ?? "",
     restingToDays: restingToDays ?? "",
@@ -88,9 +89,9 @@ export function greenBeanRoastPayload(roast = {}) {
 
   return {
     green_bean_id: roast.greenBeanId || null,
+    roast_profile_id: roast.roastProfileId || null,
     date: roast.date || null,
     roast_time: roast.roastTime || null,
-    profile: roast.profile || null,
     roast_level: roast.roastLevel || null,
     resting_from_days: roast.restingFromDays === "" ? null : Number(roast.restingFromDays),
     resting_to_days: roast.restingToDays === "" ? null : Number(roast.restingToDays),

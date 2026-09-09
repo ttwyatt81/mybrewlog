@@ -492,6 +492,7 @@ export default function App() {
       greenBeanId: activeBean.id,
       date: greenBeanRoastForm.date,
       roastTime: greenBeanRoastForm.roastTime || "",
+      roastProfileId: greenBeanRoastForm.roastProfileId || "",
       profile: greenBeanRoastForm.profile || "",
       roastLevel: greenBeanRoastForm.roastLevel,
       restingFromDays: greenBeanRoastForm.restingFromDays,
@@ -524,12 +525,9 @@ export default function App() {
       return { ...current, roasts: nextRoasts };
     });
 
-    const cleanProfileName = (greenBeanRoastForm.profile || "").trim().toLowerCase();
-    if (cleanProfileName && greenBeanRoastForm.date) {
-      const matchingProfiles = roastProfiles.filter((profile) => ((profile.name || "").trim().toLowerCase()) === cleanProfileName);
-      for (const profile of matchingProfiles) {
-        await saveRoastProfileData(token, { ...profile, lastUsed: greenBeanRoastForm.date });
-      }
+    const selectedProfile = roastProfiles.find((profile) => profile.id === greenBeanRoastForm.roastProfileId);
+    if (selectedProfile && greenBeanRoastForm.date) {
+      await saveRoastProfileData(token, { ...selectedProfile, lastUsed: greenBeanRoastForm.date });
     }
 
     setEditingGreenBeanRoastId(null);
@@ -737,8 +735,8 @@ export default function App() {
     });
   const roastProfileUsage = greenBeans.reduce((usage, bean) => {
     (bean.roasts || []).forEach((roast) => {
-      const profileName = (roast.profile || "").trim().toLowerCase();
-      if (profileName) usage[profileName] = (usage[profileName] || 0) + 1;
+      const profileKey = roast.roastProfileId || (roast.profile || "").trim().toLowerCase();
+      if (profileKey) usage[profileKey] = (usage[profileKey] || 0) + 1;
     });
     return usage;
   }, {});
@@ -754,7 +752,7 @@ export default function App() {
     })
     .map((profile) => ({
       ...profile,
-      usageCount: roastProfileUsage[(profile.name || "").trim().toLowerCase()] || 0,
+      usageCount: roastProfileUsage[profile.id] || roastProfileUsage[(profile.name || "").trim().toLowerCase()] || 0,
     }));
 
   const bestBrew = (bean) => bean.brews.length ? bean.brews.reduce((a, b) => b.rating > a.rating ? b : a, bean.brews[0]) : null;
@@ -775,6 +773,7 @@ export default function App() {
     id: roast.id || null,
     date: roast.date || new Date().toISOString().split("T")[0],
     roastTime: roast.roastTime || "",
+    roastProfileId: roast.roastProfileId || roastProfiles.find((profile) => profile.name === roast.profile)?.id || "",
     profile: roast.profile || "",
     roastLevel: roast.roastLevel || "Medium",
     restingFromDays: roast.restingFromDays || "",
@@ -852,6 +851,7 @@ export default function App() {
     setGreenBeanRoastForm((current) => ({
       ...defaultGreenBeanRoast,
       ...current,
+      roastProfileId: preset.id || current.roastProfileId || "",
       profile: preset.profile || preset.name || current.profile,
       roastLevel: preset.roastLevel || current.roastLevel || "Medium",
       startWeight: preset.startWeight ?? current.startWeight,
