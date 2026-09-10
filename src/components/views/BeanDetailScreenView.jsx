@@ -31,9 +31,13 @@ export default function BeanDetailScreenView({
   onEditRoast,
   onDeleteRoast,
   onExportRoast,
+  greenBeans = [],
   roastedBeans = [],
   onGoToSourceRoast,
 }) {
+  const linkedRoast = !isGreenBeanSheet && liveBean.sourceRoastId
+    ? greenBeans.flatMap((greenBean) => greenBean.roasts || []).find((roast) => roast.id === liveBean.sourceRoastId)
+    : null;
   const editDeleteActions = (
     <div style={{ display: "flex", gap: "8px", flexWrap: "nowrap", justifyContent: "flex-end", alignItems: "center", marginLeft: "auto" }}>
       <button
@@ -73,6 +77,11 @@ export default function BeanDetailScreenView({
             )}
         </div>
         </div>
+        {!isGreenBeanSheet && linkedRoast && (linkedRoast.roastProfileName || linkedRoast.roastLevel) && (
+          <div style={{ fontSize: "13px", color: "#c9b094", lineHeight: 1.3, marginTop: "-6px" }}>
+            {[linkedRoast.roastProfileName, linkedRoast.roastLevel].filter(Boolean).join(" · ")}
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", width: "100%" }}>
           {!isGreenBeanSheet && (
             <button onClick={onLogBrew} style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "7px 13px", fontSize: "12px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>

@@ -1083,6 +1083,7 @@ export default function App() {
             }}
             onDeleteRoast={deleteGreenBeanRoast}
             onExportRoast={exportGreenBeanRoastToRoastedBeans}
+            greenBeans={greenBeans}
             roastedBeans={beans}
             onGoToSourceRoast={goToSourceRoast}
           />
