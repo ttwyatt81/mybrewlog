@@ -93,8 +93,8 @@ export function combineBeansAndBrews(beanRows, brewRows, existingBeans = []) {
 
   (brewRows || []).forEach((row) => {
     const brew = normalizeBrewRow(row);
-    if (!brew.bean_id) return;
-    const bean = lookup[brew.bean_id];
+    if (!brew.roasted_bean_id) return;
+    const bean = lookup[brew.roasted_bean_id];
     if (!bean) return;
 
     const existingBrews = Array.isArray(bean.brews) ? bean.brews : [];

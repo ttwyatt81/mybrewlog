@@ -136,7 +136,6 @@ export default function App() {
     machine: "",
     description: "",
     lastUsed: "",
-    rating: 0,
     archived: false,
   });
   const [filter, setFilter] = useState("");
@@ -434,7 +433,7 @@ export default function App() {
       ...brewForm,
       method: finalMethod,
       method_confirmed: undefined,
-      bean_id: activeBean.id,
+      roasted_bean_id: activeBean.id,
       water: getComputedBrewWater(brewForm),
       totalTime: brewForm.totalTime || "",
       pours: Array.isArray(brewForm.pours) ? brewForm.pours : []
@@ -493,7 +492,6 @@ export default function App() {
       date: greenBeanRoastForm.date,
       roastTime: greenBeanRoastForm.roastTime || "",
       roastProfileId: greenBeanRoastForm.roastProfileId || "",
-      profile: greenBeanRoastForm.profile || "",
       roastLevel: greenBeanRoastForm.roastLevel,
       restingFromDays: greenBeanRoastForm.restingFromDays,
       restingToDays: greenBeanRoastForm.restingToDays,
@@ -540,7 +538,7 @@ export default function App() {
     const token = await getAccessTokenOrFail();
     if (!token) return;
 
-    const roastRows = await sbGet("roasts", token, "select=*");
+    const roastRows = await sbGet("roasts", token, "select=*,roast_profiles(name)");
     const roast = (roastRows || []).find((item) => item.id === bean.sourceRoastId);
     if (!roast) return;
 
@@ -735,7 +733,7 @@ export default function App() {
     });
   const roastProfileUsage = greenBeans.reduce((usage, bean) => {
     (bean.roasts || []).forEach((roast) => {
-      const profileKey = roast.roastProfileId || (roast.profile || "").trim().toLowerCase();
+      const profileKey = roast.roastProfileId || (roast.roastProfileName || "").trim().toLowerCase();
       if (profileKey) usage[profileKey] = (usage[profileKey] || 0) + 1;
     });
     return usage;
@@ -773,8 +771,8 @@ export default function App() {
     id: roast.id || null,
     date: roast.date || new Date().toISOString().split("T")[0],
     roastTime: roast.roastTime || "",
-    roastProfileId: roast.roastProfileId || roastProfiles.find((profile) => profile.name === roast.profile)?.id || "",
-    profile: roast.profile || "",
+    roastProfileId: roast.roastProfileId || "",
+    profile: roast.roastProfileName || "",
     roastLevel: roast.roastLevel || "Medium",
     restingFromDays: roast.restingFromDays || "",
     restingToDays: roast.restingToDays || "",
@@ -800,7 +798,6 @@ export default function App() {
       machine: (roastProfileForm.machine || "").trim(),
       description: (roastProfileForm.description || "").trim(),
       lastUsed: roastProfileForm.lastUsed || "",
-      rating: Number(roastProfileForm.rating) || 0,
       archived: Boolean(roastProfileForm.archived),
     };
 
@@ -810,7 +807,7 @@ export default function App() {
       return;
     }
 
-    setRoastProfileForm({ id: null, name: "", machine: "", description: "", lastUsed: "", rating: 0, archived: false });
+    setRoastProfileForm({ id: null, name: "", machine: "", description: "", lastUsed: "", archived: false });
     setView(VIEW_KEYS.BEANS);
   };
 
@@ -824,7 +821,7 @@ export default function App() {
       return;
     }
     if (roastProfileForm.id === id) {
-      setRoastProfileForm({ id: null, name: "", machine: "", description: "", lastUsed: "", rating: 0, archived: false });
+      setRoastProfileForm({ id: null, name: "", machine: "", description: "", lastUsed: "", archived: false });
     }
   };
 
@@ -852,7 +849,7 @@ export default function App() {
       ...defaultGreenBeanRoast,
       ...current,
       roastProfileId: preset.id || current.roastProfileId || "",
-      profile: preset.profile || preset.name || current.profile,
+      profile: preset.name || current.profile,
       roastLevel: preset.roastLevel || current.roastLevel || "Medium",
       startWeight: preset.startWeight ?? current.startWeight,
       endWeight: preset.endWeight ?? current.endWeight,
@@ -862,7 +859,7 @@ export default function App() {
   };
 
   const startNewRoastProfile = () => {
-    setRoastProfileForm({ id: null, name: "", machine: "", description: "", lastUsed: "", rating: 0, archived: false });
+    setRoastProfileForm({ id: null, name: "", machine: "", description: "", lastUsed: "", archived: false });
     setView(VIEW_KEYS.ROAST_PROFILE_FORM);
   };
 
@@ -873,7 +870,6 @@ export default function App() {
       machine: profile.machine || "",
       description: profile.description || "",
       lastUsed: profile.lastUsed || "",
-      rating: Number(profile.rating) || 0,
       archived: Boolean(profile.archived),
     });
     setView(VIEW_KEYS.ROAST_PROFILE_FORM);

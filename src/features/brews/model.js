@@ -118,7 +118,7 @@ export function normalizeBrewRow(row = {}) {
 
   return {
     id: row.id,
-    bean_id: getValue(row, "bean_id", "beanId"),
+    roasted_bean_id: getValue(row, "roasted_bean_id", "roastedBeanId", "bean_id", "beanId"),
     date: getValue(row, "date") || "",
     createdAt: getValue(row, "createdAt", "created_at") || "",
     method,
@@ -155,7 +155,7 @@ export function brewPayload(brew) {
   const espressoYield = brew.method === "Espresso" ? (brew.shotYield || brew.water) : brew.water;
 
   return {
-    bean_id: brew.bean_id,
+    roasted_bean_id: brew.roasted_bean_id,
     date: brew.date || null,
     method: brew.method,
     brewer: brew.brewer || null,

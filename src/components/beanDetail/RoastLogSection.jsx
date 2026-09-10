@@ -155,7 +155,7 @@ export default function RoastLogSection({
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
                   <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "13px", color: "#c8893a" }}>#{roastCount - i}</span>
                   <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "15px", color: "#e4cfb1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {roast.profile || "Untitled Profile"}
+                    {roast.roastProfileName || "Untitled Profile"}
                   </span>
                   {roast.roastLevel && (
                     <span style={{ fontSize: "11px", color: "#c1a88c", whiteSpace: "nowrap" }}>

@@ -151,9 +151,9 @@ export default function BeanCard({
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", marginBottom: "2px", lineHeight: 1.2 }}>{bean.name}</div>
-          {bean.sourceRoastId && linkedRoast && (linkedRoast.profile || linkedRoast.roastLevel) && (
+          {bean.sourceRoastId && linkedRoast && (linkedRoast.roastProfileName || linkedRoast.roastLevel) && (
             <div style={{ fontSize: "13px", color: "#c9b094", lineHeight: 1.3, marginBottom: "2px" }}>
-              {[linkedRoast?.profile, linkedRoast?.roastLevel].filter(Boolean).join(" · ")}
+              {[linkedRoast?.roastProfileName, linkedRoast?.roastLevel].filter(Boolean).join(" · ")}
             </div>
           )}
           <div style={{ fontSize: "11px", color: "#d0b69a", lineHeight: 1.3 }}>

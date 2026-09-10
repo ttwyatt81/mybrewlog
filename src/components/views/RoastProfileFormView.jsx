@@ -25,7 +25,6 @@ export default function RoastProfileFormView({
   inp,
   onFoc,
   onBlr,
-  StarRating,
 }) {
   return (
     <div>
@@ -70,9 +69,6 @@ export default function RoastProfileFormView({
                 placeholder="DD-MM-YYYY"
               />
             </Field>
-            <Field label="Rating">
-              <StarRating value={Number(roastProfileForm.rating) || 0} onChange={(v) => setRoastProfileForm((current) => ({ ...current, rating: v }))} />
-            </Field>
           </div>
           <div style={{ marginTop: "11px" }}>
             <Field label="Description">
@@ -98,7 +94,7 @@ export default function RoastProfileFormView({
           </button>
           <button
             onClick={() => {
-              setRoastProfileForm({ id: null, name: "", machine: "", description: "", lastUsed: "", rating: 0, archived: false });
+              setRoastProfileForm({ id: null, name: "", machine: "", description: "", lastUsed: "", archived: false });
               setView("beans");
             }}
             style={{ padding: "13px 20px", background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "9px", color: "#6a5040", cursor: "pointer", fontSize: "14px" }}

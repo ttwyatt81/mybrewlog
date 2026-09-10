@@ -49,7 +49,7 @@ export function useImportExport({
       }));
 
       const allBrews = beans.flatMap((bean) =>
-        (bean.brews || []).map((brew) => ({ ...brew, bean_id: bean.id, pours: brew.pours || [] }))
+        (bean.brews || []).map((brew) => ({ ...brew, roasted_bean_id: bean.id, pours: brew.pours || [] }))
       );
 
       const payload = {
@@ -106,12 +106,13 @@ export function useImportExport({
 
       const brewsToImport = Array.isArray(payload.brews)
         ? payload.brews
-        : payload.beans.flatMap((bean) => (bean.brews || []).map((brew) => ({ ...brew, bean_id: bean.id })));
+        : payload.beans.flatMap((bean) => (bean.brews || []).map((brew) => ({ ...brew, roasted_bean_id: bean.id })));
 
       for (const rawBrew of brewsToImport) {
-        if (rawBrew.bean_id && beanIdMap[rawBrew.bean_id]) {
+        const importedRoastedBeanId = rawBrew.roasted_bean_id || rawBrew.bean_id;
+        if (importedRoastedBeanId && beanIdMap[importedRoastedBeanId]) {
           const brewPayloadToInsert = buildBrewPayload(rawBrew);
-          brewPayloadToInsert.bean_id = beanIdMap[rawBrew.bean_id];
+          brewPayloadToInsert.roasted_bean_id = beanIdMap[importedRoastedBeanId];
           const insertedBrew = await insertRow("brews", token, brewPayloadToInsert);
           if (insertedBrew && rawBrew.pours) {
             brewPoursMap[insertedBrew.id] = rawBrew.pours;

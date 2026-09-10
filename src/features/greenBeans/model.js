@@ -27,7 +27,7 @@ export function normalizeGreenBeanRoast(roast = {}) {
     roastProfileId: getValue(roast, "roast_profile_id", "roastProfileId") || "",
     date: getValue(roast, "date") || "",
     roastTime: roastTime || "",
-    profile: getValue(roast, "profile") || roast.roast_profiles?.name || roast.roastProfile?.name || "",
+    roastProfileName: roast.roast_profiles?.name || roast.roastProfile?.name || "",
     roastLevel: getValue(roast, "roast_level") || "",
     restingFromDays: restingFromDays ?? "",
     restingToDays: restingToDays ?? "",
