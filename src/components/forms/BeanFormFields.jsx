@@ -195,8 +195,8 @@ export default function BeanFormFields({
                   type="number"
                   min="0"
                   step="0.01"
-                  value={editBean.price || ""}
-                  onChange={e => setB("price", e.target.value)}
+                  value={editBean.purchasePrice || ""}
+                  onChange={e => setB("purchasePrice", e.target.value)}
                   placeholder="e.g. 28.50"
                   onFocus={onFoc}
                   onBlur={onBlr}
@@ -210,8 +210,8 @@ export default function BeanFormFields({
                   type="number"
                   min="0"
                   step="0.001"
-                  value={editBean.weightKg || ""}
-                  onChange={e => setB("weightKg", e.target.value)}
+                  value={editBean.purchaseWeightKg || ""}
+                  onChange={e => setB("purchaseWeightKg", e.target.value)}
                   placeholder="e.g. 0.25"
                   onFocus={onFoc}
                   onBlur={onBlr}

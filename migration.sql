@@ -65,6 +65,29 @@ BEGIN
 END $$;
 ALTER TABLE green_beans ADD COLUMN IF NOT EXISTS price NUMERIC;
 ALTER TABLE green_beans ADD COLUMN IF NOT EXISTS weight_kg NUMERIC;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'green_beans' AND column_name = 'price'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'green_beans' AND column_name = 'purchase_price'
+  ) THEN
+    ALTER TABLE green_beans RENAME COLUMN price TO purchase_price;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'green_beans' AND column_name = 'weight_kg'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'green_beans' AND column_name = 'purchase_weight_kg'
+  ) THEN
+    ALTER TABLE green_beans RENAME COLUMN weight_kg TO purchase_weight_kg;
+  END IF;
+END $$;
+ALTER TABLE green_beans ADD COLUMN IF NOT EXISTS purchase_price NUMERIC;
+ALTER TABLE green_beans ADD COLUMN IF NOT EXISTS purchase_weight_kg NUMERIC;
 ALTER TABLE green_beans ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE green_beans ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ;
 ALTER TABLE green_beans ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
@@ -84,6 +107,16 @@ ALTER TABLE roasts ADD COLUMN IF NOT EXISTS profile TEXT;
 ALTER TABLE roasts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 UPDATE roasts SET created_at = COALESCE(created_at, updated_at, NOW()) WHERE created_at IS NULL;
 ALTER TABLE roasts ALTER COLUMN created_at SET DEFAULT NOW();
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'roasts' AND column_name = 'roast_time' AND data_type <> 'time without time zone'
+  ) THEN
+    ALTER TABLE roasts ALTER COLUMN roast_time TYPE TIME USING NULLIF(TRIM(roast_time::text), '')::TIME;
+  END IF;
+END $$;
 
 DO $$
 BEGIN
@@ -114,6 +147,29 @@ BEGIN
 END $$;
 ALTER TABLE recipes ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE recipes ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+UPDATE brews SET rating = 0 WHERE rating IS NOT NULL AND (rating < 0 OR rating > 5);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'brews_rating_check'
+  ) THEN
+    ALTER TABLE brews
+      ADD CONSTRAINT brews_rating_check CHECK (rating >= 0 AND rating <= 5);
+  END IF;
+END $$;
+
+ALTER TABLE brews ADD COLUMN IF NOT EXISTS recipe_id UUID;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'brews_recipe_id_fkey'
+  ) THEN
+    ALTER TABLE brews
+      ADD CONSTRAINT brews_recipe_id_fkey
+      FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE SET NULL;
+  END IF;
+END $$;
 
 -- Normalize relationship delete behavior to RESTRICT.
 DO $$
@@ -191,7 +247,7 @@ BEGIN
       bean.user_id,
       bean.id,
       NULLIF(item->>'date', '')::date,
-      NULLIF(item->>'roast_time', ''),
+      NULLIF(item->>'roast_time', '')::TIME,
       NULLIF(item->>'profile', ''),
       NULLIF(COALESCE(item->>'roast_level', item->>'roastLevel'), ''),
       NULLIF(COALESCE(item->>'resting_from_days', item->>'restingFromDays'), '')::numeric,
@@ -260,6 +316,7 @@ CREATE INDEX IF NOT EXISTS brews_user_id_idx ON brews(user_id);
 ALTER INDEX IF EXISTS brews_bean_id_idx RENAME TO brews_roasted_bean_id_idx;
 CREATE INDEX IF NOT EXISTS brews_roasted_bean_id_idx ON brews(roasted_bean_id);
 CREATE INDEX IF NOT EXISTS brews_date_idx ON brews(date DESC);
+CREATE INDEX IF NOT EXISTS brews_recipe_id_idx ON brews(recipe_id);
 CREATE INDEX IF NOT EXISTS recipes_user_id_idx ON recipes(user_id);
 CREATE INDEX IF NOT EXISTS recipes_name_idx ON recipes(name);
 

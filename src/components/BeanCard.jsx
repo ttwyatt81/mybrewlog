@@ -23,8 +23,8 @@ export default function BeanCard({
   const best = Array.isArray(bean.brews) ? bestBrew(bean) : null;
   const brewCount = Array.isArray(bean.brews) ? bean.brews.length : 0;
   const roastCount = Array.isArray(bean.roasts) ? bean.roasts.length : 0;
-  const price = parseFloat(bean.price);
-  const weightKg = parseFloat(bean.weightKg);
+  const price = parseFloat(bean.purchasePrice);
+  const weightKg = parseFloat(bean.purchaseWeightKg);
   const hasValidPricePerKg = Number.isFinite(price) && Number.isFinite(weightKg) && weightKg > 0;
   const pricePerKg = hasValidPricePerKg ? (price / weightKg) : null;
   const linkedRoast = !isGreenBeanSheet && bean.sourceRoastId

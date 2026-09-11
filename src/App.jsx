@@ -524,7 +524,8 @@ export default function App() {
     });
 
     const selectedProfile = roastProfiles.find((profile) => profile.id === greenBeanRoastForm.roastProfileId);
-    if (selectedProfile && greenBeanRoastForm.date) {
+    // never move last_used backwards (e.g. when editing an older roast)
+    if (selectedProfile && greenBeanRoastForm.date && greenBeanRoastForm.date > (selectedProfile.lastUsed || "")) {
       await saveRoastProfileData(token, { ...selectedProfile, lastUsed: greenBeanRoastForm.date });
     }
 

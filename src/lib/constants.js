@@ -67,7 +67,7 @@ export const defaultBrew = {
   dose: "", water: "", temperature: "", grindSize: "",
   bloomWater: "", bloomTime: "", numPours: "", totalTime: "",
   pours: [], pourStructure: "", rating: 0, tastingNotes: "",
-  recipeSource: "Manual", recipeName: "",
+  recipeSource: "Manual", recipeId: "", recipeName: "",
   // Espresso fields
   machine: "", grinder: "", preHeat: "", preInfusionTime: "", preInfusionBar: "", maxPressureBar: "", maxPressureUntilG: "", finishPressureBar: "", shotYield: "", brewTime: "",
 };

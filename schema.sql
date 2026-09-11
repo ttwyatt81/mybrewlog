@@ -19,8 +19,8 @@ CREATE TABLE green_beans (
   varietal TEXT,
   altitude TEXT,
   bean_density NUMERIC,
-  price NUMERIC,
-  weight_kg NUMERIC,
+  purchase_price NUMERIC,
+  purchase_weight_kg NUMERIC,
   notes TEXT,
   archived BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -51,7 +51,7 @@ CREATE TABLE roasts (
   green_bean_id UUID NOT NULL REFERENCES green_beans(id) ON DELETE RESTRICT,
   roast_profile_id UUID REFERENCES roast_profiles(id) ON DELETE SET NULL,
   date DATE,
-  roast_time TEXT,
+  roast_time TIME,
   roast_level TEXT,
   resting_from_days NUMERIC,
   resting_to_days NUMERIC,
@@ -85,45 +85,6 @@ CREATE TABLE roasted_beans (
   source_roast_id UUID REFERENCES roasts(id) ON DELETE RESTRICT,
   notes TEXT,
   archived BOOLEAN NOT NULL DEFAULT false,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- ============================================================================
--- BREWS
--- ============================================================================
-CREATE TABLE brews (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
-  roasted_bean_id UUID NOT NULL REFERENCES roasted_beans(id) ON DELETE RESTRICT,
-  date DATE,
-  method TEXT NOT NULL,
-  brewer TEXT,
-  filter_paper TEXT,
-  dose NUMERIC,
-  water NUMERIC,
-  temperature NUMERIC,
-  grind_size TEXT,
-  bloom_water NUMERIC,
-  bloom_time NUMERIC,
-  num_pours NUMERIC,
-  total_time TEXT,
-  pour_structure TEXT,
-  pours JSONB NOT NULL DEFAULT '[]'::jsonb,
-  rating NUMERIC DEFAULT 0,
-  tasting_notes TEXT,
-  recipe_source TEXT DEFAULT 'Manual',
-  recipe_name TEXT,
-  machine TEXT,
-  grinder TEXT,
-  pre_heat TEXT,
-  pre_infusion_time NUMERIC,
-  pre_infusion_bar NUMERIC,
-  max_pressure_bar NUMERIC,
-  max_pressure_until_g NUMERIC,
-  finish_pressure_bar NUMERIC,
-  shot_yield NUMERIC,
-  brew_time NUMERIC,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -163,6 +124,46 @@ CREATE TABLE recipes (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ============================================================================
+-- BREWS
+-- ============================================================================
+CREATE TABLE brews (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
+  roasted_bean_id UUID NOT NULL REFERENCES roasted_beans(id) ON DELETE RESTRICT,
+  date DATE,
+  method TEXT NOT NULL,
+  brewer TEXT,
+  filter_paper TEXT,
+  dose NUMERIC,
+  water NUMERIC,
+  temperature NUMERIC,
+  grind_size TEXT,
+  bloom_water NUMERIC,
+  bloom_time NUMERIC,
+  num_pours NUMERIC,
+  total_time TEXT,
+  pour_structure TEXT,
+  pours JSONB NOT NULL DEFAULT '[]'::jsonb,
+  rating NUMERIC DEFAULT 0 CHECK (rating >= 0 AND rating <= 5),
+  tasting_notes TEXT,
+  recipe_source TEXT DEFAULT 'Manual',
+  recipe_id UUID REFERENCES recipes(id) ON DELETE SET NULL,
+  recipe_name TEXT,
+  machine TEXT,
+  grinder TEXT,
+  pre_heat TEXT,
+  pre_infusion_time NUMERIC,
+  pre_infusion_bar NUMERIC,
+  max_pressure_bar NUMERIC,
+  max_pressure_until_g NUMERIC,
+  finish_pressure_bar NUMERIC,
+  shot_yield NUMERIC,
+  brew_time NUMERIC,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Indexes
 CREATE INDEX green_beans_user_id_idx ON green_beans(user_id);
 CREATE INDEX green_beans_name_idx ON green_beans(name);
@@ -179,6 +180,7 @@ CREATE INDEX roasted_beans_source_roast_id_idx ON roasted_beans(source_roast_id)
 CREATE INDEX brews_user_id_idx ON brews(user_id);
 CREATE INDEX brews_roasted_bean_id_idx ON brews(roasted_bean_id);
 CREATE INDEX brews_date_idx ON brews(date DESC);
+CREATE INDEX brews_recipe_id_idx ON brews(recipe_id);
 CREATE INDEX recipes_user_id_idx ON recipes(user_id);
 CREATE INDEX recipes_name_idx ON recipes(name);
 

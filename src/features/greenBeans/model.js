@@ -71,8 +71,8 @@ export function normalizeGreenBeanRow(row = {}) {
     varietal: getValue(row, "varietal") || "",
     altitude: getValue(row, "altitude") || "",
     beanDensity: getValue(row, "beanDensity", "bean_density") || "",
-    price: getValue(row, "price") || "",
-    weightKg: getValue(row, "weightKg", "weight_kg") || "",
+    purchasePrice: getValue(row, "purchasePrice", "purchase_price", "price") || "",
+    purchaseWeightKg: getValue(row, "purchaseWeightKg", "purchase_weight_kg", "weightKg", "weight_kg") || "",
     notes: getValue(row, "notes") || "",
     archived: archivedValue === true || archivedValue === "true" || archivedValue === 1 || archivedValue === "1",
     brews: [],
@@ -116,8 +116,8 @@ export function greenBeanPayload(bean) {
     varietal: bean.varietal || null,
     altitude: bean.altitude || null,
     bean_density: bean.beanDensity || null,
-    price: bean.price === "" ? null : bean.price,
-    weight_kg: bean.weightKg === "" ? null : bean.weightKg,
+    purchase_price: bean.purchasePrice === "" ? null : bean.purchasePrice,
+    purchase_weight_kg: bean.purchaseWeightKg === "" ? null : bean.purchaseWeightKg,
     notes: bean.notes || null,
     archived: Boolean(bean.archived)
   };
