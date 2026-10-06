@@ -47,11 +47,11 @@ export function useGreenBeans(initialBeans = []) {
     return normalized;
   }, []);
 
-  const saveRoast = useCallback(async (token, roast) => {
+  const saveRoast = useCallback(async (token, roast, relatedProfile = null) => {
     const saved = await saveGreenBeanRoast(token, roast);
     if (!saved) return null;
 
-    const normalizedRoast = normalizeGreenBeanRoast(saved);
+    const normalizedRoast = normalizeGreenBeanRoast(saved, relatedProfile);
     if (!normalizedRoast.greenBeanId) return normalizedRoast;
 
     setBeans((current) => sortGreenBeansByRecentActivity(

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import BeanCard from "./components/BeanCard";
 import {
   defaultRecipe,
   processOptions,
@@ -23,23 +22,16 @@ import {
 import { useBeans } from "./features/beans/hooks";
 import {
   normalizePourSteps,
-  buildPourStructureFromForm,
-  parseTimeValue,
-  formatSecondsToTime,
   getComputedBrewWater,
   parsePourStepsFromStructure,
   getTechniqueLinesFromBrew,
   sortBrewsNewestFirst
 } from "./features/brews/model";
 import { useBrews } from "./features/brews/hooks";
-import {
-  normalizeRecipeRow,
-} from "./features/recipes/model";
 import { useRecipes } from "./features/recipes/hooks";
 import Tag from "./components/ui/Tag";
 import Field from "./components/ui/Field";
 import SectionHead from "./components/ui/SectionHead";
-import StatBox from "./components/ui/StatBox";
 import StarRating from "./components/ui/StarRating";
 import { inp, onFoc, onBlr } from "./components/ui/formStyles";
 import AppShell from "./components/layout/AppShell";
@@ -291,7 +283,7 @@ export default function App() {
     const token = await getAccessTokenOrFail();
     if (!token) return;
 
-    const nextValue = !Boolean(recipe.archived);
+    const nextValue = !recipe.archived;
     const saved = await saveRecipeData(token, { ...recipe, archived: nextValue });
     if (!saved) {
       setSaveError(withSupabaseError("Failed to update recipe status. Check your connection and try again."));
@@ -382,7 +374,7 @@ export default function App() {
     if (tab === TAB_KEYS.GREEN_BEANS) {
       const token = await getAccessTokenOrFail();
       if (!token) return;
-      const nextValue = !Boolean(bean.archived);
+      const nextValue = !bean.archived;
       const saved = await saveGreenBeanData(token, { ...bean, archived: nextValue });
       if (!saved) {
         setSaveError(withSupabaseError("Failed to update green bean status. Check your connection and try again."));
@@ -403,7 +395,7 @@ export default function App() {
     const token = await getAccessTokenOrFail();
     if (!token) return;
 
-    const nextValue = !Boolean(bean.archived);
+    const nextValue = !bean.archived;
     const updatedBean = { ...bean, archived: nextValue };
     const saved = await saveBeanData(token, updatedBean);
     if (!saved) {
@@ -485,6 +477,7 @@ export default function App() {
     const reductionPercent = startWeight && endWeight && startWeight > 0
       ? (((startWeight - endWeight) / startWeight) * 100).toFixed(1)
       : "";
+    const selectedProfile = roastProfiles.find((profile) => profile.id === greenBeanRoastForm.roastProfileId) || null;
 
     const roastPayload = {
       id: editingGreenBeanRoastId || null,
@@ -503,7 +496,7 @@ export default function App() {
       notes: greenBeanRoastForm.notes || "",
     };
 
-    const saved = await saveGreenBeanRoastData(token, roastPayload);
+    const saved = await saveGreenBeanRoastData(token, roastPayload, selectedProfile);
     if (!saved) {
       setSaveError(withSupabaseError("Failed to save green bean roast. Check your connection and try again."));
       return;
@@ -523,7 +516,6 @@ export default function App() {
       return { ...current, roasts: nextRoasts };
     });
 
-    const selectedProfile = roastProfiles.find((profile) => profile.id === greenBeanRoastForm.roastProfileId);
     // never move last_used backwards (e.g. when editing an older roast)
     if (selectedProfile && greenBeanRoastForm.date && greenBeanRoastForm.date > (selectedProfile.lastUsed || "")) {
       await saveRoastProfileData(token, { ...selectedProfile, lastUsed: greenBeanRoastForm.date });
@@ -723,7 +715,7 @@ export default function App() {
 
   const activeFilterCount = [filterOrigin, filterType, filterRoaster].filter(Boolean).length;
   const visibleRecipes = [...recipes]
-    .filter((recipe) => recipeListMode === "archived" ? Boolean(recipe.archived) : !Boolean(recipe.archived))
+    .filter((recipe) => recipeListMode === "archived" ? recipe.archived : !recipe.archived)
     .filter((recipe) => {
       if (!recipeSearch) return true;
       const haystack = [recipe.name, recipe.method, recipe.brewer, recipe.machine, recipe.notes]
@@ -740,7 +732,7 @@ export default function App() {
     return usage;
   }, {});
   const visibleRoastProfiles = [...roastProfiles]
-    .filter((profile) => roastProfileListMode === "archived" ? Boolean(profile.archived) : !Boolean(profile.archived))
+    .filter((profile) => roastProfileListMode === "archived" ? profile.archived : !profile.archived)
     .filter((profile) => {
       if (!roastProfileSearch) return true;
       const haystack = [profile.name, profile.machine, profile.description, profile.lastUsed]
@@ -831,7 +823,7 @@ export default function App() {
     setSaveError("");
     const token = await getAccessTokenOrFail();
     if (!token) return;
-    const nextArchived = !Boolean(profile.archived);
+    const nextArchived = !profile.archived;
     const saved = await saveRoastProfileData(token, { ...profile, archived: nextArchived });
     if (!saved) {
       setSaveError(withSupabaseError("Failed to update roast profile status. Check your connection and try again."));
@@ -841,22 +833,6 @@ export default function App() {
     if (roastProfileForm.id === profile.id) {
       setRoastProfileForm((current) => ({ ...current, archived: nextArchived }));
     }
-  };
-
-  const applyRoastPreset = (preset) => {
-    if (!preset) return;
-
-    setGreenBeanRoastForm((current) => ({
-      ...defaultGreenBeanRoast,
-      ...current,
-      roastProfileId: preset.id || current.roastProfileId || "",
-      profile: preset.name || current.profile,
-      roastLevel: preset.roastLevel || current.roastLevel || "Medium",
-      startWeight: preset.startWeight ?? current.startWeight,
-      endWeight: preset.endWeight ?? current.endWeight,
-      notes: preset.notes ?? current.notes,
-    }));
-    setView(VIEW_KEYS.GREEN_BEAN_ROAST_FORM);
   };
 
   const startNewRoastProfile = () => {
@@ -934,7 +910,6 @@ export default function App() {
             title={tab === TAB_KEYS.GREEN_BEANS ? "Green Beans" : "Roasted Beans"}
             subtitle={tab === TAB_KEYS.GREEN_BEANS ? "Green Bean Journal" : "Coffee Journal"}
             isGreenBeanSheet={tab === TAB_KEYS.GREEN_BEANS}
-            beans={sheetBeans}
             greenBeans={greenBeans}
             saveError={saveError}
             setSaveError={setSaveError}
@@ -944,7 +919,6 @@ export default function App() {
             setFilter={setFilter}
             filterOrigin={filterOrigin}
             setFilterOrigin={setFilterOrigin}
-            filterType={filterType}
             setFilterType={setFilterType}
             filterRoaster={filterRoaster}
             setFilterRoaster={setFilterRoaster}
@@ -1124,13 +1098,6 @@ export default function App() {
               saveBrew={saveBrew}
               setView={setView}
               setEditingBrewId={setEditingBrewId}
-              getComputedBrewWater={getComputedBrewWater}
-              normalizePourSteps={normalizePourSteps}
-              buildPourStructureFromForm={buildPourStructureFromForm}
-              parseTimeValue={parseTimeValue}
-              formatSecondsToTime={formatSecondsToTime}
-              getTechniqueLinesFromBrew={getTechniqueLinesFromBrew}
-              brewMethods={brewMethods}
               pourOverBrewers={pourOverBrewers}
               filterPapers={filterPapers}
               preHeatOptions={preHeatOptions}

@@ -5,7 +5,7 @@ function getValue(row, ...keys) {
   return "";
 }
 
-export function normalizeGreenBeanRoast(roast = {}) {
+export function normalizeGreenBeanRoast(roast = {}, relatedProfile = null) {
   const startWeight = getValue(roast, "start_weight");
   const endWeight = getValue(roast, "end_weight");
   const roastTime = getValue(roast, "roast_time");
@@ -21,13 +21,18 @@ export function normalizeGreenBeanRoast(roast = {}) {
     ? (((parsedStart - parsedEnd) / parsedStart) * 100).toFixed(1)
     : null;
 
+  const roastProfileId = getValue(roast, "roast_profile_id", "roastProfileId") || "";
+  const profile = relatedProfile || roast.roast_profiles || roast.roastProfile || null;
+  const roastProfileName = String(profile?.name || "").trim();
+
   return {
     id: roast.id || null,
     greenBeanId: getValue(roast, "green_bean_id") || null,
-    roastProfileId: getValue(roast, "roast_profile_id", "roastProfileId") || "",
+    roastProfileId,
     date: getValue(roast, "date") || "",
     roastTime: roastTime || "",
-    roastProfileName: roast.roast_profiles?.name || roast.roastProfile?.name || "",
+    roastProfileName,
+    roastProfileStatus: !roastProfileId ? "none" : profile ? (roastProfileName ? "named" : "unnamed") : "unavailable",
     roastLevel: getValue(roast, "roast_level") || "",
     restingFromDays: restingFromDays ?? "",
     restingToDays: restingToDays ?? "",
