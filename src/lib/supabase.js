@@ -169,7 +169,6 @@ export async function sbRefreshSession(refreshToken) {
           refreshToken: refreshTokenId,
           status: res.status,
           ok: res.ok,
-          body: data,
           error,
           error_description: errorDescription,
           errorType: null,
