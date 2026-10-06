@@ -7,7 +7,6 @@ export function useImportExport({
   recipes,
   roastProfiles,
   setBeans,
-  setRoastProfiles,
   loadData,
   setGlobalLoading,
   setSaveError,
@@ -165,7 +164,6 @@ export function useImportExport({
     buildRoastProfilePayload,
     loadData,
     setBeans,
-    setRoastProfiles,
   ]);
 
   return {
