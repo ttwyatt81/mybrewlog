@@ -9,6 +9,8 @@ import {
 
 const SESSION_KEY = "sb_session";
 const LAST_EMAIL_KEY = "last_auth_email";
+const emptyAsyncList = async () => [];
+const noop = () => {};
 
 export function useAuthSession({
   loadBrewsData,
@@ -21,10 +23,10 @@ export function useAuthSession({
   setRecipes,
   setRoastProfiles,
 }) {
-  const loadGreenBeans = typeof loadGreenBeansData === "function" ? loadGreenBeansData : async () => [];
-  const loadRoastProfiles = typeof loadRoastProfilesData === "function" ? loadRoastProfilesData : async () => [];
-  const clearGreenBeans = typeof setGreenBeans === "function" ? setGreenBeans : () => {};
-  const clearRoastProfiles = typeof setRoastProfiles === "function" ? setRoastProfiles : () => {};
+  const loadGreenBeans = typeof loadGreenBeansData === "function" ? loadGreenBeansData : emptyAsyncList;
+  const loadRoastProfiles = typeof loadRoastProfilesData === "function" ? loadRoastProfilesData : emptyAsyncList;
+  const clearGreenBeans = typeof setGreenBeans === "function" ? setGreenBeans : noop;
+  const clearRoastProfiles = typeof setRoastProfiles === "function" ? setRoastProfiles : noop;
   const [session, setSession] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [authState, setAuthState] = useState("login"); // login | verify | app
