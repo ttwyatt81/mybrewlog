@@ -86,7 +86,11 @@ export function useAuthSession({
     setCurrentUser(null);
     setAuthState("login");
     setAuthCode("");
-  }, []);
+    setBeans([]);
+    clearGreenBeans([]);
+    setRecipes([]);
+    clearRoastProfiles([]);
+  }, [clearGreenBeans, clearRoastProfiles, setBeans, setRecipes]);
 
   const refreshSession = useCallback(async (currentSession) => {
     if (!currentSession?.refresh_token) return null;
@@ -251,11 +255,7 @@ export function useAuthSession({
   const handleSignOut = useCallback(async () => {
     if (session) await sbSignOut(session.access_token);
     clearSession();
-    setBeans([]);
-    clearGreenBeans([]);
-    setRecipes([]);
-    clearRoastProfiles([]);
-  }, [clearGreenBeans, clearRoastProfiles, clearSession, session, setBeans, setRecipes]);
+  }, [clearSession, session]);
 
   return {
     session,
