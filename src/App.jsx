@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   defaultRecipe,
   processOptions,
@@ -175,14 +175,14 @@ export default function App() {
     buildRoastProfilePayload: roastProfilePayload,
   });
 
-  const getAccessTokenOrFail = async () => {
+  const getAccessTokenOrFail = useCallback(async () => {
     const { token, errorType } = await ensureValidAccessToken();
     if (token) return token;
     if (errorType && errorType !== "invalid_refresh_token") {
       setSaveError("Session temporarily unavailable. Please try again.");
     }
     return null;
-  };
+  }, [ensureValidAccessToken, setSaveError]);
 
   useEffect(() => {
     const userId = session?.user?.id || currentUser?.id || currentUser?.email;
@@ -218,7 +218,7 @@ export default function App() {
     };
 
     migrateNames();
-  }, [beans, greenBeans, session, currentUser, ensureValidAccessToken, saveBeanData]);
+  }, [beans, greenBeans, session, currentUser, getAccessTokenOrFail, saveBeanData]);
 
   const confirmDeletion = (itemType) => new Promise((resolve) => {
     setDeleteConfirmation({ itemType, resolve });
