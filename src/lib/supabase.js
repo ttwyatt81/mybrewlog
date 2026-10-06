@@ -1,7 +1,9 @@
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const AUTH_DEBUG = import.meta.env.DEV;
+const VITE_ENV = import.meta.env || globalThis.process?.env || {};
+const SUPABASE_URL = VITE_ENV.VITE_SUPABASE_URL;
+const SUPABASE_KEY = VITE_ENV.VITE_SUPABASE_ANON_KEY;
+const AUTH_DEBUG = VITE_ENV.DEV;
 let lastSupabaseErrorMessage = "";
+let unauthorizedRefreshHandler = null;
 
 const refreshInFlightByToken = new Map();
 
@@ -58,6 +60,26 @@ async function fetchJson(url, options = {}) {
   return { ok: res.ok, status: res.status, data };
 }
 
+function isExpiredJwtResponse(response) {
+  if (response.status !== 401) return false;
+  const message = extractSupabaseErrorMessage(response.data).toLowerCase();
+  return /(?:jwt|access token|bearer token).{0,40}(?:expired|invalid)|(?:expired|invalid).{0,40}(?:jwt|access token|bearer token)/.test(message);
+}
+
+async function sendRestRequest(url, options, token) {
+  const refreshHandler = unauthorizedRefreshHandler;
+  const requestGeneration = refreshHandler?.getGeneration() ?? null;
+  const sessionTokenAtStart = refreshHandler?.getAccessToken() ?? null;
+  const response = await fetchJson(url, options);
+  if (!isExpiredJwtResponse(response) || !token || token !== sessionTokenAtStart || !refreshHandler) return response;
+
+  const refreshedToken = await refreshHandler.refresh(token, requestGeneration);
+  if (!refreshedToken || refreshedToken === token) return response;
+
+  const headers = new Headers(options.headers || {});
+  headers.set("Authorization", `Bearer ${refreshedToken}`);
+  return fetchJson(url, { ...options, headers });
+}
 function extractSupabaseErrorMessage(data) {
   if (!data) return "";
   if (typeof data === "string") return data.trim();
@@ -89,6 +111,13 @@ function clearLastSupabaseError() {
 
 export function getLastSupabaseErrorMessage() {
   return lastSupabaseErrorMessage;
+}
+
+export function registerUnauthorizedRefreshHandler(handler) {
+  unauthorizedRefreshHandler = handler;
+  return () => {
+    if (unauthorizedRefreshHandler === handler) unauthorizedRefreshHandler = null;
+  };
 }
 
 export async function sbSendOtp(email) {
@@ -229,7 +258,7 @@ export async function sbSignOut(token) {
 export async function sbGet(table, token, query = "select=*") {
   ensureSupabaseConfig();
   const url = `${SUPABASE_URL}/rest/v1/${table}?${query}`;
-  const res = await fetchJson(url, { headers: authHeaders(token) });
+  const res = await sendRestRequest(url, { headers: authHeaders(token) }, token);
   if (!res.ok) {
     setLastSupabaseError(res.status, res.data);
     console.error(`Failed to fetch ${table}:`, res.status, res.data);
@@ -252,13 +281,13 @@ export async function sbGetUser(token) {
 export async function sbInsert(table, token, payload) {
   ensureSupabaseConfig();
   const url = `${SUPABASE_URL}/rest/v1/${table}`;
-  const res = await fetchJson(url, {
+  const res = await sendRestRequest(url, {
     method: "POST",
     headers: { ...authHeaders(token), Prefer: "return=representation" },
     // Let the database set `user_id` via DEFAULT auth.uid() instead of
     // the frontend injecting it. This avoids mismatched ownership.
     body: JSON.stringify(payload)
-  });
+  }, token);
   if (!res.ok) {
     setLastSupabaseError(res.status, res.data);
     console.error(`Failed to insert into ${table}:`, res.status, res.data);
@@ -272,12 +301,12 @@ export async function sbUpsert(table, token, payload, conflictKeys = ["id"]) {
   ensureSupabaseConfig();
   const query = `?on_conflict=${encodeURIComponent(conflictKeys.join(","))}`;
   const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
-  const res = await fetchJson(url, {
+  const res = await sendRestRequest(url, {
     method: "POST",
     headers: { ...authHeaders(token), Prefer: "return=representation,resolution=merge-duplicates" },
     // Do not include user_id; DB default auth.uid() will set ownership.
     body: JSON.stringify(payload)
-  });
+  }, token);
   if (!res.ok) {
     setLastSupabaseError(res.status, res.data);
     console.error(`Failed to upsert into ${table}:`, res.status, res.data);
@@ -291,12 +320,12 @@ export async function sbUpdate(table, token, rowId, payload) {
   if (!rowId) return null;
   ensureSupabaseConfig();
   const url = `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(rowId)}`;
-  const res = await fetchJson(url, {
+  const res = await sendRestRequest(url, {
     method: "PATCH",
     headers: { ...authHeaders(token), Prefer: "return=representation" },
     // Avoid changing/setting user_id from the client. Let RLS/auth manage ownership.
     body: JSON.stringify(payload)
-  });
+  }, token);
   if (!res.ok) {
     setLastSupabaseError(res.status, res.data);
     console.error(`Failed to update ${table} row ${rowId}:`, res.status, res.data);
@@ -310,10 +339,10 @@ export async function sbDelete(table, token, rowId) {
   if (!rowId) return false;
   ensureSupabaseConfig();
   const url = `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(rowId)}`;
-  const res = await fetchJson(url, {
+  const res = await sendRestRequest(url, {
     method: "DELETE",
     headers: authHeaders(token)
-  });
+  }, token);
   if (!res.ok) {
     setLastSupabaseError(res.status, res.data);
     console.error(`Failed to delete ${table} row ${rowId}:`, res.status, res.data);

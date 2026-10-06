@@ -4,8 +4,14 @@ import {
   sbVerifyOtp,
   sbSignOut,
   sbRefreshSession,
-  sbGetUser
+  sbGetUser,
+  registerUnauthorizedRefreshHandler
 } from "../../lib/supabase";
+import {
+  createExpiredAccessTokenHandler,
+  createSessionGeneration,
+  restoreStoredSessionState,
+} from "./expiredAccessTokenHandler.js";
 
 const SESSION_KEY = "sb_session";
 const LAST_EMAIL_KEY = "last_auth_email";
@@ -36,6 +42,10 @@ export function useAuthSession({
   const [authLoading, setAuthLoading] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const sessionGenerationRef = useRef(null);
+  if (!sessionGenerationRef.current) sessionGenerationRef.current = createSessionGeneration();
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
   const userLoadInFlightRef = useRef({ token: null, promise: null });
   const activeSessionTokenRef = useRef(null);
 
@@ -76,11 +86,14 @@ export function useAuthSession({
   }, []);
 
   const saveSession = useCallback((sessionData) => {
+    sessionRef.current = sessionData;
     setSession(sessionData);
     localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
   }, []);
 
   const clearSession = useCallback(() => {
+    sessionGenerationRef.current.advance();
+    sessionRef.current = null;
     localStorage.removeItem(SESSION_KEY);
     setSession(null);
     setCurrentUser(null);
@@ -94,18 +107,29 @@ export function useAuthSession({
 
   const refreshSession = useCallback(async (currentSession) => {
     if (!currentSession?.refresh_token) return null;
-    const { session: refreshed, errorType } = await sbRefreshSession(currentSession.refresh_token);
-    if (!refreshed) return { session: null, errorType: errorType || "refresh_failed" };
-
-    const nextSession = {
-      ...currentSession,
-      ...refreshed,
-      expires_at: Date.now() + (refreshed.expires_in || 0) * 1000
-    };
-
-    saveSession(nextSession);
-    return { session: nextSession, errorType: null };
+    return sessionGenerationRef.current.refresh(
+      currentSession,
+      sbRefreshSession,
+      () => sessionRef.current,
+      saveSession
+    );
   }, [saveSession]);
+
+  const refreshRejectedAccessToken = useCallback(async (rejectedToken, requestGeneration) => {
+    const handler = createExpiredAccessTokenHandler({
+      generation: sessionGenerationRef.current,
+      getSession: () => sessionRef.current,
+      refreshSession,
+      clearSession,
+    });
+    return handler(rejectedToken, requestGeneration);
+  }, [clearSession, refreshSession]);
+
+  useEffect(() => registerUnauthorizedRefreshHandler({
+    getGeneration: () => sessionGenerationRef.current.current(),
+    getAccessToken: () => sessionRef.current?.access_token || null,
+    refresh: refreshRejectedAccessToken,
+  }), [refreshRejectedAccessToken]);
 
   const getValidAccessToken = useCallback(async () => {
     if (session?.access_token && session?.expires_at && Date.now() < session.expires_at - 60000) {
@@ -116,8 +140,15 @@ export function useAuthSession({
   }, [refreshSession, session]);
 
   const ensureValidAccessToken = useCallback(async () => {
+    const generation = sessionGenerationRef.current.current();
+    const refreshToken = sessionRef.current?.refresh_token;
     const result = await getValidAccessToken();
-    if (!result?.token && result?.errorType === "invalid_refresh_token") {
+    if (
+      !result?.token
+      && result?.errorType === "invalid_refresh_token"
+      && sessionGenerationRef.current.isCurrent(generation)
+      && sessionRef.current?.refresh_token === refreshToken
+    ) {
       clearSession();
     }
     return result;
@@ -161,6 +192,7 @@ export function useAuthSession({
       const validAccess = storedSession?.access_token && storedSession?.expires_at && Date.now() < storedSession.expires_at - 60000;
 
       if (validAccess) {
+        sessionRef.current = storedSession;
         setSession(storedSession);
         setAuthState("app");
         loadData(storedSession.access_token);
@@ -168,18 +200,21 @@ export function useAuthSession({
       }
 
       if (storedSession?.refresh_token) {
+        sessionRef.current = storedSession;
+        const generation = sessionGenerationRef.current.current();
         (async () => {
           const refreshed = await refreshSession(storedSession);
-          if (refreshed?.session) {
-            setAuthState("app");
-            loadData(refreshed.session.access_token);
-          } else if (refreshed?.errorType === "invalid_refresh_token") {
-            clearSession();
-          } else {
-            // Keep remembered email and allow retry later instead of forcing full logout.
-            setAuthState("login");
-            setAuthCode("");
-          }
+          restoreStoredSessionState({
+            generation: sessionGenerationRef.current,
+            startedInGeneration: generation,
+            storedSession,
+            refreshed,
+            getSession: () => sessionRef.current,
+            setAuthState,
+            loadData,
+            clearSession,
+            setAuthCode,
+          });
         })();
         return;
       }
@@ -243,6 +278,7 @@ export function useAuthSession({
         email: cleanEmail
       };
       localStorage.setItem(LAST_EMAIL_KEY, cleanEmail);
+      sessionGenerationRef.current.advance();
       saveSession(sess);
       setAuthState("app");
       loadData(data.access_token);
@@ -253,8 +289,9 @@ export function useAuthSession({
   }, [authCode, authEmail, loadData, saveSession]);
 
   const handleSignOut = useCallback(async () => {
-    if (session) await sbSignOut(session.access_token);
+    const accessToken = session?.access_token;
     clearSession();
+    if (accessToken) await sbSignOut(accessToken);
   }, [clearSession, session]);
 
   return {
