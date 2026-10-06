@@ -42,7 +42,7 @@ export default function GreenBeanRoastFormView({
               >
                 <option value="">Select...</option>
                 {roastProfiles.map((profile) => (
-                  <option key={profile.id} value={profile.name}>{profile.name}</option>
+                  <option key={profile.id} value={profile.id}>{profile.name}</option>
                 ))}
               </select>
               <button onClick={() => { setTab("roastProfiles"); setView("beans"); }} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "7px", color: "#d4bca0", cursor: "pointer", padding: "7px 10px", fontSize: "12px", whiteSpace: "nowrap" }}>Profiles</button>
