@@ -1,11 +1,12 @@
 import { useCallback, useState } from "react";
+import { commitIfCurrent } from "../auth/expiredAccessTokenHandler.js";
 import { loadGreenBeans, loadGreenBeanRoasts, saveGreenBean, saveGreenBeanRoast, deleteGreenBean, deleteGreenBeanRoast } from "./api";
 import { normalizeGreenBeanRoast, normalizeGreenBeanRow, sortGreenBeanRoasts, sortGreenBeansByRecentActivity } from "./model";
 
 export function useGreenBeans(initialBeans = []) {
   const [beans, setBeans] = useState(initialBeans);
 
-  const load = useCallback(async (token) => {
+  const load = useCallback(async (token, canCommit = () => true) => {
     const [rows, roastRows] = await Promise.all([
       loadGreenBeans(token),
       loadGreenBeanRoasts(token),
@@ -29,7 +30,7 @@ export function useGreenBeans(initialBeans = []) {
       };
     });
 
-    setBeans(sortGreenBeansByRecentActivity(normalized));
+    commitIfCurrent(canCommit, () => setBeans(sortGreenBeansByRecentActivity(normalized)));
     return rows;
   }, []);
 

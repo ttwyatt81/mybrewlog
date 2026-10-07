@@ -1,14 +1,15 @@
 import { useCallback, useState } from "react";
+import { commitIfCurrent } from "../auth/expiredAccessTokenHandler.js";
 import { deleteRoastProfile, loadRoastProfiles, saveRoastProfile } from "./api";
 import { normalizeRoastProfileRow } from "./model";
 
 export function useRoastProfiles(initialProfiles = []) {
   const [roastProfiles, setRoastProfiles] = useState(initialProfiles);
 
-  const load = useCallback(async (token) => {
+  const load = useCallback(async (token, canCommit = () => true) => {
     const rows = await loadRoastProfiles(token);
     const normalized = (rows || []).map((row) => normalizeRoastProfileRow(row));
-    setRoastProfiles(normalized);
+    commitIfCurrent(canCommit, () => setRoastProfiles(normalized));
     return rows;
   }, []);
 

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { Buffer } from "node:buffer";
 import { env } from "node:process";
 import { test } from "node:test";
 
@@ -11,15 +12,24 @@ const {
   sbGet,
   sbUpsert,
   sbRefreshSession,
+  sbSignOut,
+  shouldReportSignOutFailure,
 } = await import("./supabase.js");
 const {
   createExpiredAccessTokenHandler,
   createSessionGeneration,
+  commitIfCurrent,
+  coordinateSessionRefresh,
+  createSessionDataCommitGuard,
+  isCurrentOtpAttempt,
+  reconcileExternalSession,
   restoreStoredSessionState,
 } = await import("../features/auth/expiredAccessTokenHandler.js");
 
 const expiredJwt = { code: "PGRST301", message: "JWT expired" };
 const refreshToken = "test-refresh-token";
+const logoutToken = "test-logout-token";
+const jwtForSubject = (subject, marker) => `eyJhbGciOiJub25lIn0.${Buffer.from(JSON.stringify({ sub: subject, marker })).toString("base64url")}.signature`;
 
 function response(status, body) {
   return new Response(body === null ? null : JSON.stringify(body), {
@@ -32,6 +42,17 @@ function deferred() {
   let resolve;
   const promise = new Promise((done) => { resolve = done; });
   return { promise, resolve };
+}
+
+function createLockManager() {
+  let queue = Promise.resolve();
+  return {
+    request(_name, callback) {
+      const result = queue.then(callback, callback);
+      queue = result.then(() => undefined, () => undefined);
+      return result;
+    },
+  };
 }
 
 async function withFetch(t, mockFetch) {
@@ -53,6 +74,362 @@ function register(handler, t) {
   });
   t.after(unregister);
 }
+
+test("sbSignOut reports HTTP success", async (t) => {
+  await withFetch(t, async () => response(204, null));
+
+  assert.deepEqual(await sbSignOut(logoutToken), { ok: true, status: 204 });
+});
+
+test("sbSignOut reports HTTP failure", async (t) => {
+  await withFetch(t, async () => response(401, { message: "not authorized" }));
+
+  assert.deepEqual(await sbSignOut(logoutToken), { ok: false, status: 401, errorType: "http" });
+});
+
+test("sbSignOut reports network failure", async (t) => {
+  await withFetch(t, async () => { throw new TypeError("network unavailable"); });
+
+  assert.deepEqual(await sbSignOut(logoutToken), { ok: false, errorType: "network" });
+});
+
+test("late logout failure is ignored after a new session starts", async (t) => {
+  const logoutResponse = deferred();
+  await withFetch(t, async () => logoutResponse.promise);
+  const generation = createSessionGeneration();
+  const logoutGeneration = generation.current();
+  const pendingLogout = sbSignOut(logoutToken);
+
+  generation.advance();
+  const newSession = { access_token: "new-session-token", refresh_token: "new-session-refresh" };
+  logoutResponse.resolve(response(503, { message: "server unavailable" }));
+  const result = await pendingLogout;
+
+  assert.equal(shouldReportSignOutFailure({
+    result,
+    generationIsCurrent: generation.isCurrent(logoutGeneration),
+    hasSession: Boolean(newSession),
+  }), false);
+});
+
+test("cross-tab sign-out advances generation and clears session data", () => {
+  const generation = createSessionGeneration();
+  const startingGeneration = generation.current();
+  let cleared = false;
+  const result = reconcileExternalSession({
+    generation,
+    currentSession: { access_token: "account-a-token", refresh_token: "account-a-refresh", email: "a@example.test" },
+    nextSession: null,
+    onRotation: () => assert.fail("sign-out cannot be treated as token rotation"),
+    onAccountChange: () => assert.fail("sign-out cannot be treated as account switch"),
+    onSignOut: () => { cleared = true; },
+  });
+
+  assert.equal(result, "signed-out");
+  assert.equal(cleared, true);
+  assert.equal(generation.isCurrent(startingGeneration), false);
+});
+
+test("cross-tab token rotation updates the same account without advancing generation", () => {
+  const generation = createSessionGeneration();
+  const currentSession = { access_token: "old-token", refresh_token: "old-refresh", email: "a@example.test" };
+  const nextSession = { access_token: "new-token", refresh_token: "new-refresh", email: "a@example.test" };
+  const startingGeneration = generation.current();
+  let appliedSession = null;
+
+  const result = reconcileExternalSession({
+    generation,
+    currentSession,
+    nextSession,
+    onRotation: (session) => { appliedSession = session; },
+    onAccountChange: () => assert.fail("same-account token rotation must not reload account data"),
+    onSignOut: () => assert.fail("token rotation cannot sign out"),
+  });
+
+  assert.equal(result, "rotated");
+  assert.equal(appliedSession, nextSession);
+  assert.equal(generation.isCurrent(startingGeneration), true);
+});
+
+test("cross-tab account switch invalidates older in-flight data loads", () => {
+  const generation = createSessionGeneration();
+  const startingGeneration = generation.current();
+  const previousSession = { access_token: "account-a-token", refresh_token: "account-a-refresh", email: "a@example.test" };
+  const nextSession = { access_token: "account-b-token", refresh_token: "account-b-refresh", email: "b@example.test" };
+  let cleared = false;
+  let loadGeneration = null;
+  const result = reconcileExternalSession({
+    generation,
+    currentSession: previousSession,
+    nextSession,
+    onRotation: () => assert.fail("different accounts cannot be treated as rotation"),
+    onAccountChange: (_session, nextGeneration) => {
+      cleared = true;
+      loadGeneration = nextGeneration;
+    },
+    onSignOut: () => assert.fail("account switch cannot sign out"),
+  });
+
+  assert.equal(result, "account-changed");
+  assert.equal(cleared, true);
+  assert.equal(generation.isCurrent(startingGeneration), false);
+  assert.equal(generation.isCurrent(loadGeneration), true);
+});
+
+test("cross-tab account switch clears collections and UI before loading the new account", () => {
+  const generation = createSessionGeneration();
+  const previousSession = { access_token: "account-a-token", refresh_token: "account-a-refresh", email: "a@example.test" };
+  const nextSession = { access_token: "account-b-token", refresh_token: "account-b-refresh", email: "b@example.test" };
+  const state = {
+    beans: ["account-a-bean"], brews: ["account-a-brew"], greenBeans: ["account-a-green-bean"],
+    recipes: ["account-a-recipe"], roastProfiles: ["account-a-profile"], formDraft: "account-a-draft",
+    selectedRecord: "account-a-record", loadedToken: null,
+  };
+
+  reconcileExternalSession({
+    generation,
+    currentSession: previousSession,
+    nextSession,
+    onRotation: () => assert.fail("different accounts cannot be treated as rotation"),
+    onSignOut: () => assert.fail("account switch cannot sign out"),
+    onAccountChange: (session, nextGeneration) => {
+      state.beans = [];
+      state.brews = [];
+      state.greenBeans = [];
+      state.recipes = [];
+      state.roastProfiles = [];
+      state.formDraft = null;
+      state.selectedRecord = null;
+      state.loadedToken = session.access_token;
+      state.loadGeneration = nextGeneration;
+    },
+  });
+
+  assert.deepEqual(state, {
+    beans: [], brews: [], greenBeans: [], recipes: [], roastProfiles: [],
+    formDraft: null, selectedRecord: null, loadedToken: "account-b-token",
+    loadGeneration: generation.current(),
+  });
+});
+
+test("production data commit guard rejects a late collection result after sign-out", () => {
+  const generation = createSessionGeneration();
+  const loadGeneration = generation.current();
+  const canCommit = () => generation.isCurrent(loadGeneration);
+  let displayedBeans = ["new-account-bean"];
+
+  reconcileExternalSession({
+    generation,
+    currentSession: { access_token: "account-a-token", refresh_token: "account-a-refresh", email: "a@example.test" },
+    nextSession: null,
+    onRotation: () => assert.fail("sign-out cannot rotate"),
+    onAccountChange: () => assert.fail("sign-out cannot switch accounts"),
+    onSignOut: () => {},
+  });
+  const committed = commitIfCurrent(canCommit, () => { displayedBeans = ["late-account-a-bean"]; });
+
+  assert.equal(committed, false);
+  assert.deepEqual(displayedBeans, ["new-account-bean"]);
+});
+
+test("session data commit guard rejects old-account tokens and accepts same-account rotation", () => {
+  const generation = createSessionGeneration();
+  const accountA = { access_token: jwtForSubject("account-a", "old"), refresh_token: "a-refresh", email: "a@example.test" };
+  let currentSession = accountA;
+  const accountAGuard = createSessionDataCommitGuard(
+    generation,
+    generation.current(),
+    accountA.access_token,
+    () => currentSession
+  );
+  currentSession = { access_token: jwtForSubject("account-a", "rotated"), refresh_token: "a-refresh-2", email: "a@example.test" };
+  assert.equal(accountAGuard(), true);
+
+  currentSession = { access_token: jwtForSubject("account-b", "new"), refresh_token: "b-refresh", email: "b@example.test" };
+  let oldDataCommitted = false;
+  const committed = commitIfCurrent(accountAGuard, () => { oldDataCommitted = true; });
+  assert.equal(committed, false);
+  assert.equal(oldDataCommitted, false);
+
+  const staleImportGuard = createSessionDataCommitGuard(
+    generation,
+    generation.current(),
+    accountA.access_token,
+    () => currentSession
+  );
+  assert.equal(staleImportGuard(), false);
+});
+
+test("two tabs serialize same-session refresh and the waiter adopts shared tokens", async () => {
+  const locks = createLockManager();
+  const responseDeferred = deferred();
+  let signalStarted;
+  const refreshStarted = new Promise((resolve) => { signalStarted = resolve; });
+  const original = { access_token: "expired-token", refresh_token: "old-refresh", email: "same@example.test" };
+  let sharedSession = original;
+  let firstTabSession = original;
+  let secondTabSession = original;
+  let refreshCalls = 0;
+  let persistCalls = 0;
+
+  const coordinateForTab = (generation, getLocalSession, setLocalSession) => coordinateSessionRefresh({
+    locks,
+    generation,
+    requestGeneration: generation.current(),
+    currentSession: original,
+    getCurrentSession: getLocalSession,
+    getSharedSession: () => sharedSession,
+    refresh: () => generation.refresh(
+      original,
+      async () => {
+        refreshCalls += 1;
+        signalStarted();
+        return responseDeferred.promise;
+      },
+      getLocalSession,
+      (nextSession) => {
+        persistCalls += 1;
+        sharedSession = nextSession;
+        setLocalSession(nextSession);
+      },
+      (candidate) => sharedSession?.refresh_token === candidate.refresh_token
+    ),
+    adoptSession: setLocalSession,
+  });
+
+  const firstPromise = coordinateForTab(createSessionGeneration(), () => firstTabSession, (session) => { firstTabSession = session; });
+  const secondPromise = coordinateForTab(createSessionGeneration(), () => secondTabSession, (session) => { secondTabSession = session; });
+  await refreshStarted;
+  responseDeferred.resolve({ session: { access_token: "rotated-token", refresh_token: "rotated-refresh", expires_in: 3600 } });
+
+  const [firstResult, secondResult] = await Promise.all([firstPromise, secondPromise]);
+  assert.equal(firstResult.session.access_token, "rotated-token");
+  assert.equal(secondResult.session.access_token, "rotated-token");
+  assert.equal(firstTabSession.refresh_token, "rotated-refresh");
+  assert.equal(secondTabSession.refresh_token, "rotated-refresh");
+  assert.equal(refreshCalls, 1);
+  assert.equal(persistCalls, 1);
+});
+
+test("refresh result cannot overwrite a newer shared account session", async () => {
+  const generation = createSessionGeneration();
+  const refreshResponse = deferred();
+  const currentSession = { access_token: "account-a-token", refresh_token: "account-a-refresh", email: "a@example.test" };
+  let sharedSession = currentSession;
+  let persisted = false;
+  const refreshPromise = generation.refresh(
+    currentSession,
+    () => refreshResponse.promise,
+    () => currentSession,
+    () => { persisted = true; },
+    (candidate) => sharedSession?.refresh_token === candidate.refresh_token
+  );
+
+  sharedSession = { access_token: "account-b-token", refresh_token: "account-b-refresh", email: "b@example.test" };
+  refreshResponse.resolve({ session: { access_token: "late-a-token", refresh_token: "late-a-refresh" } });
+
+  assert.deepEqual(await refreshPromise, { session: null, errorType: "stale_session" });
+  assert.equal(sharedSession.access_token, "account-b-token");
+  assert.equal(persisted, false);
+});
+
+test("temporary refresh failure leaves the shared session and generation intact", async () => {
+  const generation = createSessionGeneration();
+  const session = { access_token: "account-a-token", refresh_token: "account-a-refresh", email: "a@example.test" };
+  const startingGeneration = generation.current();
+  let sharedSession = session;
+  const result = await coordinateSessionRefresh({
+    locks: createLockManager(),
+    generation,
+    requestGeneration: startingGeneration,
+    currentSession: session,
+    getCurrentSession: () => session,
+    getSharedSession: () => sharedSession,
+    refresh: () => generation.refresh(
+      session,
+      async () => ({ session: null, errorType: "network" }),
+      () => session,
+      () => assert.fail("network failure cannot persist a replacement session"),
+      (candidate) => sharedSession?.refresh_token === candidate.refresh_token
+    ),
+    adoptSession: () => assert.fail("a failed refresh cannot adopt another session"),
+  });
+
+  assert.deepEqual(result, { session: null, errorType: "network" });
+  assert.equal(generation.isCurrent(startingGeneration), true);
+  assert.equal(sharedSession, session);
+});
+
+test("expired stored session with temporary refresh failure can complete fresh OTP login", () => {
+  const generation = createSessionGeneration();
+  const rememberedSession = { access_token: "expired-access", refresh_token: "remembered-refresh", email: "old@example.test" };
+  let currentSession = rememberedSession;
+  let authState = "login";
+  let cleared = false;
+  const setAuthState = (value) => { authState = value; };
+  const setAuthCode = () => {};
+  const noOp = () => {};
+
+  restoreStoredSessionState({
+    generation,
+    startedInGeneration: generation.current(),
+    storedSession: rememberedSession,
+    refreshed: { session: null, errorType: "network" },
+    getSession: () => currentSession,
+    setAuthState,
+    loadData: noOp,
+    clearSession: () => { cleared = true; currentSession = null; },
+    setAuthCode,
+  });
+
+  assert.equal(authState, "login");
+  assert.equal(currentSession, rememberedSession);
+  assert.equal(cleared, false);
+  const attemptArgs = {
+    generation,
+    startedInGeneration: generation.current(),
+    expectedAuthState: "login",
+    getAuthState: () => authState,
+    startingRefreshToken: currentSession.refresh_token,
+    getRefreshToken: () => currentSession?.refresh_token || null,
+  };
+  assert.equal(isCurrentOtpAttempt(attemptArgs), true);
+
+  authState = "verify";
+  assert.equal(isCurrentOtpAttempt({ ...attemptArgs, expectedAuthState: "verify" }), true);
+  currentSession = {
+    access_token: "fresh-otp-access",
+    refresh_token: "fresh-otp-refresh",
+    email: "new@example.test",
+  };
+  generation.advance();
+  authState = "app";
+  assert.equal(generation.isCurrent(attemptArgs.startedInGeneration), false);
+  assert.equal(currentSession.access_token, "fresh-otp-access");
+});
+
+test("OTP attempt is ignored after a refreshed session or account change supersedes it", () => {
+  const generation = createSessionGeneration();
+  let currentSession = { access_token: "expired-access", refresh_token: "old-refresh", email: "a@example.test" };
+  let authState = "login";
+  const startedInGeneration = generation.current();
+  const attempt = (expectedAuthState) => isCurrentOtpAttempt({
+    generation,
+    startedInGeneration,
+    expectedAuthState,
+    getAuthState: () => authState,
+    startingRefreshToken: "old-refresh",
+    getRefreshToken: () => currentSession?.refresh_token || null,
+  });
+
+  currentSession = { ...currentSession, access_token: "refreshed-access", refresh_token: "rotated-refresh" };
+  authState = "app";
+  assert.equal(attempt("login"), false);
+
+  generation.advance();
+  currentSession = { access_token: "account-b-access", refresh_token: "account-b-refresh", email: "b@example.test" };
+  assert.equal(attempt("login"), false);
+});
 
 test("refreshes and retries once while preserving the REST request", async (t) => {
   const calls = [];

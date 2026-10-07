@@ -242,17 +242,24 @@ export async function sbRefreshSession(refreshToken) {
 }
 
 export async function sbSignOut(token) {
-  if (!token) return;
-  ensureSupabaseConfig();
+  if (!token) return { ok: false, errorType: "missing_token" };
 
   try {
-    await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+    ensureSupabaseConfig();
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
       method: "POST",
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
     });
-  } catch (error) {
-    console.error("Sign out failed:", error);
+    return response.ok
+      ? { ok: true, status: response.status }
+      : { ok: false, status: response.status, errorType: "http" };
+  } catch {
+    return { ok: false, errorType: "network" };
   }
+}
+
+export function shouldReportSignOutFailure({ result, generationIsCurrent, hasSession }) {
+  return !result?.ok && generationIsCurrent && !hasSession;
 }
 
 export async function sbGet(table, token, query = "select=*") {

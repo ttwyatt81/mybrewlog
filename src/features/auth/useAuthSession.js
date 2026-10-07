@@ -5,11 +5,17 @@ import {
   sbSignOut,
   sbRefreshSession,
   sbGetUser,
-  registerUnauthorizedRefreshHandler
+  registerUnauthorizedRefreshHandler,
+  shouldReportSignOutFailure,
 } from "../../lib/supabase";
 import {
   createExpiredAccessTokenHandler,
   createSessionGeneration,
+  commitIfCurrent,
+  coordinateSessionRefresh,
+  createSessionDataCommitGuard,
+  isCurrentOtpAttempt,
+  reconcileExternalSession,
   restoreStoredSessionState,
 } from "./expiredAccessTokenHandler.js";
 
@@ -17,6 +23,16 @@ const SESSION_KEY = "sb_session";
 const LAST_EMAIL_KEY = "last_auth_email";
 const emptyAsyncList = async () => [];
 const noop = () => {};
+const SIGN_OUT_FAILURE_MESSAGE = "Signed out on this device, but server logout could not be confirmed.";
+
+function readPersistedSession() {
+  try {
+    const stored = localStorage.getItem(SESSION_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
 
 export function useAuthSession({
   loadBrewsData,
@@ -28,6 +44,8 @@ export function useAuthSession({
   setGreenBeans,
   setRecipes,
   setRoastProfiles,
+  setBrews = noop,
+  resetAccountUi = noop,
 }) {
   const loadGreenBeans = typeof loadGreenBeansData === "function" ? loadGreenBeansData : emptyAsyncList;
   const loadRoastProfiles = typeof loadRoastProfilesData === "function" ? loadRoastProfilesData : emptyAsyncList;
@@ -36,6 +54,8 @@ export function useAuthSession({
   const [session, setSession] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [authState, setAuthState] = useState("login"); // login | verify | app
+  const authStateRef = useRef(authState);
+  authStateRef.current = authState;
   const [authEmail, setAuthEmail] = useState("");
   const [authCode, setAuthCode] = useState("");
   const [authError, setAuthError] = useState("");
@@ -50,6 +70,7 @@ export function useAuthSession({
   const activeSessionTokenRef = useRef(null);
 
   const loadCurrentUser = useCallback(async (token) => {
+    const generation = sessionGenerationRef.current.current();
     if (!token) {
       setCurrentUser(null);
       userLoadInFlightRef.current = { token: null, promise: null };
@@ -64,13 +85,13 @@ export function useAuthSession({
     const promise = (async () => {
       try {
         const user = await sbGetUser(token);
-        if (activeSessionTokenRef.current === token) {
+        if (sessionGenerationRef.current.isCurrent(generation) && activeSessionTokenRef.current === token) {
           setCurrentUser(user || null);
         }
         return user || null;
       } catch (error) {
         console.error("Failed to load authenticated user:", error);
-        if (activeSessionTokenRef.current === token) {
+        if (sessionGenerationRef.current.isCurrent(generation) && activeSessionTokenRef.current === token) {
           setCurrentUser(null);
         }
         return null;
@@ -99,20 +120,41 @@ export function useAuthSession({
     setCurrentUser(null);
     setAuthState("login");
     setAuthCode("");
+    setAuthError("");
+    setAuthLoading(false);
     setBeans([]);
+    setBrews([]);
     clearGreenBeans([]);
     setRecipes([]);
     clearRoastProfiles([]);
-  }, [clearGreenBeans, clearRoastProfiles, setBeans, setRecipes]);
+    resetAccountUi();
+    setLoading(false);
+  }, [clearGreenBeans, clearRoastProfiles, resetAccountUi, setAuthError, setAuthLoading, setBeans, setBrews, setRecipes]);
 
   const refreshSession = useCallback(async (currentSession) => {
     if (!currentSession?.refresh_token) return null;
-    return sessionGenerationRef.current.refresh(
+    const generation = sessionGenerationRef.current;
+    const requestGeneration = generation.current();
+    return coordinateSessionRefresh({
+      locks: globalThis.navigator?.locks,
+      generation,
+      requestGeneration,
       currentSession,
-      sbRefreshSession,
-      () => sessionRef.current,
-      saveSession
-    );
+      getCurrentSession: () => sessionRef.current,
+      getSharedSession: readPersistedSession,
+      refresh: () => generation.refresh(
+        currentSession,
+        sbRefreshSession,
+        () => sessionRef.current,
+        saveSession,
+        (candidate) => readPersistedSession()?.refresh_token === candidate.refresh_token
+      ),
+      adoptSession: (sharedSession) => {
+        sessionRef.current = sharedSession;
+        setSession(sharedSession);
+        setAuthState("app");
+      },
+    });
   }, [saveSession]);
 
   const refreshRejectedAccessToken = useCallback(async (rejectedToken, requestGeneration) => {
@@ -148,30 +190,87 @@ export function useAuthSession({
       && result?.errorType === "invalid_refresh_token"
       && sessionGenerationRef.current.isCurrent(generation)
       && sessionRef.current?.refresh_token === refreshToken
+      && readPersistedSession()?.refresh_token === refreshToken
     ) {
       clearSession();
     }
     return result;
   }, [clearSession, getValidAccessToken]);
 
-  const loadData = useCallback(async (token) => {
-    setLoading(true);
+  const loadData = useCallback(async (token, generation = sessionGenerationRef.current.current()) => {
+    const canCommit = createSessionDataCommitGuard(
+      sessionGenerationRef.current,
+      generation,
+      token,
+      () => sessionRef.current
+    );
+    if (!commitIfCurrent(canCommit, () => setLoading(true))) return;
     try {
-      const brewRows = await loadBrewsData(token);
-      await loadBeansData(token, brewRows);
-      await loadGreenBeans(token);
-      await loadRecipesData(token);
-      await loadRoastProfiles(token);
+      const brewRows = await loadBrewsData(token, canCommit);
+      if (!canCommit()) return;
+      await loadBeansData(token, brewRows, canCommit);
+      if (!canCommit()) return;
+      await loadGreenBeans(token, canCommit);
+      if (!canCommit()) return;
+      await loadRecipesData(token, canCommit);
+      if (!canCommit()) return;
+      await loadRoastProfiles(token, canCommit);
     } catch (e) {
       console.error("Load data error:", e);
+    } finally {
+      commitIfCurrent(canCommit, () => setLoading(false));
     }
-    setLoading(false);
   }, [loadBeansData, loadBrewsData, loadGreenBeans, loadRecipesData, loadRoastProfiles]);
 
   useEffect(() => {
     const lastEmail = localStorage.getItem(LAST_EMAIL_KEY);
     if (lastEmail) setAuthEmail(lastEmail);
   }, []);
+
+  useEffect(() => {
+    const handleStorage = (event) => {
+      if (event.key !== SESSION_KEY) return;
+
+      let nextSession;
+      try {
+        const stored = localStorage.getItem(SESSION_KEY);
+        nextSession = stored ? JSON.parse(stored) : null;
+      } catch {
+        nextSession = null;
+      }
+
+      reconcileExternalSession({
+        generation: sessionGenerationRef.current,
+        currentSession: sessionRef.current,
+        nextSession,
+        onRotation: (rotatedSession) => {
+          sessionRef.current = rotatedSession;
+          setSession(rotatedSession);
+          setAuthState("app");
+        },
+        onAccountChange: (newSession, generation) => {
+          sessionRef.current = newSession;
+          setCurrentUser(null);
+          setSession(newSession);
+          setAuthState("app");
+          setAuthCode("");
+          setAuthError("");
+          setAuthLoading(false);
+          setBeans([]);
+          setBrews([]);
+          clearGreenBeans([]);
+          setRecipes([]);
+          clearRoastProfiles([]);
+          resetAccountUi();
+          loadData(newSession.access_token, generation);
+        },
+        onSignOut: clearSession,
+      });
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [clearGreenBeans, clearRoastProfiles, clearSession, loadData, resetAccountUi, setBeans, setBrews, setRecipes]);
 
   useEffect(() => {
     const token = session?.access_token || null;
@@ -214,6 +313,7 @@ export function useAuthSession({
             loadData,
             clearSession,
             setAuthCode,
+            setAuthLoading,
           });
         })();
         return;
@@ -251,10 +351,20 @@ export function useAuthSession({
 
   const handleSendOtp = useCallback(async () => {
     if (!authEmail.trim()) return;
+    const startedInGeneration = sessionGenerationRef.current.current();
+    const startingRefreshToken = sessionRef.current?.refresh_token || null;
     setAuthLoading(true);
     setAuthError("");
     const cleanEmail = authEmail.trim();
     const { ok, error } = await sbSendOtp(cleanEmail);
+    if (!isCurrentOtpAttempt({
+      generation: sessionGenerationRef.current,
+      startedInGeneration,
+      expectedAuthState: "login",
+      getAuthState: () => authStateRef.current,
+      startingRefreshToken,
+      getRefreshToken: () => sessionRef.current?.refresh_token || null,
+    })) return;
     if (ok) {
       setAuthState("verify");
     } else {
@@ -266,10 +376,20 @@ export function useAuthSession({
 
   const handleVerifyOtp = useCallback(async () => {
     if (authCode.length < 6) return; // allow 6-8 digits
+    const startedInGeneration = sessionGenerationRef.current.current();
+    const startingRefreshToken = sessionRef.current?.refresh_token || null;
     setAuthLoading(true);
     setAuthError("");
     const cleanEmail = authEmail.trim();
     const data = await sbVerifyOtp(cleanEmail, authCode.trim());
+    if (!isCurrentOtpAttempt({
+      generation: sessionGenerationRef.current,
+      startedInGeneration,
+      expectedAuthState: "verify",
+      getAuthState: () => authStateRef.current,
+      startingRefreshToken,
+      getRefreshToken: () => sessionRef.current?.refresh_token || null,
+    })) return;
     if (data) {
       const sess = {
         access_token: data.access_token,
@@ -291,7 +411,17 @@ export function useAuthSession({
   const handleSignOut = useCallback(async () => {
     const accessToken = session?.access_token;
     clearSession();
-    if (accessToken) await sbSignOut(accessToken);
+    if (!accessToken) return;
+
+    const logoutGeneration = sessionGenerationRef.current.current();
+    const result = await sbSignOut(accessToken);
+    if (shouldReportSignOutFailure({
+      result,
+      generationIsCurrent: sessionGenerationRef.current.isCurrent(logoutGeneration),
+      hasSession: Boolean(sessionRef.current),
+    })) {
+      setAuthError(SIGN_OUT_FAILURE_MESSAGE);
+    }
   }, [clearSession, session]);
 
   return {

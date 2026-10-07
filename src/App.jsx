@@ -83,9 +83,12 @@ export default function App() {
     saveRoast: saveGreenBeanRoastData,
     removeRoast: deleteGreenBeanRoastData,
   } = useGreenBeans();
-  const { load: loadBrewsData, save: saveBrewData, remove: deleteBrewData } = useBrews();
+  const { setBrews, load: loadBrewsData, save: saveBrewData, remove: deleteBrewData } = useBrews();
   const { recipes, setRecipes, load: loadRecipesData, save: saveRecipeData, remove: deleteRecipeData } = useRecipes();
   const { roastProfiles, setRoastProfiles, load: loadRoastProfilesData, save: saveRoastProfileData, remove: deleteRoastProfileData } = useRoastProfiles();
+  const [activeBean, setActiveBean] = useState(null);
+  const accountUiResetRef = useRef(() => {});
+  const resetAccountUi = useCallback(() => accountUiResetRef.current(), []);
   const {
     session,
     currentUser,
@@ -112,13 +115,14 @@ export default function App() {
     loadRecipesData,
     loadRoastProfilesData,
     setBeans,
+    setBrews,
     setGreenBeans,
     setRecipes,
     setRoastProfiles,
+    resetAccountUi,
   });
   const [view, setView] = useState(VIEW_KEYS.BEANS);
   const [editBean, setEditBean] = useState(null);
-  const [activeBean, setActiveBean] = useState(null);
   const [brewForm, setBrewForm] = useState(defaultBrew);
   const [greenBeanRoastForm, setGreenBeanRoastForm] = useState(defaultGreenBeanRoast);
   const [editingGreenBeanRoastId, setEditingGreenBeanRoastId] = useState(null);
@@ -174,6 +178,36 @@ export default function App() {
     buildRecipePayload: recipePayload,
     buildRoastProfilePayload: roastProfilePayload,
   });
+
+  accountUiResetRef.current = () => {
+    deleteConfirmation?.resolve(false);
+    setView(VIEW_KEYS.BEANS);
+    setEditBean(null);
+    setActiveBean(null);
+    setBrewForm(defaultBrew);
+    setGreenBeanRoastForm(defaultGreenBeanRoast);
+    setEditingGreenBeanRoastId(null);
+    setRoastProfileForm({ id: null, name: "", machine: "", description: "", lastUsed: "", archived: false });
+    setFilter("");
+    setRoastProfileSearch("");
+    setRecipeSearch("");
+    setFilterOrigin("");
+    setFilterType("");
+    setFilterRoaster("");
+    setEditRecipe(null);
+    setTab(TAB_KEYS.BEANS);
+    setBeanListMode("active");
+    setGreenBeanListMode("active");
+    setRecipeListMode("active");
+    setRoastProfileListMode("active");
+    setSelectedRoastProfile(null);
+    setEditingBrewId(null);
+    setShowTransfer(null);
+    setDeleteConfirmation(null);
+    setImportText("");
+    setSaveError("");
+    clearFeedback();
+  };
 
   const getAccessTokenOrFail = useCallback(async () => {
     const { token, errorType } = await ensureValidAccessToken();

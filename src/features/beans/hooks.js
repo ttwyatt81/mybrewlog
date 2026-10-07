@@ -1,13 +1,14 @@
 import { useCallback, useState } from "react";
+import { commitIfCurrent } from "../auth/expiredAccessTokenHandler.js";
 import { loadBeans, saveBean, deleteBean } from "./api";
 import { combineBeansAndBrews, normalizeBeanRow, sortBeansByRecentActivity } from "./model";
 
 export function useBeans(initialBeans = []) {
   const [beans, setBeans] = useState(initialBeans);
 
-  const load = useCallback(async (token, brewRows = []) => {
+  const load = useCallback(async (token, brewRows = [], canCommit = () => true) => {
     const beanRows = await loadBeans(token);
-    setBeans((current) => combineBeansAndBrews(beanRows, brewRows, current));
+    commitIfCurrent(canCommit, () => setBeans((current) => combineBeansAndBrews(beanRows, brewRows, current)));
     return beanRows;
   }, []);
 

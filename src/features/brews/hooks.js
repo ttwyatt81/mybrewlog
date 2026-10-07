@@ -1,14 +1,15 @@
 import { useCallback, useState } from "react";
+import { commitIfCurrent } from "../auth/expiredAccessTokenHandler.js";
 import { loadBrews, saveBrew, deleteBrew } from "./api";
 import { normalizeBrewRow } from "./model";
 
 export function useBrews(initialBrews = []) {
   const [brews, setBrews] = useState(initialBrews);
 
-  const load = useCallback(async (token) => {
+  const load = useCallback(async (token, canCommit = () => true) => {
     const brewRows = await loadBrews(token);
     const normalizedBrews = (brewRows || []).map((row) => normalizeBrewRow(row));
-    setBrews(normalizedBrews);
+    commitIfCurrent(canCommit, () => setBrews(normalizedBrews));
     return brewRows;
   }, []);
 

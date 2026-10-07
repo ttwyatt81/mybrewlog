@@ -1,14 +1,15 @@
 import { useCallback, useState } from "react";
+import { commitIfCurrent } from "../auth/expiredAccessTokenHandler.js";
 import { loadRecipes, saveRecipe, deleteRecipe } from "./api";
 import { normalizeRecipeRow } from "./model";
 
 export function useRecipes(initialRecipes = []) {
   const [recipes, setRecipes] = useState(initialRecipes);
 
-  const load = useCallback(async (token) => {
+  const load = useCallback(async (token, canCommit = () => true) => {
     const recipeRows = await loadRecipes(token);
     const normalizedRecipes = (recipeRows || []).map((row) => normalizeRecipeRow(row));
-    setRecipes(normalizedRecipes);
+    commitIfCurrent(canCommit, () => setRecipes(normalizedRecipes));
     return recipeRows;
   }, []);
 
