@@ -375,7 +375,7 @@ export function useAuthSession({
   }, [authEmail]);
 
   const handleVerifyOtp = useCallback(async () => {
-    if (authCode.length < 6) return; // allow 6-8 digits
+    if (!/^\d{8}$/.test(authCode)) return;
     const startedInGeneration = sessionGenerationRef.current.current();
     const startingRefreshToken = sessionRef.current?.refresh_token || null;
     setAuthLoading(true);
