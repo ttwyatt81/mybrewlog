@@ -1,5 +1,12 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import RestoreDiagnostics from "../ui/RestoreDiagnostics";
+
+const TABS = [
+  { id: "beans", label: "Roasted Beans" },
+  { id: "greenBeans", label: "Green Beans" },
+  { id: "roastProfiles", label: "Roast Profiles" },
+  { id: "recipes", label: "Recipes" },
+];
 
 export default function AppShell({
   view,
@@ -17,43 +24,91 @@ export default function AppShell({
   children,
 }) {
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
-  return (
-    <div style={{ minHeight: "100vh", background: "#0c0905", backgroundImage: "radial-gradient(ellipse at 15% 15%, rgba(110,55,8,0.18) 0%, transparent 55%), radial-gradient(ellipse at 85% 85%, rgba(50,25,3,0.25) 0%, transparent 55%)", fontFamily: "'DM Sans', sans-serif", color: "#f6eee0" }}>
-      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  const triggerRef = useRef(null);
 
-      <div style={{ borderBottom: "1px solid rgba(200,137,58,0.13)", padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "rgba(12,9,5,0.93)", backdropFilter: "blur(14px)", zIndex: 10 }}>
-        <div style={{ display: "flex", transform: view !== "beans" || isDetailView ? "translateX(max(-16px, calc((100vw - 680px) / 2 - 32px)))" : undefined }}>
-          {view === "beans" && !isDetailView && [{ id: "beans", label: "Roasted Beans" }, { id: "greenBeans", label: "Green Beans" }, { id: "roastProfiles", label: "Roast Profiles" }, { id: "recipes", label: "Recipes" }].map((item) => (
-            <button key={item.id} onClick={() => setTab(item.id)}
-              style={{ padding: "14px 20px", background: "none", border: "none", borderBottom: `2px solid ${tab === item.id ? "#c8893a" : "transparent"}`, color: tab === item.id ? "#e2bc7f" : "#c2a587", cursor: "pointer", fontSize: "14px", fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s", marginBottom: "-1px" }}>
-              {item.label}
-            </button>
-          ))}
-          {(view !== "beans" || isDetailView) && (
-            <div style={{ display: "flex", alignItems: "center", padding: "0 4px" }}>
-              <button onClick={onBack || (() => setView("beans"))} style={{ background: "none", border: "none", color: "#ccb396", cursor: "pointer", fontSize: "13px", padding: "14px 8px" }}>← Back</button>
-            </div>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center", transform: view !== "beans" || isDetailView ? "translateX(min(4px, calc((720px - 100vw) / 2)))" : undefined }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "1px" }}>
-            <div style={{ fontSize: "10px", color: "#d0b59a", letterSpacing: "0.03em", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userEmail}</div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button onClick={onSync} disabled={loading} style={{ background: "none", border: "none", color: loading ? "#d4c6b2" : "#c6a98c", cursor: loading ? "not-allowed" : "pointer", fontSize: "10px", padding: 0, letterSpacing: "0.05em", textDecoration: "underline" }}>Sync</button>
-              <button onClick={onSignOut} style={{ background: "none", border: "none", color: "#c6a98c", cursor: "pointer", fontSize: "10px", padding: 0, letterSpacing: "0.05em" }}>Sign out</button>
-              <button onClick={() => setShowTroubleshooting((v) => !v)} aria-expanded={showTroubleshooting} style={{ background: "none", border: "none", color: "#c6a98c", cursor: "pointer", fontSize: "10px", padding: 0, letterSpacing: "0.05em" }}>Troubleshooting</button>
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    menuRef.current?.querySelector("[role='menuitem']:not(:disabled)")?.focus();
+    const onPointerDown = (event) => {
+      if (!menuRef.current?.contains(event.target) && !triggerRef.current?.contains(event.target)) setMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [menuOpen]);
+
+  const closeMenu = (restoreFocus = true) => {
+    setMenuOpen(false);
+    if (restoreFocus) triggerRef.current?.focus();
+  };
+
+  const onMenuKeyDown = (event) => {
+    const items = [...menuRef.current.querySelectorAll("[role='menuitem']:not(:disabled)")];
+    const index = items.indexOf(document.activeElement);
+    const move = (next) => { event.preventDefault(); items[(next + items.length) % items.length]?.focus(); };
+    if (event.key === "ArrowDown") move(index + 1);
+    else if (event.key === "ArrowUp") move(index - 1);
+    else if (event.key === "Home") move(0);
+    else if (event.key === "End") move(items.length - 1);
+    else if (event.key === "Escape") { event.preventDefault(); closeMenu(); }
+    else if (event.key === "Tab") closeMenu(false);
+  };
+
+  const showTabs = view === "beans" && !isDetailView;
+  const isRedesigned = showTabs && (tab === "beans" || tab === "greenBeans");
+
+  return (
+    <div className="mbl-app" data-section={tab}>
+      <header className="mbl-header">
+        <div className="mbl-header-inner">
+          <div className="mbl-header-top">
+            <div className="mbl-wordmark">WyattCoffeeLabBrewLog</div>
+            <div className="mbl-account">
+              <div className="mbl-account-email">{userEmail}</div>
+              <div className="mbl-account-actions">
+                <button className="mbl-link" onClick={onSignOut}>Sign out</button>
+                <div className="mbl-menu">
+                  <button
+                    ref={triggerRef}
+                    className="mbl-menu-trigger"
+                    aria-label="More actions"
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpen}
+                    onClick={() => setMenuOpen((open) => !open)}
+                    onKeyDown={(event) => {
+                      if (event.key === "ArrowDown" && !menuOpen) { event.preventDefault(); setMenuOpen(true); }
+                    }}
+                  >⋯</button>
+                  {menuOpen && (
+                    <div ref={menuRef} className="mbl-menu-list" role="menu" aria-label="More actions" onKeyDown={onMenuKeyDown}>
+                      <button role="menuitem" className="mbl-menu-item" disabled={loading} onClick={() => { closeMenu(); onSync?.(); }}>Refresh</button>
+                      <button role="menuitem" className="mbl-menu-item" onClick={() => { closeMenu(); setShowTroubleshooting((v) => !v); }}>Troubleshooting</button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
+          <nav className="mbl-tabs" aria-label="Sections">
+            {showTabs ? TABS.map((item) => (
+              <button key={item.id} className="mbl-tab" onClick={() => setTab(item.id)} aria-current={tab === item.id ? "page" : undefined}>
+                {item.label}
+              </button>
+            )) : (
+              <button className="mbl-tab" onClick={onBack || (() => setView("beans"))}>← Back</button>
+            )}
+          </nav>
         </div>
-      </div>
+      </header>
 
       {showTroubleshooting && (
-        <div style={{ maxWidth: "680px", margin: "0 auto", padding: "0 16px 8px" }}>
+        <div className="mbl-header-inner" style={{ paddingTop: "8px", paddingBottom: "8px" }}>
           <RestoreDiagnostics entries={restoreDiagnostics} onClear={onClearDiagnostics} defaultOpen />
         </div>
       )}
 
-      {children}
+      {isRedesigned ? children : <div className="mbl-legacy">{children}</div>}
     </div>
   );
 }

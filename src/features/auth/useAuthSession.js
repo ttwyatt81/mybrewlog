@@ -14,6 +14,7 @@ import {
   commitIfCurrent,
   coordinateSessionRefresh,
   createSessionDataCommitGuard,
+  findRotatedSession,
   isCurrentOtpAttempt,
   reconcileExternalSession,
   restoreStoredSessionState,
@@ -361,14 +362,30 @@ export function useAuthSession({
       record: recordRestore,
       onRetry: setRestoreRetryCount,
     });
-    if (outcome.status === "stale") return;
+    if (outcome.status === "stale") {
+      const runIsCurrent = restoreRunRef.current === runId && sessionGenerationRef.current.isCurrent(generation);
+      if (!runIsCurrent) return;
+      const persisted = readPersistedSession();
+      const rotated = findRotatedSession(storedSession, persisted);
+      if (rotated) {
+        sessionRef.current = rotated;
+        setSession(rotated);
+        setAuthState("app");
+        loadData(rotated.access_token);
+      } else if (!persisted) {
+        clearSession();
+      }
+      return;
+    }
 
     const applied = restoreStoredSessionState({
       generation: sessionGenerationRef.current,
       startedInGeneration: generation,
       storedSession,
       refreshed: outcome.result,
-      getSession: () => sessionRef.current,
+      // Renders reset sessionRef to the (null) state while restoring, so fall back to the still-matching stored session.
+      getSession: () => sessionRef.current
+        || (readPersistedSession()?.refresh_token === storedSession.refresh_token ? storedSession : null),
       setAuthState,
       loadData,
       clearSession,

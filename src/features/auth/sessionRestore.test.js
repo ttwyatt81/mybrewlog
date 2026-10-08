@@ -93,6 +93,38 @@ test("confirmed invalid refresh token logs out without retrying and records no s
   assert.equal(readRestoreDiagnostics(storage)[0].category, "invalid_refresh_token");
 });
 
+test("rejected 400 requests are not retried, keep the session and record only the allowlisted code", async () => {
+  const storage = memoryStorage();
+  const generation = createSessionGeneration();
+  const startedInGeneration = generation.current();
+  let calls = 0;
+  const outcome = await runRestoreAttempts({
+    refresh: async () => {
+      calls += 1;
+      return { session: null, errorType: "request_rejected", status: 400, errorCode: "bad_json" };
+    },
+    isCurrent: () => true,
+    record: (entry) => recordRestoreEvent({ ...entry, errorCode: entry.errorCode, body: "secret-body" }, storage),
+    sleep: async () => assert.fail("must not retry a rejected request"),
+  });
+  let authState = "restoring";
+  let cleared = false;
+  restoreStoredSessionState({
+    generation, startedInGeneration, storedSession: stored, refreshed: outcome.result,
+    getSession: () => stored, setAuthState: (s) => { authState = s; }, loadData: () => {},
+    clearSession: () => { cleared = true; }, setAuthCode: () => {},
+  });
+
+  assert.equal(calls, 1);
+  assert.equal(outcome.status, "failed");
+  assert.equal(authState, "restore_failed");
+  assert.equal(cleared, false);
+  const [entry] = readRestoreDiagnostics(storage);
+  assert.deepEqual([entry.category, entry.status, entry.errorCode], ["request_rejected", 400, "bad_json"]);
+  assert.ok(!JSON.stringify(entry).includes("secret"));
+  assert.ok(recordRestoreEvent({ category: "server_error", errorCode: "me@example.test" }, storage).every((e) => e.errorCode !== "me@example.test"));
+});
+
 test("logout or account switch during pending restoration cancels the retry", async () => {
   for (const interrupt of ["logout", "account-switch"]) {
     const generation = createSessionGeneration();

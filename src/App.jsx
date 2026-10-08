@@ -948,7 +948,7 @@ export default function App() {
       loading={loading}
     >
 
-      <div style={{ maxWidth: "680px", margin: "0 auto", padding: "22px 16px" }}>
+      <div className="mbl-page">
 
         {/* ── BEANS LIST ── */}
         {view === VIEW_KEYS.BEANS && (tab === TAB_KEYS.BEANS || tab === TAB_KEYS.GREEN_BEANS) && (

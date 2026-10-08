@@ -21,6 +21,7 @@ const {
   commitIfCurrent,
   coordinateSessionRefresh,
   createSessionDataCommitGuard,
+  findRotatedSession,
   isCurrentOtpAttempt,
   reconcileExternalSession,
   restoreStoredSessionState,
@@ -93,6 +94,44 @@ test("refresh timeout aborts the fetch and releases deduplication state", async 
   const retry = await sbRefreshSession("timeout-refresh-token");
   assert.equal(retry.session.access_token, "ok");
   assert.equal(calls, 2);
+});
+
+test("refresh request is a JSON POST with only refresh_token in the body", async (t) => {
+  let captured;
+  await withFetch(t, (url, options) => {
+    captured = { url, options };
+    return Promise.resolve(response(200, { access_token: "ok" }));
+  });
+
+  await sbRefreshSession("json-format-token");
+  assert.equal(captured.url, "https://example.supabase.co/auth/v1/token?grant_type=refresh_token");
+  assert.equal(captured.options.method, "POST");
+  assert.equal(captured.options.headers["Content-Type"], "application/json");
+  assert.deepEqual(JSON.parse(captured.options.body), { refresh_token: "json-format-token" });
+});
+
+test("HTTP 400 refresh responses are classified by allowlisted error code without leaking bodies", async (t) => {
+  const cases = [
+    [{ error_code: "refresh_token_not_found", msg: "secret detail me@example.test" }, "invalid_refresh_token", "refresh_token_not_found"],
+    [{ error_code: "refresh_token_already_used" }, "invalid_refresh_token", "refresh_token_already_used"],
+    [{ error: "invalid_grant", error_description: "Invalid Refresh Token: Already Used" }, "invalid_refresh_token", "invalid_grant"],
+    [{ error_code: "bad_json", msg: "Could not parse request body as JSON" }, "request_rejected", "bad_json"],
+    [{ error_code: "something_new", msg: "secret detail" }, "request_rejected", "other"],
+    [{}, "request_rejected", null],
+  ];
+
+  for (const [index, [body, errorType, errorCode]] of cases.entries()) {
+    await withFetch(t, () => Promise.resolve(response(400, body)));
+    const result = await sbRefreshSession(`classify-token-${index}`);
+    assert.deepEqual(result, { session: null, errorType, status: 400, errorCode });
+  }
+});
+
+test("5xx refresh responses stay temporary even with a refresh-token error code", async (t) => {
+  await withFetch(t, () => Promise.resolve(response(503, { error_code: "refresh_token_not_found" })));
+  const result = await sbRefreshSession("server-error-token");
+  assert.equal(result.errorType, "request_failed");
+  assert.equal(result.status, 503);
 });
 
 test("sbSignOut reports HTTP success", async (t) => {
@@ -776,6 +815,27 @@ test("ordinary access-token rotation in the same generation permits retry", asyn
 
   assert.deepEqual(await pendingRequest, [{ id: "ok" }]);
   assert.equal(requestCount, 2);
+});
+
+test("already-used refresh token adopts a newer same-account session and never clears it", async () => {
+  const generation = createSessionGeneration();
+  const stored = { access_token: "old", refresh_token: "old-r", email: "a@example.test" };
+  const rotated = { access_token: "new", refresh_token: "new-r", email: "a@example.test" };
+  const other = { access_token: "b", refresh_token: "b-r", email: "b@example.test" };
+  let shared = stored;
+  const result = await generation.refresh(
+    stored,
+    async () => { shared = rotated; return { session: null, errorType: "invalid_refresh_token", status: 400, errorCode: "refresh_token_already_used" }; },
+    () => stored,
+    () => assert.fail("must not persist"),
+    (candidate) => shared?.refresh_token === candidate.refresh_token
+  );
+
+  assert.equal(result.errorType, "stale_session");
+  assert.equal(findRotatedSession(stored, shared), rotated);
+  assert.equal(findRotatedSession(stored, other), null);
+  assert.equal(findRotatedSession(stored, stored), null);
+  assert.equal(findRotatedSession(stored, null), null);
 });
 
 test("stale invalid-refresh failure cannot clear a newer session", async () => {
