@@ -18,6 +18,7 @@ export default function AuthView({
   setAuthState,
   setAuthError,
 }) {
+  const restoreRejected = restoreDiagnostics[restoreDiagnostics.length - 1]?.category === "request_rejected";
   return (
     <div style={{ minHeight: "100vh", background: "#0c0905", backgroundImage: "radial-gradient(ellipse at 15% 15%, rgba(110,55,8,0.18) 0%, transparent 55%)", fontFamily: "'DM Sans', sans-serif", color: "#f0e6d3", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
@@ -38,8 +39,8 @@ export default function AuthView({
 
         {authState === "restore_failed" && (
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "14px", color: "#d0b69a", marginBottom: "6px" }}>Can't reach the server right now.</div>
-            <div style={{ fontSize: "12px", color: "#c3aa90", marginBottom: "18px" }}>Your saved sign-in is kept on this device. We'll retry when you're back online.</div>
+            <div style={{ fontSize: "14px", color: "#d0b69a", marginBottom: "6px" }}>{restoreRejected ? "We couldn’t restore your session." : "Can't reach the server right now."}</div>
+            <div style={{ fontSize: "12px", color: "#c3aa90", marginBottom: "18px" }}>{restoreRejected ? "Your saved sign-in is kept on this device. You can try again or sign in with email." : "Your saved sign-in is kept on this device. We'll retry when you're back online."}</div>
             <button onClick={retryRestore} style={{ width: "100%", background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "9px", color: "#fff", padding: "13px", fontSize: "15px", fontWeight: "500", cursor: "pointer", marginBottom: "12px" }}>Try again</button>
             <button onClick={abandonRestore} style={{ width: "100%", background: "none", border: "none", color: "#c3aa90", cursor: "pointer", fontSize: "13px", padding: "8px" }}>Sign in with email instead</button>
           </div>

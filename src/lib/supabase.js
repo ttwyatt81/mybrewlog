@@ -20,16 +20,47 @@ function logRefreshDebug(event, details = {}) {
   console.debug("[supabase refresh]", event, details);
 }
 
-function classifyRefreshError(status, body) {
-  const error = String(body?.error || "").toLowerCase();
-  const description = String(body?.error_description || body?.message || body?.msg || "").toLowerCase();
-  const combined = `${error} ${description}`.trim();
-  const mentionsRefreshToken = combined.includes("refresh token");
-  const explicitlyInvalid = combined.includes("invalid") || combined.includes("expired") || combined.includes("revoked") || combined.includes("not found");
+// Only these Supabase machine-readable codes are ever stored or logged.
+export const REFRESH_ERROR_CODES = [
+  "refresh_token_not_found",
+  "refresh_token_already_used",
+  "session_not_found",
+  "session_expired",
+  "invalid_grant",
+  "bad_json",
+  "validation_failed",
+  "over_request_rate_limit",
+  "unexpected_failure",
+];
+const INVALID_REFRESH_CODES = new Set([
+  "refresh_token_not_found",
+  "refresh_token_already_used",
+  "session_not_found",
+  "session_expired",
+]);
 
-  if ((status === 400 || status === 401) && mentionsRefreshToken && explicitlyInvalid) {
+export function extractRefreshErrorCode(body) {
+  const raw = [body?.error_code, body?.error].find((value) => typeof value === "string" && value.trim());
+  if (!raw) return null;
+  const code = raw.trim().toLowerCase();
+  return REFRESH_ERROR_CODES.includes(code) ? code : "other";
+}
+
+export function classifyRefreshError(status, body) {
+  const code = extractRefreshErrorCode(body);
+  const description = String(body?.error_description || body?.message || body?.msg || "").toLowerCase();
+  const mentionsRefreshToken = description.includes("refresh token");
+  const explicitlyInvalid = description.includes("invalid") || description.includes("expired") || description.includes("revoked") || description.includes("not found");
+  const authRejection = status === 400 || status === 401;
+
+  if (authRejection && (INVALID_REFRESH_CODES.has(code) || (code === "invalid_grant" && mentionsRefreshToken && explicitlyInvalid))) {
     return "invalid_refresh_token";
   }
+  if (authRejection && !code && mentionsRefreshToken && explicitlyInvalid) {
+    return "invalid_refresh_token";
+  }
+  // Other 400/422 responses are malformed or rejected requests; retrying will not help.
+  if (status === 400 || status === 422) return "request_rejected";
 
   return "request_failed";
 }
@@ -185,26 +216,19 @@ export async function sbRefreshSession(refreshToken) {
         method: "POST",
         headers: {
           apikey: SUPABASE_KEY,
-          "Content-Type": "application/x-www-form-urlencoded"
+          "Content-Type": "application/json"
         },
-        body: new URLSearchParams({
-          grant_type: "refresh_token",
-          refresh_token: normalizedRefreshToken
-        })
+        body: JSON.stringify({ refresh_token: normalizedRefreshToken })
       });
 
       const data = await res.json().catch(() => ({}));
       if (controller.signal.aborted) throw new DOMException("Refresh timed out", "AbortError");
-      const error = data?.error || null;
-      const errorDescription = data?.error_description || data?.message || data?.msg || null;
 
       if (data?.access_token) {
         logRefreshDebug("request_success", {
           refreshToken: refreshTokenId,
           status: res.status,
           ok: res.ok,
-          error,
-          error_description: errorDescription,
           errorType: null,
           shared: false
         });
@@ -212,17 +236,16 @@ export async function sbRefreshSession(refreshToken) {
       }
 
       const errorType = res.ok ? "request_failed" : classifyRefreshError(res.status, data);
+      const errorCode = extractRefreshErrorCode(data);
       logRefreshDebug("request_failure", {
         refreshToken: refreshTokenId,
         status: res.status,
         ok: res.ok,
-        body: data,
-        error,
-        error_description: errorDescription,
+        errorCode,
         errorType,
         shared: false
       });
-      return { session: null, errorType, status: res.status };
+      return { session: null, errorType, status: res.status, errorCode };
     } catch (error) {
       const timedOut = error?.name === "AbortError";
       console.error("Refresh session request failed:", error);
@@ -230,9 +253,6 @@ export async function sbRefreshSession(refreshToken) {
         refreshToken: refreshTokenId,
         status: null,
         ok: false,
-        body: null,
-        error: error?.message || String(error),
-        error_description: null,
         errorType: timedOut ? "timeout" : "network",
         shared: false
       });

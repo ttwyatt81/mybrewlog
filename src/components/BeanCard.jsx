@@ -1,3 +1,5 @@
+import { coffeeAccent } from "../styles/theme";
+
 const formatDateValue = (value) => {
   if (!value) return "";
   const date = new Date(value);
@@ -6,6 +8,17 @@ const formatDateValue = (value) => {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const year = date.getFullYear();
   return `${day}-${month}-${year}`;
+};
+
+// "Various" is a placeholder, so the overview hides it; stored data is untouched.
+const meaningful = (value) => {
+  const text = String(value ?? "").trim();
+  return text && text.toLowerCase() !== "various" ? text : "";
+};
+
+const formatRoastLevel = (value) => {
+  const text = meaningful(value);
+  return /^\d+(\.\d+)?$/.test(text) ? `L${text}` : text;
 };
 
 export default function BeanCard({
@@ -30,182 +43,69 @@ export default function BeanCard({
   const linkedRoast = !isGreenBeanSheet && bean.sourceRoastId
     ? greenBeans.flatMap((greenBean) => greenBean.roasts || []).find((roast) => roast.id === bean.sourceRoastId)
     : null;
-  const archiveToggle = (
-    <button
-      onClick={(event) => {
-        event.stopPropagation();
-        onToggleArchive?.(bean);
-      }}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "6px",
-        background: "none",
-        border: "none",
-        borderRadius: 0,
-        color: "#c1a88c",
-        padding: "0 2px",
-        cursor: "pointer",
-        fontSize: "10px",
-        lineHeight: 1,
-        height: "auto"
-      }}
-      aria-label={bean.archived ? "Move bean back to active" : "Archive bean"}
-      title={bean.archived ? "Move back to active" : "Archive bean"}
-    >
-      <span>{bean.archived ? "Archived" : "Active"}</span>
-      <span style={{
-        display: "inline-block",
-        width: "22px",
-        height: "12px",
-        borderRadius: "999px",
-        background: bean.archived ? "linear-gradient(135deg, rgba(200,137,58,0.7), rgba(160,104,40,0.9))" : "rgba(255,255,255,0.12)",
-        position: "relative",
-        boxShadow: bean.archived ? "0 0 0 1px rgba(200,137,58,0.4), 0 4px 10px rgba(160,104,40,0.25)" : "inset 0 0 0 1px rgba(255,255,255,0.06)"
-      }}>
-        <span style={{
-          position: "absolute",
-          top: "2px",
-          left: bean.archived ? "12px" : "2px",
-          width: "8px",
-          height: "8px",
-          borderRadius: "50%",
-          background: "#f5f0e7",
-          transition: "all 0.2s ease",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.28)"
-        }} />
-      </span>
-    </button>
-  );
-  const editButton = (
-    <button
-      onClick={(event) => {
-        event.stopPropagation();
-        onEditBean?.(bean);
-      }}
-      style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
-      onMouseEnter={(event) => {
-        event.currentTarget.style.color = "#c8893a";
-        const icon = event.currentTarget.querySelector('[data-role="edit-icon"]');
-        const label = event.currentTarget.querySelector('[data-role="edit-label"]');
-        if (icon) icon.style.transform = "translateX(1px)";
-        if (label) label.style.opacity = "1";
-      }}
-      onMouseLeave={(event) => {
-        event.currentTarget.style.color = "#c9b094";
-        const icon = event.currentTarget.querySelector('[data-role="edit-icon"]');
-        const label = event.currentTarget.querySelector('[data-role="edit-label"]');
-        if (icon) icon.style.transform = "translateX(0)";
-        if (label) label.style.opacity = "0";
-      }}
-      aria-label={`Edit ${bean.name}`}
-    >
-      <span data-role="edit-label" style={{ fontSize: "11px", opacity: 0, width: "40px", overflow: "hidden", whiteSpace: "nowrap", transition: "opacity 0.15s ease" }}>Edit</span>
-      <span data-role="edit-icon" style={{ fontSize: "14px", lineHeight: "1", display: "inline-block", transition: "transform 0.15s ease" }}>✎</span>
-    </button>
-  );
-  const deleteButton = (
-    <button
-      onClick={(event) => {
-        event.stopPropagation();
-        onDeleteBean?.(bean.id);
-      }}
-      style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px" }}
-      onMouseEnter={(event) => (event.currentTarget.style.color = "#c8893a")}
-      onMouseLeave={(event) => (event.currentTarget.style.color = "#c9b094")}
-      aria-label={`Delete ${bean.name}`}
-    >
-      ✕
-    </button>
-  );
+
+  const profileName = meaningful(linkedRoast?.roastProfileName);
+  const linkedLevel = formatRoastLevel(linkedRoast?.roastLevel);
+  const originLine = [(isGreenBeanSheet ? null : bean.roaster), bean.producer, bean.origin, bean.region]
+    .map(meaningful).filter(Boolean).join(" · ");
+  const roastDate = formatDateValue(bean.roastDate);
+
+  const openBean = () => {
+    setActiveBean(bean);
+    setView("beanDetail");
+  };
+  const act = (handler) => (event) => {
+    event.stopPropagation();
+    handler?.();
+  };
 
   return (
-    <div
-      onClick={() => {
-        setActiveBean(bean);
-        setView("beanDetail");
-      }}
-      style={{
-        background: bean.archived ? "rgba(200,137,58,0.05)" : "rgba(255,255,255,0.02)",
-        border: bean.archived ? "1px solid rgba(200,137,58,0.34)" : "1px solid rgba(200,137,58,0.18)",
-        borderRadius: "12px",
-        padding: "16px 18px",
-        cursor: "pointer",
-        transition: "all 0.18s",
-        position: "relative"
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = bean.archived ? "rgba(200,137,58,0.08)" : "rgba(200,137,58,0.06)";
-        e.currentTarget.style.borderColor = bean.archived ? "rgba(200,137,58,0.55)" : "rgba(200,137,58,0.4)";
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = bean.archived ? "rgba(200,137,58,0.05)" : "rgba(255,255,255,0.02)";
-        e.currentTarget.style.borderColor = bean.archived ? "rgba(200,137,58,0.34)" : "rgba(200,137,58,0.18)";
-      }}
+    <article
+      className={`mbl-card${bean.archived ? " mbl-card--archived" : ""}`}
+      style={{ "--mbl-accent": coffeeAccent(bean.id ?? bean.name) }}
+      onClick={openBean}
     >
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        gap: "8px"
-      }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "16px", marginBottom: "2px", lineHeight: 1.2 }}>{bean.name}</div>
-          {bean.sourceRoastId && linkedRoast && (linkedRoast.roastProfileName || linkedRoast.roastLevel) && (
-            <div style={{ fontSize: "13px", color: "#c9b094", lineHeight: 1.3, marginBottom: "2px" }}>
-              {[linkedRoast?.roastProfileName, linkedRoast?.roastLevel].filter(Boolean).join(" · ")}
-            </div>
-          )}
-          <div style={{ fontSize: "11px", color: "#d0b69a", lineHeight: 1.3 }}>
-            {[(isGreenBeanSheet ? null : bean.roaster), bean.producer, bean.origin, bean.region].filter(Boolean).join(" · ")}
-          </div>
-        </div>
-
-        <div style={{ textAlign: "right", flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", position: "absolute", top: "16px", right: "18px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "6px" }}>
-            {editButton}
-            {deleteButton}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px", fontSize: "10px", color: "#c1a88c", lineHeight: 1.2 }}>
-            {archiveToggle}
-          </div>
+      <div className="mbl-card-head">
+        <h2 className="mbl-card-name"><button className="mbl-card-open">{bean.name}</button></h2>
+        <div className="mbl-card-actions">
+          <button className="mbl-link" onClick={act(() => onToggleArchive?.(bean))} aria-label={bean.archived ? `Move ${bean.name} back to active` : `Archive ${bean.name}`}>
+            {bean.archived ? "Unarchive" : "Archive"}
+          </button>
+          <button className="mbl-link" onClick={act(() => onEditBean?.(bean))} aria-label={`Edit ${bean.name}`}>Edit</button>
+          <button className="mbl-link" onClick={act(() => onDeleteBean?.(bean.id))} aria-label={`Delete ${bean.name}`}>Delete</button>
         </div>
       </div>
 
-      {isGreenBeanSheet && (
-        <div style={{ marginTop: "10px", fontSize: "10px", color: "#c1a88c", lineHeight: 1.2 }}>
-          {roastCount} roast{roastCount !== 1 ? "s" : ""}
+      {(profileName || linkedLevel) && (
+        <div className="mbl-card-profile">
+          {profileName}
+          {profileName && linkedLevel && " · "}
+          {linkedLevel && <strong>{linkedLevel}</strong>}
         </div>
       )}
+      {originLine && <div className="mbl-card-sub">{originLine}</div>}
 
-      {!isGreenBeanSheet && (
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "10px", fontSize: "11px", lineHeight: 1 }}>
-          <span style={{ color: "#c1a88c", fontSize: "10px" }}>{brewCount} brew{brewCount !== 1 ? "s" : ""}</span>
-          {best?.rating > 0 && <span style={{ color: "#c8893a" }}>{"★".repeat(best.rating)}</span>}
-        </div>
-      )}
-
-      <div style={{
-        marginTop: "6px",
-        display: "flex",
-        gap: "7px",
-        flexWrap: "wrap"
-      }}>
+      <div className="mbl-card-tags">
         {!isGreenBeanSheet && <Tag>{bean.sourceRoastId ? "Self-roasted" : "Commercially roasted"}</Tag>}
-        {!isGreenBeanSheet && bean.type && <Tag>{bean.type}</Tag>}
-        {!isGreenBeanSheet && !bean.sourceRoastId && bean.roastLevel && <Tag>{bean.roastLevel}</Tag>}
-        {bean.process && <Tag>{bean.process}</Tag>}
-        {bean.varietal && <Tag>{bean.varietal}</Tag>}
-        {bean.altitude && <Tag>{bean.altitude}</Tag>}
-        {!isGreenBeanSheet && bean.roastDate && (
-          <Tag>
-            Roasted {formatDateValue(bean.roastDate)}
-          </Tag>
-        )}
-        {isGreenBeanSheet && (
-          <Tag>{pricePerKg !== null ? `${pricePerKg.toFixed(2)} / kg` : "Add price + weight"}</Tag>
-        )}
+        {!isGreenBeanSheet && meaningful(bean.type) && <Tag>{meaningful(bean.type)}</Tag>}
+        {!isGreenBeanSheet && !bean.sourceRoastId && formatRoastLevel(bean.roastLevel) && <Tag>{formatRoastLevel(bean.roastLevel)}</Tag>}
+        {meaningful(bean.process) && <Tag>{meaningful(bean.process)}</Tag>}
+        {meaningful(bean.varietal) && <Tag>{meaningful(bean.varietal)}</Tag>}
+        {meaningful(bean.altitude) && <Tag>{meaningful(bean.altitude)}</Tag>}
+        {isGreenBeanSheet && <Tag>{pricePerKg !== null ? `${pricePerKg.toFixed(2)} / kg` : "Add price + weight"}</Tag>}
       </div>
-    </div>
+
+      {isGreenBeanSheet ? (
+        <div className="mbl-card-meta">{roastCount} roast{roastCount !== 1 ? "s" : ""}</div>
+      ) : (
+        <>
+          <div className="mbl-card-meta">
+            {brewCount} brew{brewCount !== 1 ? "s" : ""}
+            {best?.rating > 0 && <span aria-label={`${best.rating} stars`} style={{ marginLeft: "10px", color: "var(--mbl-ink)" }}>{"★".repeat(best.rating)}</span>}
+          </div>
+          {roastDate && <div className="mbl-card-date">Roasted {roastDate}</div>}
+        </>
+      )}
+    </article>
   );
 }

@@ -1,3 +1,5 @@
+import { REFRESH_ERROR_CODES } from "../../lib/supabase.js";
+
 export const SESSION_KEY = "sb_session";
 export const DIAGNOSTICS_KEY = "sb_restore_diagnostics";
 export const MAX_DIAGNOSTIC_ENTRIES = 20;
@@ -12,8 +14,10 @@ const CATEGORIES = new Set([
   "timeout",
   "server_error",
   "invalid_refresh_token",
+  "request_rejected",
   "stale",
 ]);
+const ERROR_CODES = new Set([...REFRESH_ERROR_CODES, "other"]);
 
 export function inspectStoredSession(storage = globalThis.localStorage) {
   let raw;
@@ -37,6 +41,7 @@ export function inspectStoredSession(storage = globalThis.localStorage) {
 
 export function restoreFailureCategory(errorType) {
   if (errorType === "invalid_refresh_token") return "invalid_refresh_token";
+  if (errorType === "request_rejected") return "request_rejected";
   if (errorType === "stale_session") return "stale";
   if (errorType === "timeout") return "timeout";
   if (errorType === "network") return "network";
@@ -51,6 +56,7 @@ function sanitizeEntry(entry) {
     phase: PHASES.has(entry?.phase) ? entry.phase : "startup",
     category: CATEGORIES.has(entry?.category) ? entry.category : "server_error",
     status,
+    errorCode: ERROR_CODES.has(entry?.errorCode) ? entry.errorCode : null,
     retries,
     hadTokens: Boolean(entry?.hadTokens),
   };
@@ -91,6 +97,7 @@ export function formatRestoreDiagnostics(entries) {
     e.phase,
     e.category,
     `http=${e.status ?? "-"}`,
+    `code=${e.errorCode ?? "-"}`,
     `retries=${e.retries}`,
     `saved_tokens=${e.hadTokens ? "yes" : "no"}`,
   ].join(" "));
@@ -123,9 +130,10 @@ export async function runRestoreAttempts({
     }
 
     const category = restoreFailureCategory(result?.errorType);
-    record({ ...base, category, status: result?.status ?? null });
+    record({ ...base, category, status: result?.status ?? null, errorCode: result?.errorCode });
     if (category === "invalid_refresh_token") return { status: "invalid", result };
     if (category === "stale") return { status: "stale", result };
+    if (category === "request_rejected") return { status: "failed", result };
     if (attempt >= delays.length) return { status: "failed", result };
 
     onRetry(attempt + 1);

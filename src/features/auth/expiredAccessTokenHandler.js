@@ -201,6 +201,13 @@ export function restoreStoredSessionState({
   return true;
 }
 
+// A restore refresh can go stale because another tab rotated this account's tokens; returns the rotated session to adopt.
+export function findRotatedSession(storedSession, persistedSession) {
+  if (!persistedSession?.access_token || !persistedSession?.refresh_token) return null;
+  if (persistedSession.refresh_token === storedSession.refresh_token) return null;
+  return sameSessionIdentity(persistedSession, storedSession) ? persistedSession : null;
+}
+
 export function isCurrentOtpAttempt({
   generation,
   startedInGeneration,
