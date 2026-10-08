@@ -16,6 +16,7 @@ const CATEGORIES = new Set([
   "invalid_refresh_token",
   "request_rejected",
   "stale",
+  "stale_guard",
 ]);
 const ERROR_CODES = new Set([...REFRESH_ERROR_CODES, "other"]);
 
@@ -42,7 +43,7 @@ export function inspectStoredSession(storage = globalThis.localStorage) {
 export function restoreFailureCategory(errorType) {
   if (errorType === "invalid_refresh_token") return "invalid_refresh_token";
   if (errorType === "request_rejected") return "request_rejected";
-  if (errorType === "stale_session") return "stale";
+  if (errorType === "stale_session") return "stale_guard";
   if (errorType === "timeout") return "timeout";
   if (errorType === "network") return "network";
   return "server_error";
@@ -132,7 +133,7 @@ export async function runRestoreAttempts({
     const category = restoreFailureCategory(result?.errorType);
     record({ ...base, category, status: result?.status ?? null, errorCode: result?.errorCode });
     if (category === "invalid_refresh_token") return { status: "invalid", result };
-    if (category === "stale") return { status: "stale", result };
+    if (category === "stale_guard") return { status: "stale", result };
     if (category === "request_rejected") return { status: "failed", result };
     if (attempt >= delays.length) return { status: "failed", result };
 

@@ -83,8 +83,8 @@ export function useAuthSession({
 
   const sessionGenerationRef = useRef(null);
   if (!sessionGenerationRef.current) sessionGenerationRef.current = createSessionGeneration();
+  // Updated only by explicit session transitions; syncing from state on render would null it mid-restore.
   const sessionRef = useRef(session);
-  sessionRef.current = session;
   const userLoadInFlightRef = useRef({ token: null, promise: null });
   const activeSessionTokenRef = useRef(null);
 
@@ -374,6 +374,9 @@ export function useAuthSession({
         loadData(rotated.access_token);
       } else if (!persisted) {
         clearSession();
+      } else {
+        // Keep stored tokens; let the user retry rather than hang on "restoring".
+        setAuthState("restore_failed");
       }
       return;
     }

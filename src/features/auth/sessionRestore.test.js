@@ -168,3 +168,36 @@ test("stored session inspection and bounded diagnostics", () => {
   }
   assert.equal(readRestoreDiagnostics(storage).length, MAX_DIAGNOSTIC_ENTRIES);
 });
+
+test("refresh success is not discarded as stale when the session ref holds the stored session", async () => {
+  const generation = createSessionGeneration();
+  const refreshed = { session: { access_token: "new-a", refresh_token: "new-r", expires_in: 3600 } };
+  const run = (getSession) => {
+    const saved = [];
+    return generation
+      .refresh(stored, async () => refreshed, getSession, (s) => saved.push(s), () => true)
+      .then((result) => ({ result, saved }));
+  };
+
+  // A render resetting sessionRef to null state used to trigger the stale_session guard.
+  const nulled = await run(() => null);
+  assert.equal(nulled.result.errorType, "stale_session");
+
+  const kept = await run(() => stored);
+  assert.equal(kept.result.errorType, null);
+  assert.equal(kept.saved.length, 1);
+});
+
+test("stale_session refresh results use a distinct diagnostic category and stop retrying", async () => {
+  const storage = memoryStorage();
+  let calls = 0;
+  const outcome = await runRestoreAttempts({
+    refresh: async () => { calls += 1; return { session: null, errorType: "stale_session" }; },
+    isCurrent: () => true,
+    record: (entry) => recordRestoreEvent(entry, storage),
+    sleep: async () => {},
+  });
+  assert.equal(outcome.status, "stale");
+  assert.equal(calls, 1);
+  assert.equal(readRestoreDiagnostics(storage)[0].category, "stale_guard");
+});
