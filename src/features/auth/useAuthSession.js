@@ -18,8 +18,17 @@ import {
   reconcileExternalSession,
   restoreStoredSessionState,
 } from "./expiredAccessTokenHandler.js";
+import {
+  SESSION_KEY,
+  clearRestoreDiagnostics,
+  inspectStoredSession,
+  readRestoreDiagnostics,
+  recordRestoreEvent,
+  runRestoreAttempts,
+} from "./sessionRestore.js";
 
-const SESSION_KEY = "sb_session";
+const SESSION_EXPIRED_MESSAGE = "Your session expired. Please sign in again.";
+const RESTORE_RESTART_MIN_MS = 1000;
 const LAST_EMAIL_KEY = "last_auth_email";
 const emptyAsyncList = async () => [];
 const noop = () => {};
@@ -53,9 +62,18 @@ export function useAuthSession({
   const clearRoastProfiles = typeof setRoastProfiles === "function" ? setRoastProfiles : noop;
   const [session, setSession] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
-  const [authState, setAuthState] = useState("login"); // login | verify | app
+  // restoring | restore_failed | login | verify | app
+  const [authState, setAuthState] = useState(() => (
+    inspectStoredSession().kind === "missing" ? "login" : "restoring"
+  ));
   const authStateRef = useRef(authState);
   authStateRef.current = authState;
+  const [restoreRetryCount, setRestoreRetryCount] = useState(0);
+  const [restoreDiagnostics, setRestoreDiagnostics] = useState(() => readRestoreDiagnostics());
+  const restoreRunRef = useRef(0);
+  const restoreBusyRunRef = useRef(null);
+  const lastRestoreStartRef = useRef(0);
+  const startRestoreRef = useRef(() => {});
   const [authEmail, setAuthEmail] = useState("");
   const [authCode, setAuthCode] = useState("");
   const [authError, setAuthError] = useState("");
@@ -282,48 +300,117 @@ export function useAuthSession({
     loadCurrentUser(token);
   }, [loadCurrentUser, session?.access_token]);
 
-  useEffect(() => {
-    const stored = localStorage.getItem(SESSION_KEY);
-    if (!stored) return;
+  const recordRestore = useCallback((entry) => {
+    setRestoreDiagnostics(recordRestoreEvent(entry));
+  }, []);
 
-    try {
-      const storedSession = JSON.parse(stored);
-      const validAccess = storedSession?.access_token && storedSession?.expires_at && Date.now() < storedSession.expires_at - 60000;
+  const clearDiagnostics = useCallback(() => setRestoreDiagnostics(clearRestoreDiagnostics()), []);
 
-      if (validAccess) {
-        sessionRef.current = storedSession;
-        setSession(storedSession);
-        setAuthState("app");
-        loadData(storedSession.access_token);
-        return;
-      }
-
-      if (storedSession?.refresh_token) {
-        sessionRef.current = storedSession;
-        const generation = sessionGenerationRef.current.current();
-        (async () => {
-          const refreshed = await refreshSession(storedSession);
-          restoreStoredSessionState({
-            generation: sessionGenerationRef.current,
-            startedInGeneration: generation,
-            storedSession,
-            refreshed,
-            getSession: () => sessionRef.current,
-            setAuthState,
-            loadData,
-            clearSession,
-            setAuthCode,
-            setAuthLoading,
-          });
-        })();
-        return;
-      }
-
-      clearSession();
-    } catch {
-      clearSession();
+  const startRestore = useCallback(async (phase) => {
+    // A refresh request is already in flight; its run will finish or fail on its own.
+    if (phase !== "startup" && restoreBusyRunRef.current !== null) return;
+    lastRestoreStartRef.current = Date.now();
+    const inspected = inspectStoredSession();
+    if (inspected.kind !== "ok") {
+      restoreRunRef.current += 1;
+      recordRestore({
+        phase,
+        category: inspected.kind === "missing" ? "missing_session" : "malformed_session",
+        retries: 0,
+        hadTokens: false,
+      });
+      if (inspected.kind === "malformed") clearSession();
+      else setAuthState("login");
+      return;
     }
-  }, [clearSession, loadData, refreshSession]);
+
+    const storedSession = inspected.session;
+    const validAccess = storedSession.access_token && storedSession.expires_at && Date.now() < storedSession.expires_at - 60000;
+    if (validAccess) {
+      restoreRunRef.current += 1;
+      sessionRef.current = storedSession;
+      setSession(storedSession);
+      setAuthState("app");
+      loadData(storedSession.access_token);
+      return;
+    }
+
+    if (!storedSession.refresh_token) {
+      restoreRunRef.current += 1;
+      recordRestore({ phase, category: "malformed_session", retries: 0, hadTokens: true });
+      clearSession();
+      return;
+    }
+
+    const runId = ++restoreRunRef.current;
+    const generation = sessionGenerationRef.current.current();
+    sessionRef.current = storedSession;
+    setRestoreRetryCount(0);
+    setAuthState("restoring");
+    const outcome = await runRestoreAttempts({
+      refresh: async () => {
+        restoreBusyRunRef.current = runId;
+        try {
+          return await refreshSession(storedSession);
+        } finally {
+          if (restoreBusyRunRef.current === runId) restoreBusyRunRef.current = null;
+        }
+      },
+      isCurrent: () => restoreRunRef.current === runId && sessionGenerationRef.current.isCurrent(generation),
+      phase,
+      record: recordRestore,
+      onRetry: setRestoreRetryCount,
+    });
+    if (outcome.status === "stale") return;
+
+    const applied = restoreStoredSessionState({
+      generation: sessionGenerationRef.current,
+      startedInGeneration: generation,
+      storedSession,
+      refreshed: outcome.result,
+      getSession: () => sessionRef.current,
+      setAuthState,
+      loadData,
+      clearSession,
+      setAuthCode,
+      setAuthLoading,
+    });
+    if (applied && outcome.status === "invalid") setAuthError(SESSION_EXPIRED_MESSAGE);
+  }, [clearSession, loadData, recordRestore, refreshSession]);
+  startRestoreRef.current = startRestore;
+
+  useEffect(() => {
+    startRestoreRef.current("startup");
+    return () => { restoreRunRef.current += 1; };
+  }, []);
+
+  // iPhone suspends timers and network in the background; retry on resume/reconnect.
+  useEffect(() => {
+    if (authState !== "restoring" && authState !== "restore_failed") return;
+    const resume = (phase) => () => {
+      if (document.visibilityState === "hidden") return;
+      if (Date.now() - lastRestoreStartRef.current < RESTORE_RESTART_MIN_MS) return;
+      startRestoreRef.current(phase);
+    };
+    const onVisible = resume("resume");
+    const onOnline = resume("online");
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", onVisible);
+    window.addEventListener("online", onOnline);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", onVisible);
+      window.removeEventListener("online", onOnline);
+    };
+  }, [authState]);
+
+  const retryRestore = useCallback(() => startRestoreRef.current("manual"), []);
+
+  const abandonRestore = useCallback(() => {
+    restoreRunRef.current += 1;
+    setAuthError("");
+    setAuthState("login");
+  }, []);
 
   // Sync when app regains focus (multi-device sync)
   useEffect(() => {
@@ -443,5 +530,10 @@ export function useAuthSession({
     handleVerifyOtp,
     setAuthState,
     handleSignOut,
+    restoreRetryCount,
+    restoreDiagnostics,
+    clearDiagnostics,
+    retryRestore,
+    abandonRestore,
   };
 }

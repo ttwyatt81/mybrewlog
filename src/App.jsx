@@ -108,6 +108,11 @@ export default function App() {
     handleVerifyOtp,
     setAuthState,
     handleSignOut,
+    restoreRetryCount,
+    restoreDiagnostics,
+    clearDiagnostics,
+    retryRestore,
+    abandonRestore,
   } = useAuthSession({
     loadBrewsData,
     loadBeansData,
@@ -886,10 +891,15 @@ export default function App() {
     setView(VIEW_KEYS.ROAST_PROFILE_FORM);
   };
 
-  if (authState === "login" || authState === "verify") {
+  if (authState !== "app") {
     return (
       <AuthView
         authState={authState}
+        restoreRetryCount={restoreRetryCount}
+        restoreDiagnostics={restoreDiagnostics}
+        clearDiagnostics={clearDiagnostics}
+        retryRestore={retryRestore}
+        abandonRestore={abandonRestore}
         authEmail={authEmail}
         setAuthEmail={setAuthEmail}
         authCode={authCode}
@@ -933,6 +943,8 @@ export default function App() {
         if (token) loadData(token);
       }}
       onSignOut={handleSignOut}
+      restoreDiagnostics={restoreDiagnostics}
+      onClearDiagnostics={clearDiagnostics}
       loading={loading}
     >
 

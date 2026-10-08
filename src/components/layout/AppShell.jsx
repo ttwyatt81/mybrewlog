@@ -1,3 +1,6 @@
+import { useState } from "react";
+import RestoreDiagnostics from "../ui/RestoreDiagnostics";
+
 export default function AppShell({
   view,
   tab,
@@ -8,9 +11,12 @@ export default function AppShell({
   userEmail,
   onSync,
   onSignOut,
+  restoreDiagnostics = [],
+  onClearDiagnostics,
   loading,
   children,
 }) {
+  const [showTroubleshooting, setShowTroubleshooting] = useState(false);
   return (
     <div style={{ minHeight: "100vh", background: "#0c0905", backgroundImage: "radial-gradient(ellipse at 15% 15%, rgba(110,55,8,0.18) 0%, transparent 55%), radial-gradient(ellipse at 85% 85%, rgba(50,25,3,0.25) 0%, transparent 55%)", fontFamily: "'DM Sans', sans-serif", color: "#f6eee0" }}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
@@ -35,10 +41,17 @@ export default function AppShell({
             <div style={{ display: "flex", gap: "8px" }}>
               <button onClick={onSync} disabled={loading} style={{ background: "none", border: "none", color: loading ? "#d4c6b2" : "#c6a98c", cursor: loading ? "not-allowed" : "pointer", fontSize: "10px", padding: 0, letterSpacing: "0.05em", textDecoration: "underline" }}>Sync</button>
               <button onClick={onSignOut} style={{ background: "none", border: "none", color: "#c6a98c", cursor: "pointer", fontSize: "10px", padding: 0, letterSpacing: "0.05em" }}>Sign out</button>
+              <button onClick={() => setShowTroubleshooting((v) => !v)} aria-expanded={showTroubleshooting} style={{ background: "none", border: "none", color: "#c6a98c", cursor: "pointer", fontSize: "10px", padding: 0, letterSpacing: "0.05em" }}>Troubleshooting</button>
             </div>
           </div>
         </div>
       </div>
+
+      {showTroubleshooting && (
+        <div style={{ maxWidth: "680px", margin: "0 auto", padding: "0 16px 8px" }}>
+          <RestoreDiagnostics entries={restoreDiagnostics} onClear={onClearDiagnostics} defaultOpen />
+        </div>
+      )}
 
       {children}
     </div>

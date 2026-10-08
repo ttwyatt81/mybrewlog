@@ -75,6 +75,26 @@ function register(handler, t) {
   t.after(unregister);
 }
 
+test("refresh timeout aborts the fetch and releases deduplication state", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  let calls = 0;
+  await withFetch(t, (_url, options) => {
+    calls += 1;
+    if (calls > 1) return Promise.resolve(response(200, { access_token: "ok" }));
+    return new Promise((_resolve, reject) => {
+      options.signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+    });
+  });
+
+  const pending = sbRefreshSession("timeout-refresh-token");
+  t.mock.timers.tick(15000);
+  assert.deepEqual(await pending, { session: null, errorType: "timeout" });
+
+  const retry = await sbRefreshSession("timeout-refresh-token");
+  assert.equal(retry.session.access_token, "ok");
+  assert.equal(calls, 2);
+});
+
 test("sbSignOut reports HTTP success", async (t) => {
   await withFetch(t, async () => response(204, null));
 
@@ -360,7 +380,7 @@ test("temporary refresh failure leaves the shared session and generation intact"
   assert.equal(sharedSession, session);
 });
 
-test("expired stored session with temporary refresh failure can complete fresh OTP login", () => {
+test("expired stored session with temporary refresh failure keeps the session and still allows fresh OTP login", () => {
   const generation = createSessionGeneration();
   const rememberedSession = { access_token: "expired-access", refresh_token: "remembered-refresh", email: "old@example.test" };
   let currentSession = rememberedSession;
@@ -382,9 +402,10 @@ test("expired stored session with temporary refresh failure can complete fresh O
     setAuthCode,
   });
 
-  assert.equal(authState, "login");
+  assert.equal(authState, "restore_failed");
   assert.equal(currentSession, rememberedSession);
   assert.equal(cleared, false);
+  authState = "login";
   const attemptArgs = {
     generation,
     startedInGeneration: generation.current(),

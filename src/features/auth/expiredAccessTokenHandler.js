@@ -194,7 +194,8 @@ export function restoreStoredSessionState({
   if (refreshed?.errorType === "invalid_refresh_token") {
     clearSession();
   } else {
-    setAuthState("login");
+    // Temporary failure: keep the saved session and let the user retry.
+    setAuthState("restore_failed");
     setAuthCode("");
   }
   return true;

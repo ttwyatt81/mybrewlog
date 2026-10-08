@@ -5,6 +5,7 @@ const AUTH_DEBUG = VITE_ENV.DEV;
 let lastSupabaseErrorMessage = "";
 let unauthorizedRefreshHandler = null;
 
+const REFRESH_TIMEOUT_MS = 15000;
 const refreshInFlightByToken = new Map();
 
 function maskToken(value) {
@@ -176,8 +177,11 @@ export async function sbRefreshSession(refreshToken) {
       endpoint: `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`
     });
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REFRESH_TIMEOUT_MS);
     try {
       const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        signal: controller.signal,
         method: "POST",
         headers: {
           apikey: SUPABASE_KEY,
@@ -190,6 +194,7 @@ export async function sbRefreshSession(refreshToken) {
       });
 
       const data = await res.json().catch(() => ({}));
+      if (controller.signal.aborted) throw new DOMException("Refresh timed out", "AbortError");
       const error = data?.error || null;
       const errorDescription = data?.error_description || data?.message || data?.msg || null;
 
@@ -217,8 +222,9 @@ export async function sbRefreshSession(refreshToken) {
         errorType,
         shared: false
       });
-      return { session: null, errorType };
+      return { session: null, errorType, status: res.status };
     } catch (error) {
+      const timedOut = error?.name === "AbortError";
       console.error("Refresh session request failed:", error);
       logRefreshDebug("request_network_error", {
         refreshToken: refreshTokenId,
@@ -227,11 +233,12 @@ export async function sbRefreshSession(refreshToken) {
         body: null,
         error: error?.message || String(error),
         error_description: null,
-        errorType: "network",
+        errorType: timedOut ? "timeout" : "network",
         shared: false
       });
-      return { session: null, errorType: "network" };
+      return { session: null, errorType: timedOut ? "timeout" : "network" };
     } finally {
+      clearTimeout(timeoutId);
       refreshInFlightByToken.delete(normalizedRefreshToken);
     }
   })();

@@ -1,5 +1,12 @@
+import RestoreDiagnostics from "../ui/RestoreDiagnostics";
+
 export default function AuthView({
   authState,
+  restoreRetryCount = 0,
+  restoreDiagnostics = [],
+  clearDiagnostics,
+  retryRestore,
+  abandonRestore,
   authEmail,
   setAuthEmail,
   authCode,
@@ -19,6 +26,24 @@ export default function AuthView({
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "32px", marginBottom: "6px" }}>Bean & Brew</div>
           <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.2em", textTransform: "uppercase" }}>Coffee Journal</div>
         </div>
+
+        {authState === "restoring" && (
+          <div role="status" style={{ fontSize: "14px", color: "#d0b69a", textAlign: "center" }}>
+            Restoring your session…
+            {restoreRetryCount > 0 && (
+              <div style={{ fontSize: "12px", color: "#c3aa90", marginTop: "8px" }}>Connection is slow — retrying ({restoreRetryCount})</div>
+            )}
+          </div>
+        )}
+
+        {authState === "restore_failed" && (
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "14px", color: "#d0b69a", marginBottom: "6px" }}>Can't reach the server right now.</div>
+            <div style={{ fontSize: "12px", color: "#c3aa90", marginBottom: "18px" }}>Your saved sign-in is kept on this device. We'll retry when you're back online.</div>
+            <button onClick={retryRestore} style={{ width: "100%", background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "9px", color: "#fff", padding: "13px", fontSize: "15px", fontWeight: "500", cursor: "pointer", marginBottom: "12px" }}>Try again</button>
+            <button onClick={abandonRestore} style={{ width: "100%", background: "none", border: "none", color: "#c3aa90", cursor: "pointer", fontSize: "13px", padding: "8px" }}>Sign in with email instead</button>
+          </div>
+        )}
 
         {authState === "login" && (
           <div>
@@ -49,6 +74,8 @@ export default function AuthView({
             </button>
           </div>
         )}
+
+        <RestoreDiagnostics entries={restoreDiagnostics} onClear={clearDiagnostics} />
       </div>
     </div>
   );
