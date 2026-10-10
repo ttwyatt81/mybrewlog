@@ -137,24 +137,25 @@ export default function RoastLogSection({
   const roastCount = roasts?.length || 0;
 
   return (
-    <>
-      <div style={{ fontSize: "10px", letterSpacing: "0.12em", color: "#d4bca0", textTransform: "uppercase", marginBottom: "12px" }}>
+    <section className="mbl-log-section mbl-roast-log-section">
+      <div className="mbl-log-heading">
         Roast Log · {roastCount} roast{roastCount !== 1 ? "s" : ""}
       </div>
 
       {roastCount === 0 ? (
-        <div style={{ textAlign: "center", padding: "36px 0", color: "#3a2a1a", fontSize: "13px" }}>No roasts yet — hit "+ Roast" to log the first roast</div>
+        <div className="mbl-empty"><p>No roasts yet — hit "+ Roast" to log the first roast</p></div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div className="mbl-log-list">
           {roasts.map((roast, i) => (
-            <div key={roast.id || `${roast.date}-${i}`} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(200,137,58,0.15)", borderRadius: "11px", padding: "15px 16px" }}>
+            <article key={roast.id || `${roast.date}-${i}`} className="mbl-log-card">
               {(() => {
                 const hasRoastedBean = roastedBeans.some((bean) => bean.sourceRoastId === roast.id);
                 return (
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-                  <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "13px", color: "#c8893a" }}>#{roastCount - i}</span>
-                  <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "15px", color: "#e4cfb1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <>
+              <div className="mbl-log-card-head">
+                <div className="mbl-log-card-identity">
+                  <span className="mbl-log-number">#{roastCount - i}</span>
+                  <span className="mbl-log-title">
                     {roast.roastProfileName || (roast.roastProfileStatus === "unnamed"
                       ? "Unnamed Profile"
                       : roast.roastProfileStatus === "unavailable"
@@ -162,60 +163,30 @@ export default function RoastLogSection({
                         : "No Profile")}
                   </span>
                   {roast.roastLevel && (
-                    <span style={{ fontSize: "11px", color: "#c1a88c", whiteSpace: "nowrap" }}>
+                    <span className="mbl-log-level">
                       {`Level ${roast.roastLevel}`}
                     </span>
                   )}
                 </div>
-                <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
-                  <button
-                    onClick={() => onExportRoast?.(roast)}
-                    disabled={hasRoastedBean}
-                    style={{
-                      background: hasRoastedBean ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg,#c8893a,#a06828)",
-                      border: "none",
-                      borderRadius: "8px",
-                      color: hasRoastedBean ? "#8d7a67" : "#fff",
-                      padding: "7px 13px",
-                      fontSize: "12px",
-                      fontWeight: "500",
-                      cursor: hasRoastedBean ? "not-allowed" : "pointer",
-                      whiteSpace: "nowrap"
-                    }}
-                    title={hasRoastedBean ? "A roasted bean already exists for this roast" : "Export this roast to Roasted Beans"}
-                  >
-                    {hasRoastedBean ? "Roasted Bean Created" : "+ Roasted Beans"}
-                  </button>
-                  <button
-                    onClick={() => onEditRoast?.(roast)}
-                    style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = "#c8893a";
-                      const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
-                      const label = e.currentTarget.querySelector('[data-role="edit-label"]');
-                      if (icon) icon.style.transform = "translateX(1px)";
-                      if (label) label.style.opacity = "1";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = "#c9b094";
-                      const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
-                      const label = e.currentTarget.querySelector('[data-role="edit-label"]');
-                      if (icon) icon.style.transform = "translateX(0)";
-                      if (label) label.style.opacity = "0";
-                    }}
-                    aria-label={`Edit roast ${roast.id}`}
-                  >
-                    <span data-role="edit-label" style={{ fontSize: "11px", opacity: 0, width: "40px", overflow: "hidden", whiteSpace: "nowrap", transition: "opacity 0.15s ease" }}>Edit</span>
-                    <span data-role="edit-icon" style={{ fontSize: "14px", lineHeight: "1", display: "inline-block", transition: "transform 0.15s ease" }}>✎</span>
-                  </button>
-                  <button onClick={() => onDeleteRoast?.(roast.id)} style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#c9b094")}>✕</button>
-                </div>
               </div>
+              <div className="mbl-log-card-actions mbl-roast-log-actions">
+                <button
+                  className={`mbl-btn mbl-btn--primary${hasRoastedBean ? " mbl-roasted-bean-created" : ""}`}
+                  onClick={() => onExportRoast?.(roast)}
+                  disabled={hasRoastedBean}
+                  title={hasRoastedBean ? "A roasted bean already exists for this roast" : "Export this roast to Roasted Beans"}
+                >
+                  {hasRoastedBean ? "Roasted Bean Created" : "+ Roasted Beans"}
+                </button>
+                <button className="mbl-link" onClick={() => onEditRoast?.(roast)} aria-label={`Edit roast ${roast.id}`}>Edit</button>
+                <button className="mbl-link" onClick={() => onDeleteRoast?.(roast.id)} aria-label={`Delete roast ${roast.id}`}>Delete</button>
+              </div>
+              </>
                 );
               })()}
               <div style={{ marginBottom: roast.startWeight || roast.endWeight || roast.reductionPercent || roast.notes || roast.firstCrack || roast.totalRoast ? "10px" : "0" }}>
                 {(roast.date || getRestedDuration(roast)) && (
-                  <div style={{ fontSize: "10px", color: "#cbb18f", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                  <div className="mbl-log-meta">
                     {`Roasted ${formatDateValue(roast.date) || "-"}`}
                     {getRestedDuration(roast) && (
                       <>
@@ -287,10 +258,10 @@ export default function RoastLogSection({
                 </div>
               )}
               {roast.notes && <div style={{ fontSize: "12px", color: "#ccb294", fontStyle: "italic", lineHeight: 1.6 }}>{`"${roast.notes}"`}</div>}
-            </div>
+            </article>
           ))}
         </div>
       )}
-    </>
+    </section>
   );
 }

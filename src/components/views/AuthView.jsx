@@ -20,64 +20,66 @@ export default function AuthView({
 }) {
   const restoreRejected = restoreDiagnostics[restoreDiagnostics.length - 1]?.category === "request_rejected";
   return (
-    <div style={{ minHeight: "100vh", background: "#0c0905", backgroundImage: "radial-gradient(ellipse at 15% 15%, rgba(110,55,8,0.18) 0%, transparent 55%)", fontFamily: "'DM Sans', sans-serif", color: "#f0e6d3", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
-      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
-      <div style={{ width: "100%", maxWidth: "380px" }}>
-        <div style={{ textAlign: "center", marginBottom: "40px" }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "32px", marginBottom: "6px" }}>Bean & Brew</div>
-          <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.2em", textTransform: "uppercase" }}>Coffee Journal</div>
-        </div>
+    <div className="mbl-auth-page">
+      <main className="mbl-auth-content">
+        <header className="mbl-auth-brand">
+          <div className="mbl-wordmark">WyattCoffeeLab</div>
+          <div className="mbl-label">Coffee Journal</div>
+        </header>
 
         {authState === "restoring" && (
-          <div role="status" style={{ fontSize: "14px", color: "#d0b69a", textAlign: "center" }}>
-            Restoring your session…
+          <div className="mbl-auth-status" role="status">
+            <span className="mbl-auth-spinner" aria-hidden="true">⟳</span>
+            <span>Restoring your session…</span>
             {restoreRetryCount > 0 && (
-              <div style={{ fontSize: "12px", color: "#c3aa90", marginTop: "8px" }}>Connection is slow — retrying ({restoreRetryCount})</div>
+              <div className="mbl-auth-status-detail">Connection is slow — retrying ({restoreRetryCount})</div>
             )}
           </div>
         )}
 
         {authState === "restore_failed" && (
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "14px", color: "#d0b69a", marginBottom: "6px" }}>{restoreRejected ? "We couldn’t restore your session." : "Can't reach the server right now."}</div>
-            <div style={{ fontSize: "12px", color: "#c3aa90", marginBottom: "18px" }}>{restoreRejected ? "Your saved sign-in is kept on this device. You can try again or sign in with email." : "Your saved sign-in is kept on this device. We'll retry when you're back online."}</div>
-            <button onClick={retryRestore} style={{ width: "100%", background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "9px", color: "#fff", padding: "13px", fontSize: "15px", fontWeight: "500", cursor: "pointer", marginBottom: "12px" }}>Try again</button>
-            <button onClick={abandonRestore} style={{ width: "100%", background: "none", border: "none", color: "#c3aa90", cursor: "pointer", fontSize: "13px", padding: "8px" }}>Sign in with email instead</button>
+          <div className="mbl-auth-state">
+            <h1 className="mbl-title">{restoreRejected ? "We couldn’t restore your session." : "Can't reach the server right now."}</h1>
+            <p>{restoreRejected ? "Your saved sign-in is kept on this device. You can try again or sign in with email." : "Your saved sign-in is kept on this device. We'll retry when you're back online."}</p>
+            <button className="mbl-auth-primary" onClick={retryRestore}>Try again</button>
+            <button className="mbl-auth-secondary" onClick={abandonRestore}>Sign in with email instead</button>
           </div>
         )}
 
         {authState === "login" && (
-          <div>
-            <div style={{ fontSize: "14px", color: "#d0b69a", marginBottom: "20px", textAlign: "center" }}>
+          <div className="mbl-auth-state">
+            <h1 className="mbl-title">Sign in</h1>
+            <p className="mbl-auth-prompt">
               Enter your email — we'll send you an eight-digit code
-            </div>
-            <input value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSendOtp()} placeholder="your@email.com" type="email" style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(200,137,58,0.3)", borderRadius: "9px", color: "#f0e6d3", padding: "13px 16px", fontSize: "15px", outline: "none", fontFamily: "inherit", boxSizing: "border-box", marginBottom: "12px" }} />
-            {authError && <div style={{ color: "#c87060", fontSize: "13px", marginBottom: "10px" }}>{authError}</div>}
-            <button onClick={handleSendOtp} disabled={authLoading || !authEmail.trim()} style={{ width: "100%", background: authEmail.trim() ? "linear-gradient(135deg,#c8893a,#a06828)" : "rgba(200,137,58,0.2)", border: "none", borderRadius: "9px", color: authEmail.trim() ? "#fff" : "#c3aa90", padding: "13px", fontSize: "15px", fontWeight: "500", cursor: authEmail.trim() ? "pointer" : "not-allowed" }}>
+            </p>
+            <input className="mbl-auth-field" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSendOtp()} placeholder="your@email.com" type="email" />
+            {authError && <div className="mbl-auth-error">{authError}</div>}
+            <button className="mbl-auth-primary" onClick={handleSendOtp} disabled={authLoading || !authEmail.trim()}>
               {authLoading ? "Sending…" : "Send Code"}
             </button>
           </div>
         )}
 
         {authState === "verify" && (
-          <div>
-            <div style={{ fontSize: "14px", color: "#d0b69a", marginBottom: "6px", textAlign: "center" }}>
+          <div className="mbl-auth-state">
+            <h1 className="mbl-title">Enter your code</h1>
+            <p className="mbl-auth-prompt">
               We sent an eight-digit code to
-            </div>
-            <div style={{ fontSize: "14px", color: "#c8a060", marginBottom: "24px", textAlign: "center", fontWeight: "500" }}>{authEmail}</div>
-            <input value={authCode} onChange={(e) => setAuthCode(e.target.value.replace(/\D/g, "").slice(0, 8))} onKeyDown={(e) => e.key === "Enter" && handleVerifyOtp()} placeholder="12345678" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={8} style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(200,137,58,0.3)", borderRadius: "9px", color: "#f0e6d3", padding: "13px 16px", fontSize: "28px", outline: "none", fontFamily: "monospace", boxSizing: "border-box", marginBottom: "12px", letterSpacing: "0.4em", textAlign: "center" }} />
-            {authError && <div style={{ color: "#c87060", fontSize: "13px", marginBottom: "10px", textAlign: "center" }}>{authError}</div>}
-            <button onClick={handleVerifyOtp} disabled={authLoading || !/^\d{8}$/.test(authCode)} style={{ width: "100%", background: /^\d{8}$/.test(authCode) ? "linear-gradient(135deg,#c8893a,#a06828)" : "rgba(200,137,58,0.2)", border: "none", borderRadius: "9px", color: /^\d{8}$/.test(authCode) ? "#fff" : "#c3aa90", padding: "13px", fontSize: "15px", fontWeight: "500", cursor: /^\d{8}$/.test(authCode) ? "pointer" : "not-allowed", marginBottom: "12px" }}>
+            </p>
+            <div className="mbl-auth-email">{authEmail}</div>
+            <input className="mbl-auth-field mbl-auth-code" value={authCode} onChange={(e) => setAuthCode(e.target.value.replace(/\D/g, "").slice(0, 8))} onKeyDown={(e) => e.key === "Enter" && handleVerifyOtp()} placeholder="12345678" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={8} />
+            {authError && <div className="mbl-auth-error">{authError}</div>}
+            <button className="mbl-auth-primary" onClick={handleVerifyOtp} disabled={authLoading || !/^\d{8}$/.test(authCode)}>
               {authLoading ? "Verifying…" : "Sign In"}
             </button>
-            <button onClick={() => { setAuthState("login"); setAuthCode(""); setAuthError(""); }} style={{ width: "100%", background: "none", border: "none", color: "#c3aa90", cursor: "pointer", fontSize: "13px", padding: "8px" }}>
+            <button className="mbl-auth-secondary" onClick={() => { setAuthState("login"); setAuthCode(""); setAuthError(""); }}>
               ← Use a different email
             </button>
           </div>
         )}
 
         <RestoreDiagnostics entries={restoreDiagnostics} onClear={clearDiagnostics} />
-      </div>
+      </main>
     </div>
   );
 }

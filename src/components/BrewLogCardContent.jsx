@@ -1,5 +1,105 @@
 import Tag from "./ui/Tag";
-import { getComputedBrewWater } from "../features/brews/model";
+import { getComputedBrewWater, normalizePourSteps, parseTimeValue } from "../features/brews/model";
+
+const hasValue = (value) => value !== undefined && value !== null && String(value).trim() !== "";
+
+function formatRecipeClock(seconds) {
+  const total = Math.max(0, Number(seconds) || 0);
+  const minutes = Math.floor(total / 60);
+  const remainder = total - minutes * 60;
+  const secondsText = Number.isInteger(remainder) ? String(remainder).padStart(2, "0") : `0${remainder}`;
+  return `${minutes}:${secondsText}`;
+}
+
+function getPourOverRecipeRows(entry, bloomRatio) {
+  const steps = normalizePourSteps(entry.pours, entry.numPours)
+    .map((step, index) => ({ ...step, index }))
+    .filter((step) => hasValue(step.water) || hasValue(step.startTime) || hasValue(step.duration));
+  const bloomTimeKnown = hasValue(entry.bloomTime);
+  const firstExplicitStart = steps.find((step) => hasValue(step.startTime))?.startTime;
+  const bloomTarget = bloomTimeKnown
+    ? formatRecipeClock(parseTimeValue(entry.bloomTime))
+    : (hasValue(firstExplicitStart) ? formatRecipeClock(parseTimeValue(firstExplicitStart)) : "—");
+  const bloomMultiplier = bloomRatio(entry.bloomWater, entry.dose);
+  const rows = [{
+    step: "01 Bloom",
+    detail: bloomMultiplier ? `×${bloomMultiplier}` : "",
+    cumulative: hasValue(entry.bloomWater) ? `${entry.bloomWater}g` : "—",
+    elapsed: "—",
+    target: bloomTarget,
+  }];
+  let currentStart = bloomTimeKnown ? parseTimeValue(entry.bloomTime) : 0;
+  let currentStartKnown = bloomTimeKnown;
+
+  steps.forEach((step, rowIndex) => {
+    const explicitStart = hasValue(step.startTime);
+    const startKnown = explicitStart || currentStartKnown;
+    const start = explicitStart ? parseTimeValue(step.startTime) : currentStart;
+    const durationKnown = hasValue(step.duration);
+    const endKnown = startKnown && durationKnown;
+    const end = start + parseTimeValue(step.duration);
+    const nextStep = steps[rowIndex + 1];
+    const nextStartKnown = Boolean(nextStep && hasValue(nextStep.startTime));
+    const finalTimeKnown = !nextStep && hasValue(entry.totalTime);
+    let target = "—";
+
+    if (nextStartKnown) {
+      target = formatRecipeClock(parseTimeValue(nextStep.startTime));
+    } else if (finalTimeKnown) {
+      target = formatRecipeClock(parseTimeValue(entry.totalTime));
+    } else if (endKnown) {
+      target = formatRecipeClock(end);
+    }
+
+    rows.push({
+      step: `${String(step.index + 2).padStart(2, "0")} Pour ${step.index + 2}`,
+      detail: "",
+      cumulative: hasValue(step.water) ? `${step.water}g` : "—",
+      elapsed: startKnown && endKnown ? `${formatRecipeClock(start)}–${formatRecipeClock(end)}` : "—",
+      target,
+    });
+
+    if (nextStartKnown) {
+      currentStart = parseTimeValue(nextStep.startTime);
+      currentStartKnown = true;
+    } else {
+      currentStart = end;
+      currentStartKnown = endKnown;
+    }
+  });
+
+  return rows;
+}
+
+function getEspressoRecipeRows(entry) {
+  const shotYield = hasValue(entry.shotYield) ? entry.shotYield : entry.water;
+  const yieldText = hasValue(shotYield) ? `${shotYield}g` : "—";
+  const timeText = hasValue(entry.brewTime) ? `${entry.brewTime}s` : "—";
+  const finishTarget = hasValue(shotYield) || hasValue(entry.brewTime) ? `${yieldText} at ${timeText}` : "—";
+
+  return [
+    {
+      stage: "01 Pre-infusion",
+      pressure: hasValue(entry.preInfusionBar) ? `${entry.preInfusionBar} bar` : "—",
+      target: hasValue(entry.preInfusionTime) ? `End at ${entry.preInfusionTime}s` : "—",
+    },
+    {
+      stage: "02 Extraction",
+      pressure: hasValue(entry.maxPressureBar) ? `${entry.maxPressureBar} bar` : "—",
+      target: hasValue(entry.maxPressureUntilG) ? `Until ${entry.maxPressureUntilG}g` : "—",
+    },
+    {
+      stage: "03 Decline",
+      pressure: hasValue(entry.finishPressureBar) ? `Slowly to ${entry.finishPressureBar} bar` : "—",
+      target: hasValue(shotYield) ? `Until ${shotYield}g` : "—",
+    },
+    {
+      stage: "04 Finish",
+      pressure: "0 bar",
+      target: finishTarget,
+    },
+  ];
+}
 
 function defaultCalcRatio(dose, water) {
   if (!dose || !water || isNaN(dose) || isNaN(water)) return null;
@@ -57,21 +157,24 @@ function getEspressoOverviewLine(entry) {
   return parts.join("\n");
 }
 
-function getStatItems(entry, calcRatio, bloomRatio) {
+function getStatItems(entry, calcRatio, bloomRatio, recipeOverview) {
   if (entry.method === "Pour Over") {
     const derivedWater = entry?.numPours ? getComputedBrewWater(entry) : 0;
     const effectiveWater = entry.water || derivedWater || "";
-    return [
+    const items = [
       { l: "Dose", v: entry.dose ? `${entry.dose}g` : null },
       { l: "Water", v: effectiveWater ? `${effectiveWater}g` : null },
       { l: "Ratio", v: calcRatio(entry.dose, effectiveWater) ? `1:${calcRatio(entry.dose, effectiveWater)}` : null },
       { l: "Temp", v: entry.temperature ? `${entry.temperature}°C` : null },
       { l: "Grind", v: entry.grindSize || null },
       { l: "Time", v: entry.totalTime || null },
-      { l: "Bloom", v: entry.bloomWater ? `${entry.bloomWater}g` : null },
-      { l: "Bloom ×", v: bloomRatio(entry.bloomWater, entry.dose) ? `×${bloomRatio(entry.bloomWater, entry.dose)}` : null },
-      { l: "# Pours", v: entry.numPours || null },
-    ].filter((item) => item.v);
+      ...(recipeOverview ? [] : [
+        { l: "Bloom", v: entry.bloomWater ? `${entry.bloomWater}g` : null },
+        { l: "Bloom ×", v: bloomRatio(entry.bloomWater, entry.dose) ? `×${bloomRatio(entry.bloomWater, entry.dose)}` : null },
+        { l: "# Pours", v: entry.numPours || null },
+      ]),
+    ];
+    return items.filter((item) => item.v);
   }
 
   if (entry.method === "Espresso") {
@@ -114,12 +217,15 @@ export default function BrewLogCardContent({
   showTechnique = !compact,
   showTastingNotes = true,
   tastingNotesMaxLength,
+  recipeOverview = false,
 }) {
   const calcRatioFn = calcRatio || defaultCalcRatio;
   const bloomRatioFn = bloomRatio || defaultBloomRatio;
   const filteredTechniqueLines = getFilteredTechniqueLines(entry, getTechniqueLinesFromBrew);
-  const espressoOverviewLine = getEspressoOverviewLine(entry);
-  const statItems = getStatItems(entry, calcRatioFn, bloomRatioFn);
+  const espressoOverviewLine = recipeOverview ? "" : getEspressoOverviewLine(entry);
+  const statItems = getStatItems(entry, calcRatioFn, bloomRatioFn, recipeOverview);
+  const pourOverRecipeRows = recipeOverview && entry.method === "Pour Over" ? getPourOverRecipeRows(entry, bloomRatioFn) : [];
+  const espressoRecipeRows = recipeOverview && entry.method === "Espresso" ? getEspressoRecipeRows(entry) : [];
   const compactStatItems = getCompactStatItems(entry, statItems);
   const tastingNotesText = tastingNotesMaxLength && entry.tastingNotes?.length > tastingNotesMaxLength
     ? `${entry.tastingNotes.slice(0, tastingNotesMaxLength)}…`
@@ -149,7 +255,7 @@ export default function BrewLogCardContent({
       )}
 
       {!compact && statItems.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px", marginBottom: "10px" }}>
+        <div className={recipeOverview ? "mbl-recipe-metrics" : undefined} style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px", marginBottom: "10px" }}>
           {statItems.map((item) => (
             <div key={item.l} style={{ background: "rgba(200,137,58,0.04)", borderRadius: "7px", padding: "8px 6px", textAlign: "center" }}>
               <div style={{ fontSize: "13px", color: "#e0cdb0", fontFamily: "'Playfair Display', serif" }}>{item.v}</div>
@@ -159,13 +265,70 @@ export default function BrewLogCardContent({
         </div>
       )}
 
-      {showTechnique && entry.method === "Espresso" && espressoOverviewLine && (
+      {showTechnique && pourOverRecipeRows.length > 0 && (
+        <div className="mbl-recipe-technique-scroll" role="region" aria-label="Pour Over technique" tabIndex="0">
+          <table className="mbl-recipe-technique-table mbl-recipe-technique-table--pour-over">
+            <thead>
+              <tr>
+                <th scope="col">Step</th>
+                <th scope="col">Target <small className="mbl-recipe-technique-subtitle">(cumulative)</small></th>
+                <th scope="col">Pour Time <small className="mbl-recipe-technique-subtitle">(elapsed)</small></th>
+                <th scope="col">Target</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pourOverRecipeRows.map((row) => (
+                <tr key={row.step}>
+                  <th scope="row">
+                    {row.step}
+                    {row.detail && <small className="mbl-recipe-technique-step-detail"> · {row.detail}</small>}
+                  </th>
+                  <td>{row.cumulative}</td>
+                  <td>{row.elapsed}</td>
+                  <td>{row.target}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showTechnique && espressoRecipeRows.length > 0 && (
+        <div className="mbl-recipe-technique-scroll" role="region" aria-label="Espresso technique" tabIndex="0">
+          <table className="mbl-recipe-technique-table mbl-recipe-technique-table--espresso">
+            <thead>
+              <tr>
+                <th scope="col">Stage</th>
+                <th scope="col">Pressure</th>
+                <th scope="col">Target</th>
+              </tr>
+            </thead>
+            <tbody>
+              {espressoRecipeRows.map((row) => (
+                <tr key={row.stage}>
+                  <th scope="row">{row.stage}</th>
+                  <td>{row.pressure}</td>
+                  <td>{row.target}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showTechnique && recipeOverview && entry.method !== "Pour Over" && entry.method !== "Espresso" && filteredTechniqueLines.length > 0 && (
+        <div className="mbl-recipe-technique-fallback">
+          {filteredTechniqueLines.map((line, index) => <div key={`${line.text}-${index}`}>{line.text}</div>)}
+        </div>
+      )}
+
+      {showTechnique && !recipeOverview && entry.method === "Espresso" && espressoOverviewLine && (
         <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#d3b99c", lineHeight: 1.6, marginBottom: "10px", borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>
           <div style={{ whiteSpace: "pre-line" }}>{espressoOverviewLine}</div>
         </div>
       )}
 
-      {showTechnique && filteredTechniqueLines.length > 0 && (
+      {showTechnique && !recipeOverview && filteredTechniqueLines.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#d3b99c", lineHeight: 1.6, marginBottom: "7px", borderLeft: "2px solid rgba(200,137,58,0.2)", paddingLeft: "10px" }}>
           {filteredTechniqueLines.map((line, index) => (
             <div key={`${line.text}-${index}`}>{line.text}</div>

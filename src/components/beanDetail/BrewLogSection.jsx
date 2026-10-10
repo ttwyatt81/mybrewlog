@@ -22,48 +22,27 @@ export default function BrewLogSection({
   getTechniqueLinesFromBrew,
 }) {
   return (
-    <>
-      <div style={{ fontSize: "10px", letterSpacing: "0.12em", color: "#d4bca0", textTransform: "uppercase", marginBottom: "12px" }}>
+    <section className="mbl-log-section mbl-brew-log-section">
+      <div className="mbl-log-heading">
         Brew Log · {brews.length} session{brews.length !== 1 ? "s" : ""}
       </div>
 
       {brews.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "36px 0", color: "#3a2a1a", fontSize: "13px" }}>No brews yet — hit "+ Log Brew" to start dialling in</div>
+        <div className="mbl-empty"><p>No brews yet — hit "+ Log Brew" to start dialling in</p></div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div className="mbl-log-list">
           {brews.map((brew, i) => (
-            <div key={brew.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(200,137,58,0.15)", borderRadius: "11px", padding: "15px 16px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "13px", color: "#c8893a" }}>#{brews.length - i}</span>
+            <article className="mbl-log-card" key={brew.id}>
+              <div className="mbl-log-card-head">
+                <div className="mbl-log-card-identity">
+                  <span className="mbl-log-number">#{brews.length - i}</span>
                   <StarRating value={brew.rating} size={13} />
-                  <span style={{ fontSize: "11px", color: "#c1a88c" }}>{formatDateValue(brew.date)}</span>
+                  <span className="mbl-log-meta">{formatDateValue(brew.date)}</span>
                 </div>
-                <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
-                  <button onClick={() => copyBrewToRecipe(brew)} style={{ background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "6px", color: "#d4bca0", cursor: "pointer", fontSize: "11px", padding: "3px 8px" }}>→ Recipe</button>
-                  <button
-                    onClick={() => editBrew(brew, liveBean)}
-                    style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = "#c8893a";
-                      const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
-                      const label = e.currentTarget.querySelector('[data-role="edit-label"]');
-                      if (icon) icon.style.transform = "translateX(1px)";
-                      if (label) label.style.opacity = "1";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = "#c9b094";
-                      const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
-                      const label = e.currentTarget.querySelector('[data-role="edit-label"]');
-                      if (icon) icon.style.transform = "translateX(0)";
-                      if (label) label.style.opacity = "0";
-                    }}
-                    aria-label={`Edit brew ${brew.id}`}
-                  >
-                    <span data-role="edit-label" style={{ fontSize: "11px", opacity: 0, width: "40px", overflow: "hidden", whiteSpace: "nowrap", transition: "opacity 0.15s ease" }}>Edit</span>
-                    <span data-role="edit-icon" style={{ fontSize: "14px", lineHeight: "1", display: "inline-block", transition: "transform 0.15s ease" }}>✎</span>
-                  </button>
-                  <button onClick={() => deleteBrew(brew.id)} style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#c9b094")}>✕</button>
+                <div className="mbl-log-card-actions">
+                  <button className="mbl-btn mbl-btn--quiet" onClick={() => copyBrewToRecipe(brew)}>→ Recipe</button>
+                  <button className="mbl-link" onClick={() => editBrew(brew, liveBean)} aria-label={`Edit brew ${brew.id}`}>Edit</button>
+                  <button className="mbl-link" onClick={() => deleteBrew(brew.id)} aria-label={`Delete brew ${brew.id}`}>Delete</button>
                 </div>
               </div>
               <BrewLogCardContent
@@ -71,11 +50,12 @@ export default function BrewLogSection({
                 calcRatio={calcRatio}
                 bloomRatio={bloomRatio}
                 getTechniqueLinesFromBrew={getTechniqueLinesFromBrew}
+                recipeOverview
               />
-            </div>
+            </article>
           ))}
         </div>
       )}
-    </>
+    </section>
   );
 }

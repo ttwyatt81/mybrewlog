@@ -23,9 +23,9 @@ export default function RecipeForm({
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "26px" }}>
+    <div className="mbl-editor-sections">
       <section>
-        <SectionHead>Recipe Name</SectionHead>
+        <SectionHead>Description</SectionHead>
         <Field label="Recipe Name">
           <input style={inp()} value={editRecipe.name} onChange={e => setEditRecipe(r => ({ ...r, name: e.target.value }))} placeholder="e.g. My go-to V60" onFocus={onFoc} onBlur={onBlr} />
         </Field>
@@ -51,8 +51,8 @@ export default function RecipeForm({
       )}
 
       {method !== "Pour Over" && method !== "Espresso" && (
-        <div style={{ textAlign: "center", padding: "32px 0", border: "1px dashed rgba(200,137,58,0.15)", borderRadius: "10px" }}>
-          <div style={{ fontSize: "13px", color: "#4a3a2a" }}>{method} recipe fields coming soon</div>
+        <div className="mbl-empty mbl-recipe-placeholder">
+          <p>{method} recipe fields coming soon</p>
         </div>
       )}
     </div>

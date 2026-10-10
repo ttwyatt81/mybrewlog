@@ -39,112 +39,62 @@ export default function BeanDetailScreenView({
     ? greenBeans.flatMap((greenBean) => greenBean.roasts || []).find((roast) => roast.id === liveBean.sourceRoastId)
     : null;
   const editDeleteActions = (
-    <div style={{ display: "flex", gap: "8px", flexWrap: "nowrap", justifyContent: "flex-end", alignItems: "center", marginLeft: "auto" }}>
-      <button
-        onClick={() => { setEditBean({ ...liveBean }); setView("beanForm"); }}
-        style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease" }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "#c8893a"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "#c9b094"; }}
-        aria-label={`Edit ${liveBean.name}`}
-      >
-        <span style={{ fontSize: "11px", width: "40px", whiteSpace: "nowrap" }}>Edit</span>
-        <span style={{ fontSize: "14px", lineHeight: "1" }}>✎</span>
-      </button>
-      <button onClick={() => deleteBean(liveBean.id)} style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#c9b094")} aria-label={`Delete ${liveBean.name}`}>✕</button>
+    <div className="mbl-card-actions">
+      <button className="mbl-link" onClick={() => { setEditBean({ ...liveBean }); setView("beanForm"); }} aria-label={`Edit ${liveBean.name}`}>Edit</button>
+      <button className="mbl-link" onClick={() => deleteBean(liveBean.id)} aria-label={`Delete ${liveBean.name}`}>Delete</button>
     </div>
   );
 
   return (
-    <div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "12px", marginBottom: "8px" }}>
-        <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "26px", display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
-            <span>{liveBean.name}</span>
+    <div className="mbl-bean-detail">
+      <div className="mbl-view-heading">
+        <div className="mbl-detail-heading">
+          <h1 className="mbl-title">{liveBean.name}</h1>
             {liveBean.archived && (
-              <span style={{
-                padding: "4px 8px",
-                borderRadius: "999px",
-                background: "rgba(200,137,58,0.18)",
-                border: "1px solid rgba(200,137,58,0.28)",
-                color: "#d8b98c",
-                fontSize: "9px",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                fontWeight: 600
-              }}>
+              <span className="mbl-tag">
                 Archived
               </span>
             )}
         </div>
-        </div>
         {!isGreenBeanSheet && linkedRoast && (linkedRoast.roastProfileName || linkedRoast.roastLevel) && (
-          <div style={{ fontSize: "13px", color: "#c9b094", lineHeight: 1.3, marginTop: "-6px" }}>
+          <div className="mbl-card-profile">
             {[linkedRoast.roastProfileName, linkedRoast.roastLevel].filter(Boolean).join(" · ")}
           </div>
         )}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", width: "100%" }}>
+      </div>
+
+      <div className="mbl-detail-actions">
           {!isGreenBeanSheet && (
-            <button onClick={onLogBrew} style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "7px 13px", fontSize: "12px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
+            <button className="mbl-btn mbl-btn--primary" onClick={onLogBrew}>
               + Log Brew
             </button>
           )}
           {isGreenBeanSheet && (
-            <button onClick={onLogRoast} style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "7px 13px", fontSize: "12px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
+            <button className="mbl-btn mbl-btn--primary" onClick={onLogRoast}>
               + Log Roast
             </button>
           )}
           <button
+            className="mbl-link mbl-detail-archive-action"
             onClick={() => onToggleArchive?.(liveBean)}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "8px",
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(200,137,58,0.2)",
-              borderRadius: "999px",
-              color: "#d9b98a",
-              padding: "6px 10px",
-              cursor: "pointer",
-              fontSize: "11px"
-            }}
+            aria-label={liveBean.archived ? `Move ${liveBean.name} back to active` : `Archive ${liveBean.name}`}
           >
-            <span>{liveBean.archived ? "Archived" : "Active"}</span>
-            <span style={{
-              display: "inline-block",
-              width: "28px",
-              height: "16px",
-              borderRadius: "999px",
-              background: liveBean.archived ? "linear-gradient(135deg, rgba(200,137,58,0.7), rgba(160,104,40,0.9))" : "rgba(255,255,255,0.12)",
-              position: "relative",
-              boxShadow: liveBean.archived ? "0 0 0 1px rgba(200,137,58,0.4), 0 4px 10px rgba(160,104,40,0.25)" : "inset 0 0 0 1px rgba(255,255,255,0.06)"
-            }}>
-              <span style={{
-                position: "absolute",
-                top: "2px",
-                left: liveBean.archived ? "15px" : "2px",
-                width: "12px",
-                height: "12px",
-                borderRadius: "50%",
-                background: "#f5f0e7",
-                transition: "all 0.2s ease",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.28)"
-              }} />
-            </span>
+            {liveBean.archived ? "Unarchive" : "Archive"}
           </button>
           {!isGreenBeanSheet && liveBean.sourceRoastId && onGoToSourceRoast && (
             <button
               onClick={() => onGoToSourceRoast(liveBean)}
-              style={{ background: "rgba(200,137,58,0.08)", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "999px", color: "#d8b98c", cursor: "pointer", fontSize: "11px", padding: "6px 10px", whiteSpace: "nowrap" }}
+              className="mbl-btn mbl-btn--quiet"
             >
               View Roast Log
             </button>
           )}
           {editDeleteActions}
-        </div>
       </div>
 
-      <div style={{ fontSize: "13px", color: "#d0b69a", marginBottom: "10px" }}>{[liveBean.roaster, liveBean.producer, liveBean.origin, liveBean.region].filter(Boolean).join(" · ")}</div>
-      <div style={{ display: "flex", gap: "7px", flexWrap: "wrap", marginBottom: "18px" }}>
+      <section className="mbl-detail-info" aria-label="Bean information">
+        <div className="mbl-card-sub">{[liveBean.roaster, liveBean.producer, liveBean.origin, liveBean.region].filter(Boolean).join(" · ")}</div>
+        <div className="mbl-card-tags">
         {!isGreenBeanSheet && <Tag>{liveBean.sourceRoastId ? "Self-roast" : "Commercial Roast"}</Tag>}
         {liveBean.type && <Tag>{liveBean.type}</Tag>}
         {!isGreenBeanSheet && !liveBean.sourceRoastId && liveBean.roastLevel && <Tag>{liveBean.roastLevel}</Tag>}
@@ -152,11 +102,10 @@ export default function BeanDetailScreenView({
         {liveBean.varietal && <Tag>{liveBean.varietal}</Tag>}
         {liveBean.altitude && <Tag>{liveBean.altitude}</Tag>}
         {liveBean.roastDate && <Tag>{`Roasted ${formatDateValue(liveBean.roastDate)}`}</Tag>}
-      </div>
+        </div>
 
-      {liveBean.notes && (
-        <div style={{ marginBottom: "20px", fontSize: "13px", color: "#d0b69a", fontStyle: "italic", lineHeight: 1.6, borderLeft: "2px solid rgba(200,137,58,0.22)", paddingLeft: "12px" }}>{liveBean.notes}</div>
-      )}
+        {liveBean.notes && <p className="mbl-detail-notes">{liveBean.notes}</p>}
+      </section>
 
       {isGreenBeanSheet ? (
         <RoastLogSection

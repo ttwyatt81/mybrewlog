@@ -25,20 +25,20 @@ export default function BrewFormView({
   const method = editingBrewId ? brewForm.method : brewForm.method_confirmed;
 
   return (
-    <div>
+    <div className="mbl-editor-form mbl-brew-form">
       {!editingBrewId && !brewForm.method_confirmed && (
         <div>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "24px", marginBottom: "4px" }}>Log a Brew</div>
-          <div style={{ fontSize: "13px", color: "#c9b094", marginBottom: "32px" }}>Select your brewing method</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+          <h1 className="mbl-title mbl-form-title">Log a Brew</h1>
+          <p className="mbl-form-intro">Select your brewing method</p>
+          <div className="mbl-method-options">
             {[
               { method: "Pour Over", icon: "☕", sub: "V60, Chemex, Kalita…" },
               { method: "Espresso", icon: "🫖", sub: "Shot, lungo, ristretto…" },
             ].map(({ method: optionMethod, icon, sub }) => (
-              <div key={optionMethod} onClick={() => setBrewForm((f) => ({ ...f, method_confirmed: optionMethod }))} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(200,137,58,0.25)", borderRadius: "14px", padding: "28px 16px", cursor: "pointer", textAlign: "center", transition: "all 0.2s" }} onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(200,137,58,0.08)"; e.currentTarget.style.borderColor = "rgba(200,137,58,0.6)"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor = "rgba(200,137,58,0.25)"; }}>
-                <div style={{ fontSize: "36px", marginBottom: "12px" }}>{icon}</div>
-                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "18px", marginBottom: "6px" }}>{optionMethod}</div>
-                <div style={{ fontSize: "11px", color: "#c9b094" }}>{sub}</div>
+              <div className="mbl-method-card" key={optionMethod} onClick={() => setBrewForm((f) => ({ ...f, method_confirmed: optionMethod }))}>
+                <span className="mbl-method-icon" aria-hidden="true">{icon}</span>
+                <span className="mbl-method-name">{optionMethod}</span>
+                <span className="mbl-method-description">{sub}</span>
               </div>
             ))}
           </div>
@@ -48,33 +48,33 @@ export default function BrewFormView({
       {(editingBrewId || brewForm.method_confirmed) && (
         <div>
           {!editingBrewId && (
-            <button onClick={() => setBrewForm((f) => ({ ...f, method_confirmed: null }))} style={{ background: "none", border: "none", color: "#d4bca0", cursor: "pointer", fontSize: "12px", marginBottom: "14px", padding: 0 }}>← Change method</button>
+            <button className="mbl-editor-text-button" onClick={() => setBrewForm((f) => ({ ...f, method_confirmed: null }))}>← Change method</button>
           )}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "24px" }}>{editingBrewId ? "Edit Brew" : method}</div>
-            <span style={{ fontSize: "11px", color: "#d4bca0", background: "rgba(200,137,58,0.08)", padding: "3px 10px", borderRadius: "20px" }}>{method}</span>
+          <div className="mbl-editor-heading-row">
+            <h1 className="mbl-title">{editingBrewId ? "Edit Brew" : method}</h1>
+            <span className="mbl-editor-badge">{method}</span>
           </div>
-          <div style={{ fontSize: "13px", color: "#c9b094", marginBottom: "16px" }}>{[liveBean.roastLevel, liveBean.process, liveBean.origin].filter(Boolean).join(" · ")}</div>
+          <p className="mbl-form-context">{[liveBean.roastLevel, liveBean.process, liveBean.origin].filter(Boolean).join(" · ")}</p>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
-            <div style={{ display: "flex", gap: "8px" }}>
+          <div className="mbl-form-presets">
+            <div className="mbl-form-preset-row">
               <button onClick={() => {
                 const last = liveBean.brews.find((b) => b.method === method);
                 if (!last) return;
                 setBrewForm((f) => ({...f, ...last, id: f.id, date: f.date, method: last.method || method, method_confirmed: method, recipeSource: "Last Brew", recipeId: "", recipeName: "" }));
-              }} disabled={!liveBean.brews.some((b) => b.method === method)} style={{ flex: 1, background: liveBean.brews.some((b) => b.method === method) ? "rgba(200,137,58,0.07)" : "rgba(255,255,255,0.02)", border: `1px solid ${liveBean.brews.some((b) => b.method === method) ? "rgba(200,137,58,0.28)" : "rgba(255,255,255,0.06)"}`, borderRadius: "9px", color: liveBean.brews.some((b) => b.method === method) ? "#c8a060" : "#baa188", cursor: liveBean.brews.some((b) => b.method === method) ? "pointer" : "not-allowed", padding: "10px 8px", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "center" }} onMouseEnter={(e) => { if (liveBean.brews.some((b) => b.method === method)) e.currentTarget.style.background = "rgba(200,137,58,0.14)"; }} onMouseLeave={(e) => { if (liveBean.brews.some((b) => b.method === method)) e.currentTarget.style.background = "rgba(200,137,58,0.07)"; }}>↑ Last Brew</button>
+              }} disabled={!liveBean.brews.some((b) => b.method === method)} className="mbl-editor-chip">↑ Last Brew</button>
             </div>
             {recipes.filter((r) => r.method === method).length > 0 && (
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center" }}>
-                <span style={{ fontSize: "10px", color: "#c4ab90", letterSpacing: "0.08em", textTransform: "uppercase" }}>Recipes:</span>
+              <div className="mbl-form-recipe-shortcuts">
+                <span className="mbl-label">Recipes</span>
                 {recipes.filter((r) => r.method === method).map((recipe) => (
-                  <button key={recipe.id} onClick={() => setBrewForm((f) => ({ ...f, ...recipe, id: f.id, date: f.date, method: recipe.method || method, method_confirmed: method, recipeSource: "Saved Recipe", recipeId: recipe.id, recipeName: recipe.name }))} style={{ padding: "5px 12px", borderRadius: "20px", border: "1px solid rgba(200,137,58,0.28)", background: "rgba(200,137,58,0.07)", color: "#c8a060", cursor: "pointer", fontSize: "12px" }} onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(200,137,58,0.16)")} onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(200,137,58,0.07)")}>{recipe.name}</button>
+                  <button className="mbl-editor-chip" key={recipe.id} onClick={() => setBrewForm((f) => ({ ...f, ...recipe, id: f.id, date: f.date, method: recipe.method || method, method_confirmed: method, recipeSource: "Saved Recipe", recipeId: recipe.id, recipeName: recipe.name }))}>{recipe.name}</button>
                 ))}
               </div>
             )}
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "26px" }}>
+          <div className="mbl-editor-sections">
             <MethodFormSections
               method={method}
               formState={brewForm}
@@ -94,7 +94,7 @@ export default function BrewFormView({
 
             <section>
               <SectionHead>Tasting</SectionHead>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div className="mbl-editor-field-stack">
                 <Field label="Rating">
                   <StarRating value={brewForm.rating} onChange={(v) => setBr("rating", v)} />
                 </Field>
@@ -104,11 +104,11 @@ export default function BrewFormView({
               </div>
             </section>
 
-            <div style={{ display: "flex", gap: "10px", paddingBottom: "40px" }}>
-              <button onClick={saveBrew} style={{ flex: 1, background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "9px", color: "#fff", padding: "13px", fontSize: "15px", fontWeight: "500", cursor: "pointer" }}>
+            <div className="mbl-editor-actions">
+              <button className="mbl-editor-button mbl-editor-button--primary" onClick={saveBrew}>
                 {editingBrewId ? "Update Brew" : "Save Brew"}
               </button>
-              <button onClick={() => { setView("beanDetail"); setEditingBrewId(null); }} style={{ padding: "13px 20px", background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "9px", color: "#c9b094", cursor: "pointer", fontSize: "14px" }}>
+              <button className="mbl-editor-button mbl-editor-button--quiet" onClick={() => { setView("beanDetail"); setEditingBrewId(null); }}>
                 Cancel
               </button>
             </div>
