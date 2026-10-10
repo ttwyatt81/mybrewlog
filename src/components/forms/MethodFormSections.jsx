@@ -142,7 +142,7 @@ export default function MethodFormSections({
             <Field label="Pour Steps">
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {pourSteps.map((step, index) => (
-                  <div key={`pour-step-${index}`} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto", gap: "8px", alignItems: "end" }}>
+                  <div className="mbl-pour-step-row" key={`pour-step-${index}`} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto", gap: "8px", alignItems: "end" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
                       <label style={{ fontSize: "10px", letterSpacing: "0.1em", color: "#d4bca0", textTransform: "uppercase" }}>{`Pour ${index + 2} water (g)`}</label>
                       <input style={inp()} type="number" value={step.water ?? ""} onChange={(e) => setPourStep(index, "water", e.target.value)} placeholder={`Pour ${index + 2} water (g)`} onFocus={onFoc} onBlur={onBlr} />
@@ -207,7 +207,7 @@ export default function MethodFormSections({
             <Field label="Pre-heat Setting" hint="Group head / machine temperature">
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                 {preHeatOptions.map((option) => (
-                  <button key={option} onClick={() => setField("preHeat", formState.preHeat === option ? "" : option)} style={{ padding: "7px 16px", borderRadius: "20px", border: `1px solid ${formState.preHeat === option ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)"}`, background: formState.preHeat === option ? "rgba(200,137,58,0.18)" : "transparent", color: formState.preHeat === option ? "#c8a060" : "#5a4a3a", cursor: "pointer", fontSize: "13px", transition: "all 0.15s" }}>
+                  <button className="mbl-editor-option" aria-pressed={formState.preHeat === option} key={option} onClick={() => setField("preHeat", formState.preHeat === option ? "" : option)} style={{ padding: "7px 16px", borderRadius: "20px", border: `1px solid ${formState.preHeat === option ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)"}`, background: formState.preHeat === option ? "rgba(200,137,58,0.18)" : "transparent", color: formState.preHeat === option ? "#c8a060" : "#5a4a3a", cursor: "pointer", fontSize: "13px", transition: "all 0.15s" }}>
                     {option}
                   </button>
                 ))}

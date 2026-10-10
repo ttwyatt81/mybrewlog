@@ -77,7 +77,7 @@ export default function BeansView({
         </div>
       )}
 
-      <div className="mbl-row" style={{ marginBottom: "16px" }}>
+      <div className="mbl-row" style={{ marginBottom: "11px" }}>
         <button className="mbl-btn mbl-btn--primary" onClick={() => { setEditBean({ ...defaultBean }); setView("beanForm"); }}>+ New Bean</button>
         <div className="mbl-segment" role="group" aria-label="Bean list">
           {[
@@ -104,7 +104,7 @@ export default function BeansView({
         </div>
       ) : (
         <div>
-          <div className="mbl-row" style={{ marginBottom: "16px" }}>
+          <div className="mbl-row mbl-filter-row" style={{ marginBottom: "16px" }}>
             <input className="mbl-field mbl-field--search" type="search" aria-label="Search beans" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Search beans…" />
 
             {allOrigins.length > 0 && (

@@ -56,14 +56,21 @@ export default function AppShell({
   };
 
   const showTabs = view === "beans" && !isDetailView;
-  const isRedesigned = showTabs && (tab === "beans" || tab === "greenBeans");
+  const isRedesigned = showTabs
+    || view === "beanForm"
+    || view === "brewForm"
+    || view === "recipeForm"
+    || view === "greenBeanRoastForm"
+    || view === "roastProfileForm"
+    || (view === "beans" && tab === "roastProfiles" && isDetailView);
+  const isBeanDetail = view === "beanDetail";
 
   return (
     <div className="mbl-app" data-section={tab}>
       <header className="mbl-header">
         <div className="mbl-header-inner">
           <div className="mbl-header-top">
-            <div className="mbl-wordmark">WyattCoffeeLabBrewLog</div>
+            <div className="mbl-wordmark">WyattCoffeeLab</div>
             <div className="mbl-account">
               <div className="mbl-account-email">{userEmail}</div>
               <div className="mbl-account-actions">
@@ -108,7 +115,7 @@ export default function AppShell({
         </div>
       )}
 
-      {isRedesigned ? children : <div className="mbl-legacy">{children}</div>}
+      {isRedesigned || isBeanDetail ? children : <div className="mbl-legacy">{children}</div>}
     </div>
   );
 }

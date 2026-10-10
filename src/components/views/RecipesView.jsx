@@ -16,17 +16,16 @@ export default function RecipesView({
 }) {
   return (
     <div>
-      <div style={{ marginBottom: "22px" }}>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", marginBottom: "4px" }}>Recipes</div>
-        <div style={{ fontSize: "10px", color: "#c3aa90", letterSpacing: "0.18em", textTransform: "uppercase" }}>Saved brew recipes</div>
+      <div className="mbl-view-heading">
+        <h1 className="mbl-title">Recipes</h1>
+        <div className="mbl-label">Saved brew recipes</div>
       </div>
 
-      <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
-        <button onClick={onCreateRecipe}
-          style={{ background: "linear-gradient(135deg,#c8893a,#a06828)", border: "none", borderRadius: "8px", color: "#fff", padding: "8px 15px", fontSize: "13px", fontWeight: "500", cursor: "pointer", whiteSpace: "nowrap" }}>
+      <div className="mbl-row mbl-actions-row">
+        <button className="mbl-btn mbl-btn--primary" onClick={onCreateRecipe}>
           + New Recipe
         </button>
-        <div style={{ display: "inline-flex", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "999px", padding: "4px" }}>
+        <div className="mbl-segment" role="group" aria-label="Recipe list">
         {[
           { id: "active", label: "Active" },
           { id: "archived", label: "Archived" }
@@ -34,17 +33,7 @@ export default function RecipesView({
           <button
             key={option.id}
             onClick={() => setRecipeListMode(option.id)}
-            style={{
-              padding: "7px 16px",
-              borderRadius: "999px",
-              border: "none",
-              background: recipeListMode === option.id ? "rgba(200,137,58,0.18)" : "transparent",
-              color: recipeListMode === option.id ? "#e4bf82" : "#bca385",
-              cursor: "pointer",
-              fontSize: "12px",
-              fontWeight: recipeListMode === option.id ? 600 : 400,
-              transition: "all 0.15s"
-            }}
+            aria-pressed={recipeListMode === option.id}
           >
             {option.label}
           </button>
@@ -52,112 +41,47 @@ export default function RecipesView({
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "18px", flexWrap: "wrap" }}>
+      <div className="mbl-row mbl-filter-row mbl-filter-row--single" style={{ marginBottom: "16px" }}>
         <input
+          className="mbl-field mbl-field--search"
           value={recipeSearch}
           onChange={(e) => setRecipeSearch(e.target.value)}
           placeholder="Search recipes…"
-          style={{ flex: 1, minWidth: "160px", width: "auto", fontSize: "12px", padding: "5px 10px", color: "#c4ab90", boxSizing: "border-box" }}
+          aria-label="Search recipes"
         />
       </div>
 
-      <div>
+      <div className="mbl-cards">
         {recipes.length === 0 ? (
-          <div style={{ textAlign: "center", marginTop: "60px" }}>
+          <div className="mbl-empty">
             <div style={{ fontSize: "44px", marginBottom: "14px", opacity: 0.2 }}>📋</div>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", color: "#5a4030", marginBottom: "8px" }}>{recipeListMode === "archived" ? "No archived recipes yet" : "No saved recipes yet"}</div>
-            <div style={{ fontSize: "13px", color: "#3a2a1a" }}>{recipeListMode === "archived" ? "Archived recipes will show up here" : "Hit \"+ New Recipe\" to save a reusable brew recipe"}</div>
+            <h2>{recipeListMode === "archived" ? "No archived recipes yet" : "No saved recipes yet"}</h2>
+            <p>{recipeListMode === "archived" ? "Archived recipes will show up here" : "Hit \"+ New Recipe\" to save a reusable brew recipe"}</p>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {recipes.map(recipe => (
-              <div key={recipe.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(200,137,58,0.18)", borderRadius: "12px", padding: "16px 18px", position: "relative" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
-                  <div>
-                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "17px", marginBottom: "4px" }}>{recipe.name}</div>
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end", gap: "6px", rowGap: "8px", position: "absolute", top: "16px", right: "18px" }}>
-                    <button
-                      onClick={() => onToggleArchive?.(recipe)}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        background: "none",
-                        border: "none",
-                        borderRadius: 0,
-                        color: "#c1a88c",
-                        padding: "0 2px",
-                        cursor: "pointer",
-                        fontSize: "10px",
-                        lineHeight: 1,
-                        height: "auto",
-                        order: 3,
-                        flexBasis: "100%",
-                        justifyContent: "flex-end"
-                      }}
-                      aria-label={recipe.archived ? "Move recipe back to active" : "Archive recipe"}
-                      title={recipe.archived ? "Move back to active" : "Archive recipe"}
-                    >
-                      <span>{recipe.archived ? "Archived" : "Active"}</span>
-                      <span style={{
-                        display: "inline-block",
-                        width: "22px",
-                        height: "12px",
-                        borderRadius: "999px",
-                        background: recipe.archived ? "linear-gradient(135deg, rgba(200,137,58,0.7), rgba(160,104,40,0.9))" : "rgba(255,255,255,0.12)",
-                        position: "relative",
-                        boxShadow: recipe.archived ? "0 0 0 1px rgba(200,137,58,0.4), 0 4px 10px rgba(160,104,40,0.25)" : "inset 0 0 0 1px rgba(255,255,255,0.06)"
-                      }}>
-                        <span style={{
-                          position: "absolute",
-                          top: "2px",
-                          left: recipe.archived ? "12px" : "2px",
-                          width: "8px",
-                          height: "8px",
-                          borderRadius: "50%",
-                          background: "#f5f0e7",
-                          transition: "all 0.2s ease",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.28)"
-                        }} />
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => onEditRecipe(recipe)}
-                      style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 2px", display: "inline-flex", alignItems: "center", gap: "0px", overflow: "hidden", minWidth: "46px", justifyContent: "flex-start", transition: "color 0.15s ease", order: 1 }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = "#c8893a";
-                        const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
-                        const label = e.currentTarget.querySelector('[data-role="edit-label"]');
-                        if (icon) icon.style.transform = "translateX(1px)";
-                        if (label) label.style.opacity = "1";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = "#c9b094";
-                        const icon = e.currentTarget.querySelector('[data-role="edit-icon"]');
-                        const label = e.currentTarget.querySelector('[data-role="edit-label"]');
-                        if (icon) icon.style.transform = "translateX(0)";
-                        if (label) label.style.opacity = "0";
-                      }}
-                      aria-label={`Edit ${recipe.name}`}
-                    >
-                      <span data-role="edit-label" style={{ fontSize: "11px", opacity: 0, width: "40px", overflow: "hidden", whiteSpace: "nowrap", transition: "opacity 0.15s ease" }}>Edit</span>
-                      <span data-role="edit-icon" style={{ fontSize: "14px", lineHeight: "1", display: "inline-block", transition: "transform 0.15s ease" }}>✎</span>
-                    </button>
-                    <button onClick={() => deleteRecipe(recipe.id)} style={{ background: "none", border: "none", color: "#c9b094", cursor: "pointer", fontSize: "14px", padding: "0 4px", order: 2 }} onMouseEnter={(e) => (e.currentTarget.style.color = "#c8893a")} onMouseLeave={(e) => (e.currentTarget.style.color = "#c9b094")}>✕</button>
-                  </div>
+          recipes.map((recipe) => (
+            <article key={recipe.id} className={`mbl-card mbl-card--static mbl-recipe-card${recipe.archived ? " mbl-card--archived" : ""}`} style={{ "--mbl-accent": "var(--mbl-section)" }}>
+              <div className="mbl-card-head mbl-recipe-card-head">
+                <h2 className="mbl-card-name">{recipe.name}</h2>
+                <div className="mbl-card-actions">
+                  <button className="mbl-link" onClick={() => onToggleArchive?.(recipe)} aria-label={recipe.archived ? "Move recipe back to active" : "Archive recipe"}>{recipe.archived ? "Unarchive" : "Archive"}</button>
+                  <button className="mbl-link" onClick={() => onEditRecipe(recipe)} aria-label={`Edit ${recipe.name}`}>Edit</button>
+                  <button className="mbl-link" onClick={() => deleteRecipe(recipe.id)} aria-label={`Delete ${recipe.name}`}>Delete</button>
                 </div>
+              </div>
+              <div className="mbl-recipe-content">
                 <BrewLogCardContent
                   entry={recipe}
                   calcRatio={calcRatio}
                   bloomRatio={bloomRatio}
                   getTechniqueLinesFromBrew={getTechniqueLinesFromBrew}
+                  recipeOverview
                   showRecipeSource={false}
                   showTastingNotes={false}
                 />
               </div>
-            ))}
-          </div>
+            </article>
+          ))
         )}
       </div>
     </div>

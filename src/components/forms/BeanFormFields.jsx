@@ -50,14 +50,16 @@ export default function BeanFormFields({
   const isUnlinkedRoastBean = Boolean(editBean?.id) && !isGreenBeanSheet && !isLinkedRoastBean;
 
   return (
-    <div>
-      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "24px", marginBottom: "4px" }}>{editBean.id ? "Edit Bean" : "New Bean"}</div>
-      <div style={{ fontSize: "13px", color: "#6a5040", marginBottom: "24px" }}>Fill in what you know — more detail gives better AI suggestions</div>
+    <div className="mbl-bean-form">
+      <header className="mbl-bean-form-heading">
+        <h1 className="mbl-title">{editBean.id ? "Edit" : "New"} {isGreenBeanSheet ? "Green Bean" : "Roasted Bean"}</h1>
+        <p>{isGreenBeanSheet ? "Origin, profile and purchase details" : "Origin, roast profile and tasting details"}</p>
+      </header>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "26px" }}>
-        <section>
+      <div className="mbl-bean-form-layout">
+        <section className="mbl-bean-form-section">
           <SectionHead>Identity</SectionHead>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+          <div className="mbl-bean-form-grid">
             <Field label="Bean / Lot Name">
               <input
                 style={inp({ background: isLinkedRoastBean || isGreenBeanSheet || isUnlinkedRoastBean ? "rgba(255,255,255,0.025)" : undefined, color: isLinkedRoastBean || isGreenBeanSheet || isUnlinkedRoastBean ? "#d8c3a5" : undefined, cursor: isLinkedRoastBean ? "not-allowed" : "text" })}
@@ -134,14 +136,14 @@ export default function BeanFormFields({
           </div>
         </section>
 
-        <section>
+        <section className="mbl-bean-form-section">
           <SectionHead>Profile</SectionHead>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "11px" }}>
+          <div className="mbl-bean-form-grid">
             {!isGreenBeanSheet && (
               <Field label="Type">
                 <div style={{ display: "flex", gap: "8px" }}>
                   {beanTypes.map(t => (
-                    <button key={t} onClick={() => setB("type", editBean.type === t ? "" : t)}
+                    <button className="mbl-bean-type-button" key={t} onClick={() => setB("type", editBean.type === t ? "" : t)}
                       style={{ flex: 1, padding: "9px", borderRadius: "7px", border: `1px solid ${editBean.type === t ? "rgba(200,137,58,0.8)" : "rgba(200,137,58,0.2)"}`, background: editBean.type === t ? "rgba(200,137,58,0.18)" : "transparent", color: editBean.type === t ? "#c8a060" : "#5a4a3a", cursor: "pointer", fontSize: "13px", transition: "all 0.15s" }}>
                       {t}
                     </button>
@@ -176,50 +178,8 @@ export default function BeanFormFields({
             <Field label="Altitude" hint="e.g. 1800m">
               <input style={inp()} value={editBean.altitude} onChange={e => setB("altitude", e.target.value)} placeholder="e.g. 1800m" onFocus={onFoc} onBlur={onBlr} />
             </Field>
-            {isGreenBeanSheet && (
-              <Field label="Bean density">
-                <input
-                  style={inp()}
-                  value={editBean.beanDensity || ""}
-                  onChange={e => setB("beanDensity", e.target.value)}
-                  placeholder="e.g. 700 g/L"
-                  onFocus={onFoc}
-                  onBlur={onBlr}
-                />
-              </Field>
-            )}
-            {isGreenBeanSheet && (
-              <Field label="Price">
-                <input
-                  style={inp()}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={editBean.purchasePrice || ""}
-                  onChange={e => setB("purchasePrice", e.target.value)}
-                  placeholder="e.g. 28.50"
-                  onFocus={onFoc}
-                  onBlur={onBlr}
-                />
-              </Field>
-            )}
-            {isGreenBeanSheet && (
-              <Field label="Weight (kg)">
-                <input
-                  style={inp()}
-                  type="number"
-                  min="0"
-                  step="0.001"
-                  value={editBean.purchaseWeightKg || ""}
-                  onChange={e => setB("purchaseWeightKg", e.target.value)}
-                  placeholder="e.g. 0.25"
-                  onFocus={onFoc}
-                  onBlur={onBlr}
-                />
-              </Field>
-            )}
           </div>
-          <div style={{ marginTop: "11px" }}>
+          <div className="mbl-bean-form-notes">
             <Field label="Tasting Notes" hint={isLinkedRoastBean ? "Adjust after export if needed" : "Helps the AI tailor the recipe"}>
               <textarea
                 style={inp({ resize: "vertical", minHeight: "65px", lineHeight: 1.6 })}
@@ -233,12 +193,56 @@ export default function BeanFormFields({
           </div>
         </section>
 
-        <div style={{ display: "flex", gap: "10px", paddingBottom: "40px" }}>
-          <button onClick={saveBean} disabled={!editBean.name}
+        {isGreenBeanSheet && (
+          <section className="mbl-bean-form-section">
+            <SectionHead>Lot &amp; Purchase</SectionHead>
+            <div className="mbl-bean-form-grid">
+              <Field label="Bean density">
+                <input
+                  style={inp()}
+                  value={editBean.beanDensity || ""}
+                  onChange={e => setB("beanDensity", e.target.value)}
+                  placeholder="e.g. 700 g/L"
+                  onFocus={onFoc}
+                  onBlur={onBlr}
+                />
+              </Field>
+              <Field label="Price">
+                <input
+                  style={inp()}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editBean.purchasePrice || ""}
+                  onChange={e => setB("purchasePrice", e.target.value)}
+                  placeholder="e.g. 28.50"
+                  onFocus={onFoc}
+                  onBlur={onBlr}
+                />
+              </Field>
+              <Field label="Weight (kg)">
+                <input
+                  style={inp()}
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={editBean.purchaseWeightKg || ""}
+                  onChange={e => setB("purchaseWeightKg", e.target.value)}
+                  placeholder="e.g. 0.25"
+                  onFocus={onFoc}
+                  onBlur={onBlr}
+                />
+              </Field>
+            </div>
+          </section>
+        )}
+
+        <div className="mbl-bean-form-actions">
+          <button className="mbl-bean-form-save" onClick={saveBean} disabled={!editBean.name}
             style={{ flex: 1, background: editBean.name ? "linear-gradient(135deg,#c8893a,#a06828)" : "rgba(200,137,58,0.15)", border: "none", borderRadius: "9px", color: editBean.name ? "#fff" : "#4a3020", padding: "13px", fontSize: "15px", fontWeight: "500", cursor: editBean.name ? "pointer" : "not-allowed" }}>
             Save Bean
           </button>
-          <button onClick={() => setView("beans")}
+          <button className="mbl-bean-form-cancel" onClick={() => setView("beans")}
             style={{ padding: "13px 20px", background: "none", border: "1px solid rgba(200,137,58,0.2)", borderRadius: "9px", color: "#6a5040", cursor: "pointer", fontSize: "14px" }}>
             Cancel
           </button>

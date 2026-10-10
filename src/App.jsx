@@ -916,11 +916,10 @@ export default function App() {
 
     if (loading) {
       return (
-        <div style={{ minHeight: "100vh", background: "#0c0905", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", color: "#c9b094" }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "32px", marginBottom: "12px", animation: "spin 1.4s linear infinite", display: "inline-block" }}>⟳</div>
-            <div style={{ fontSize: "13px" }}>Loading your brews…</div>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div className="mbl-loading-screen" role="status">
+          <div className="mbl-loading-content">
+            <div className="mbl-loading-spinner" aria-hidden="true">⟳</div>
+            <div>Loading your brews…</div>
           </div>
         </div>
       );
@@ -954,7 +953,7 @@ export default function App() {
         {view === VIEW_KEYS.BEANS && (tab === TAB_KEYS.BEANS || tab === TAB_KEYS.GREEN_BEANS) && (
           <BeansView
             title={tab === TAB_KEYS.GREEN_BEANS ? "Green Beans" : "Roasted Beans"}
-            subtitle={tab === TAB_KEYS.GREEN_BEANS ? "Green Bean Journal" : "Coffee Journal"}
+            subtitle={tab === TAB_KEYS.GREEN_BEANS ? "Green Bean Library" : "Coffee Journal"}
             isGreenBeanSheet={tab === TAB_KEYS.GREEN_BEANS}
             greenBeans={greenBeans}
             saveError={saveError}
@@ -1122,6 +1121,7 @@ export default function App() {
             roastProfiles={roastProfiles}
             setTab={setTab}
             Field={Field}
+            SectionHead={SectionHead}
             inp={inp}
             onFoc={onFoc}
             onBlr={onBlr}
@@ -1131,8 +1131,8 @@ export default function App() {
 
         {/* ── BREW FORM ── */}
         {view === VIEW_KEYS.BREW_FORM && liveBean && (
-          <div>
-            <button onClick={() => { setView(VIEW_KEYS.BEAN_DETAIL); setEditingBrewId(null); }} style={{ background: "none", border: "none", color: "#d4bca0", cursor: "pointer", fontSize: "13px", marginBottom: "18px", padding: 0 }}>← {liveBean.name}</button>
+          <div className="mbl-workflow-route">
+            <button className="mbl-editor-back" onClick={() => { setView(VIEW_KEYS.BEAN_DETAIL); setEditingBrewId(null); }}>← {liveBean.name}</button>
             <BrewFormView
               liveBean={liveBean}
               brewForm={brewForm}
