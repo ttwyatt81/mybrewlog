@@ -85,6 +85,14 @@ export default function BeanDetailScreenView({
               + Log Roast
             </button>
           )}
+          {!isGreenBeanSheet && liveBean.sourceRoastId && onGoToSourceRoast && (
+            <button
+              onClick={() => onGoToSourceRoast(liveBean)}
+              className="mbl-btn mbl-btn--quiet mbl-detail-action--orange-hover"
+            >
+              View Roast Log
+            </button>
+          )}
           <button
             className="mbl-link mbl-detail-archive-action"
             onClick={() => onToggleArchive?.(liveBean)}
@@ -92,14 +100,6 @@ export default function BeanDetailScreenView({
           >
             {liveBean.archived ? "Unarchive" : "Archive"}
           </button>
-          {!isGreenBeanSheet && liveBean.sourceRoastId && onGoToSourceRoast && (
-            <button
-              onClick={() => onGoToSourceRoast(liveBean)}
-              className="mbl-btn mbl-btn--quiet"
-            >
-              View Roast Log
-            </button>
-          )}
           {editDeleteActions}
       </div>
 

@@ -40,7 +40,7 @@ export default function BrewLogSection({
                   <span className="mbl-log-meta">{formatDateValue(brew.date)}</span>
                 </div>
                 <div className="mbl-log-card-actions">
-                  <button className="mbl-btn mbl-btn--quiet" onClick={() => copyBrewToRecipe(brew)}>→ Recipe</button>
+                  <button className="mbl-btn mbl-btn--quiet mbl-detail-action--orange-hover" onClick={() => copyBrewToRecipe(brew)}>→ Recipe</button>
                   <button className="mbl-link" onClick={() => editBrew(brew, liveBean)} aria-label={`Edit brew ${brew.id}`}>Edit</button>
                   <button className="mbl-link" onClick={() => deleteBrew(brew.id)} aria-label={`Delete brew ${brew.id}`}>Delete</button>
                 </div>

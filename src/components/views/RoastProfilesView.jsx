@@ -123,7 +123,8 @@ export default function RoastProfilesView({
               <div className="mbl-card-head">
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h2 className="mbl-card-name"><button className="mbl-card-title-button">{profile.name}</button></h2>
-                  <div className="mbl-card-sub">{profile.machine || "No machine set"}</div>
+                  {profile.description && <div className="mbl-card-sub">{profile.description}</div>}
+                  <div className="mbl-card-sub">Roaster: {profile.machine || "No machine set"}</div>
                   <div className="mbl-profile-usage">
                     {profile.usageCount} roast{profile.usageCount !== 1 ? "s" : ""}
                   </div>

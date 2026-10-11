@@ -47,7 +47,7 @@ export default function BeanCard({
 
   const profileName = meaningful(linkedRoast?.roastProfileName);
   const linkedLevel = formatRoastLevel(linkedRoast?.roastLevel);
-  const originLine = [(isGreenBeanSheet ? null : bean.roaster), bean.producer, bean.origin, bean.region]
+  const originLine = [(isGreenBeanSheet ? null : bean.roaster), bean.producer, (isGreenBeanSheet ? bean.importer : null), bean.origin, bean.region]
     .map(meaningful).filter(Boolean).join(" · ");
   const roastDate = formatDateValue(bean.roastDate);
 
@@ -92,6 +92,7 @@ export default function BeanCard({
         {!isGreenBeanSheet && !bean.sourceRoastId && formatRoastLevel(bean.roastLevel) && <Tag>{formatRoastLevel(bean.roastLevel)}</Tag>}
         {meaningful(bean.process) && <Tag>{meaningful(bean.process)}</Tag>}
         {meaningful(bean.varietal) && <Tag>{meaningful(bean.varietal)}</Tag>}
+        {isGreenBeanSheet && meaningful(bean.cuppingScore) && <Tag>Score {meaningful(bean.cuppingScore)}</Tag>}
         {meaningful(bean.altitude) && <Tag>{meaningful(bean.altitude)}</Tag>}
         {isGreenBeanSheet && <Tag>{pricePerKg !== null ? `${pricePerKg.toFixed(2)} / kg` : "Add price + weight"}</Tag>}
       </div>

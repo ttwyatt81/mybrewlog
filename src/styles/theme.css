@@ -182,9 +182,9 @@ html, body { margin: 0; background: var(--mbl-cream); }
 .mbl-card-date { margin-top: 4px; font-family: var(--mbl-font-mono); font-size: 11px; color: var(--mbl-muted); }
 .mbl-tag { font-family: var(--mbl-font-mono); font-size: 11px; color: var(--mbl-ink); border: 1px solid var(--mbl-line); padding: 2px 8px; }
 .mbl-card-actions { display: flex; flex: none; gap: 6px; margin-right: -4px; }
-.mbl-card-actions .mbl-link { position: relative; min-height: 24px; padding: 0 4px; font-size: 11px; text-decoration: none; color: var(--mbl-muted); }
-.mbl-card-actions .mbl-link::after { content: ""; position: absolute; inset: -10px -3px; }
-.mbl-card-actions .mbl-link:hover { color: var(--mbl-ink); text-decoration: underline; text-underline-offset: 3px; }
+.mbl-card-actions .mbl-link, .mbl-log-card-actions .mbl-link { position: relative; min-height: 24px; padding: 0 4px; font-size: 11px; text-decoration: none; color: var(--mbl-muted); }
+.mbl-card-actions .mbl-link::after, .mbl-log-card-actions .mbl-link::after { content: ""; position: absolute; inset: -10px -3px; }
+.mbl-card-actions .mbl-link:hover, .mbl-log-card-actions .mbl-link:hover { color: var(--mbl-ink); text-decoration: underline; text-underline-offset: 3px; }
 
 @media (min-width: 900px) {
   .mbl-cards { grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -214,6 +214,7 @@ html, body { margin: 0; background: var(--mbl-cream); }
 .mbl-detail-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
 .mbl-detail-heading .mbl-title { min-width: 0; overflow-wrap: anywhere; }
 .mbl-detail-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; }
+.mbl-detail-action--orange-hover:hover, .mbl-detail-action--orange-hover:focus-visible { background: color-mix(in srgb, var(--mbl-section) 14%, var(--mbl-cream)); border-color: var(--mbl-line); color: var(--mbl-ink); }
 .mbl-detail-archive-action { text-decoration: none; }
 .mbl-detail-archive-action:hover { text-decoration: underline; text-underline-offset: 3px; }
 .mbl-archive-toggle { gap: 10px; text-transform: uppercase; }
@@ -234,7 +235,6 @@ html, body { margin: 0; background: var(--mbl-cream); }
 .mbl-log-card-identity { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; }
 .mbl-log-card-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .mbl-roast-log-actions { justify-content: flex-start; margin: 0 0 10px; }
-.mbl-log-card-actions .mbl-link { min-height: 36px; padding: 0 8px; text-decoration: none; }
 .mbl-log-number { color: var(--mbl-section); font-family: var(--mbl-font-mono); font-size: 12px; }
 .mbl-log-title { min-width: 0; color: var(--mbl-ink); font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
 .mbl-log-level { font-family: var(--mbl-font-mono); font-size: 11px; color: var(--mbl-muted); }
@@ -255,6 +255,7 @@ html, body { margin: 0; background: var(--mbl-cream); }
 .mbl-cards > .mbl-empty { grid-column: 1 / -1; }
 .mbl-card-title-button { display: block; max-width: 100%; padding: 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
 .mbl-card-title-button:hover { text-decoration: underline; text-underline-offset: 3px; }
+.mbl-app[data-section="roastProfiles"] .mbl-card-title-button:hover { text-decoration: none; }
 .mbl-profile-usage { margin-top: 8px; font-family: var(--mbl-font-mono); font-size: 11px; color: var(--mbl-muted); }
 .mbl-recipe-content > div[style*="grid-template-columns"] > div { background: color-mix(in srgb, var(--mbl-line) 30%, var(--mbl-cream)) !important; border-radius: 0 !important; }
 .mbl-recipe-content > div[style*="grid-template-columns"] > div > div:first-child { color: var(--mbl-ink) !important; font-family: var(--mbl-font-sans) !important; }
