@@ -1,4 +1,5 @@
 import { coffeeAccent } from "../styles/theme";
+import { DELETION_KINDS } from "../features/deletion/deletion.js";
 
 const formatDateValue = (value) => {
   if (!value) return "";
@@ -72,7 +73,7 @@ export default function BeanCard({
             {bean.archived ? "Unarchive" : "Archive"}
           </button>
           <button className="mbl-link" onClick={act(() => onEditBean?.(bean))} aria-label={`Edit ${bean.name}`}>Edit</button>
-          <button className="mbl-link" onClick={act(() => onDeleteBean?.(bean.id))} aria-label={`Delete ${bean.name}`}>Delete</button>
+          <button className="mbl-link" onClick={act(() => onDeleteBean?.(bean, isGreenBeanSheet ? DELETION_KINDS.GREEN_BEAN : DELETION_KINDS.ROASTED_BEAN))} aria-label={`Delete ${bean.name}`}>Delete</button>
         </div>
       </div>
 

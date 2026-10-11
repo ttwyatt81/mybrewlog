@@ -53,6 +53,7 @@ import { beanPayload, getVisibleBeans, sortBeansByRecentActivity } from "./featu
 import { brewPayload } from "./features/brews/model";
 import { recipePayload } from "./features/recipes/model";
 import { useGreenBeans } from "./features/greenBeans/hooks";
+import { DELETION_KINDS, performDeletion } from "./features/deletion/deletion.js";
 import { useRoastProfiles } from "./features/roastProfiles/hooks";
 import { roastProfilePayload } from "./features/roastProfiles/model";
 
@@ -259,14 +260,18 @@ export default function App() {
     migrateNames();
   }, [beans, greenBeans, session, currentUser, getAccessTokenOrFail, saveBeanData]);
 
-  const confirmDeletion = (itemType) => new Promise((resolve) => {
-    setDeleteConfirmation({ itemType, resolve });
+  const confirmDeletion = (itemType, detail = "") => new Promise((resolve) => {
+    setDeleteConfirmation({ itemType, detail, resolve });
   });
 
   const respondToDeletionConfirmation = (confirmed) => {
     if (!deleteConfirmation) return;
-    deleteConfirmation.resolve(confirmed);
+    deleteConfirmation.resolve?.(confirmed);
     setDeleteConfirmation(null);
+  };
+
+  const showDeletionBlocker = (detail) => {
+    setDeleteConfirmation({ itemType: "roast profile", detail, blocked: true });
   };
 
   const closeRecipeForm = () => {
@@ -383,29 +388,31 @@ export default function App() {
     setView(VIEW_KEYS.BEANS);
   };
 
-  const deleteBean = async (id) => {
-    const itemType = tab === TAB_KEYS.GREEN_BEANS ? "green bean" : "bean";
-    if (!await confirmDeletion(itemType)) return;
-    if (tab === TAB_KEYS.GREEN_BEANS) {
-      const token = await getAccessTokenOrFail();
-      if (!token) return;
-      const deleted = await deleteGreenBeanData(token, id);
-      if (!deleted) {
-        setSaveError(withSupabaseError("Failed to delete green bean. Check your connection and try again."));
-        return;
-      }
-      if (activeBean?.id === id) {
-        setActiveBean(null);
-      }
-      setView(VIEW_KEYS.BEANS);
-      return;
-    }
+  const removeByKind = async (kind, id, greenBeanId) => {
     const token = await getAccessTokenOrFail();
-    if (!token) return;
-    const deleted = await deleteBeanData(token, id);
-    if (deleted) {
-      setView(VIEW_KEYS.BEANS);
-    }
+    if (!token) return { ok: false, skipped: true };
+    if (kind === DELETION_KINDS.GREEN_BEAN) return deleteGreenBeanData(token, id);
+    if (kind === DELETION_KINDS.ROASTED_BEAN) return deleteBeanData(token, id);
+    if (kind === DELETION_KINDS.ROAST) return deleteGreenBeanRoastData(token, id, greenBeanId);
+    if (kind === DELETION_KINDS.ROAST_PROFILE) return deleteRoastProfileData(token, id);
+    return { ok: false, skipped: true };
+  };
+
+  const deleteBean = async (bean, kind) => {
+    if (kind !== DELETION_KINDS.GREEN_BEAN && kind !== DELETION_KINDS.ROASTED_BEAN) return;
+    await performDeletion({
+      kind,
+      record: bean,
+      clearFeedback: () => setSaveError(""),
+      confirm: confirmDeletion,
+      remove: (deletionKind, id) => removeByKind(deletionKind, id),
+      onError: setSaveError,
+      onBlocked: showDeletionBlocker,
+      onSuccess: () => {
+        if (activeBean?.id === bean.id) setActiveBean(null);
+        setView(VIEW_KEYS.BEANS);
+      },
+    });
   };
 
   const toggleArchiveBean = async (bean) => {
@@ -584,19 +591,23 @@ export default function App() {
     setEditingGreenBeanRoastId(roast.id || null);
   };
 
-  const deleteGreenBeanRoast = async (roastId) => {
-    if (!activeBean || tab !== TAB_KEYS.GREEN_BEANS) return;
-    if (!await confirmDeletion("roast log")) return;
-    const token = await getAccessTokenOrFail();
-    if (!token) return;
-
-    const deleted = await deleteGreenBeanRoastData(token, roastId, activeBean.id);
-    if (!deleted) {
-      setSaveError(withSupabaseError("Failed to delete green bean roast. Check your connection and try again."));
-      return;
-    }
-
-    setActiveBean((current) => current ? { ...current, roasts: (current.roasts || []).filter((roast) => roast.id !== roastId) } : current);
+  const deleteGreenBeanRoast = async (roast) => {
+    const greenBeanId = roast?.greenBeanId || activeBean?.id;
+    if (!greenBeanId) return;
+    await performDeletion({
+      kind: DELETION_KINDS.ROAST,
+      record: roast,
+      related: { roastedBeans: beans },
+      clearFeedback: () => setSaveError(""),
+      confirm: confirmDeletion,
+      remove: (kind, id) => removeByKind(kind, id, greenBeanId),
+      onBlocked: showDeletionBlocker,
+      onSuccess: () => {
+        setActiveBean((current) => current?.id === greenBeanId
+          ? { ...current, roasts: (current.roasts || []).filter((item) => item.id !== roast.id) }
+          : current);
+      },
+    });
   };
 
   const findBeanBySourceRoastId = async (token, sourceRoastId) => {
@@ -844,17 +855,23 @@ export default function App() {
   };
 
   const deleteRoastProfile = async (id) => {
-    if (!await confirmDeletion("roast profile")) return;
-    const token = await getAccessTokenOrFail();
-    if (!token) return;
-    const deleted = await deleteRoastProfileData(token, id);
-    if (!deleted) {
-      setSaveError(withSupabaseError("Failed to delete roast profile. Check your connection and try again."));
-      return;
-    }
-    if (roastProfileForm.id === id) {
-      setRoastProfileForm({ id: null, name: "", machine: "", description: "", lastUsed: "", archived: false });
-    }
+    const profile = roastProfiles.find((item) => item.id === id);
+    const roasts = greenBeans.flatMap((bean) => bean.roasts || []);
+    await performDeletion({
+      kind: DELETION_KINDS.ROAST_PROFILE,
+      record: profile,
+      related: { roasts },
+      clearFeedback: () => setSaveError(""),
+      confirm: confirmDeletion,
+      remove: (kind, profileId) => removeByKind(kind, profileId),
+      onError: (message) => setSaveError(withSupabaseError(message)),
+      onBlocked: showDeletionBlocker,
+      onSuccess: () => {
+        if (roastProfileForm.id === id) {
+          setRoastProfileForm({ id: null, name: "", machine: "", description: "", lastUsed: "", archived: false });
+        }
+      },
+    });
   };
 
   const toggleArchiveRoastProfile = async (profile) => {
@@ -929,7 +946,7 @@ export default function App() {
     <AppShell
       view={view}
       tab={tab}
-      setTab={setTab}
+      setTab={(nextTab) => { setSaveError(""); setTab(nextTab); }}
       setView={setView}
       isDetailView={Boolean(selectedRoastProfile)}
       onBack={() => {
@@ -1076,6 +1093,8 @@ export default function App() {
             toggleArchiveRoastProfile={toggleArchiveRoastProfile}
             editRoastProfile={editRoastProfile}
             deleteRoastProfile={deleteRoastProfile}
+            saveError={saveError}
+            setSaveError={setSaveError}
           />
         )}
 
@@ -1106,6 +1125,8 @@ export default function App() {
             greenBeans={greenBeans}
             roastedBeans={beans}
             onGoToSourceRoast={goToSourceRoast}
+            saveError={saveError}
+            setSaveError={setSaveError}
           />
         )}
 
@@ -1186,6 +1207,8 @@ export default function App() {
       {deleteConfirmation && (
         <DeleteConfirmationModal
           itemType={deleteConfirmation.itemType}
+          detail={deleteConfirmation.detail}
+          blocked={deleteConfirmation.blocked}
           onCancel={() => respondToDeletionConfirmation(false)}
           onConfirm={() => respondToDeletionConfirmation(true)}
         />

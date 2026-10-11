@@ -1,5 +1,6 @@
-import { sbGet, sbInsert, sbUpdate, sbDelete } from "../../lib/supabase";
-import { beanPayload } from "./model";
+import { sbGet, sbInsert, sbUpdate } from "../../lib/supabase.js";
+import { deleteRoastedBeanWithBrews } from "./deleteRoastedBean.js";
+import { beanPayload } from "./model.js";
 
 export async function loadBeans(token) {
   return sbGet("roasted_beans", token, "select=*&order=created_at.desc");
@@ -14,6 +15,5 @@ export async function saveBean(token, bean) {
 }
 
 export async function deleteBean(token, id) {
-  if (!token) return false;
-  return sbDelete("roasted_beans", token, id);
+  return deleteRoastedBeanWithBrews(token, id);
 }

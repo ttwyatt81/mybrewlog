@@ -369,21 +369,47 @@ export async function sbUpdate(table, token, rowId, payload) {
   return Array.isArray(res.data) ? res.data[0] : res.data;
 }
 
-export async function sbDelete(table, token, rowId) {
-  if (!rowId) return false;
-  ensureSupabaseConfig();
-  const url = `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(rowId)}`;
-  const res = await sendRestRequest(url, {
-    method: "DELETE",
-    headers: authHeaders(token)
-  }, token);
+async function sendStructuredRequest(url, options, token, logLabel) {
+  let res;
+  try {
+    res = await sendRestRequest(url, options, token);
+  } catch (error) {
+    lastSupabaseErrorMessage = "Network request failed.";
+    console.error(`Failed to ${logLabel}:`, error);
+    return { ok: false, status: 0, code: "", message: "", networkError: true, data: null };
+  }
   if (!res.ok) {
     setLastSupabaseError(res.status, res.data);
-    console.error(`Failed to delete ${table} row ${rowId}:`, res.status, res.data);
-    return false;
+    console.error(`Failed to ${logLabel}:`, res.status, res.data);
+    const code = typeof res.data?.code === "string" ? res.data.code.trim() : "";
+    return { ok: false, status: res.status, code, message: lastSupabaseErrorMessage, data: res.data };
   }
   clearLastSupabaseError();
-  return true;
+  return { ok: true, status: res.status, code: "", message: "", data: res.data };
+}
+
+export async function sbRpc(fn, token, args = {}) {
+  ensureSupabaseConfig();
+  return sendStructuredRequest(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(args),
+  }, token, `call ${fn}`);
+}
+
+export async function sbDeleteRow(table, token, rowId) {
+  if (!rowId) return { ok: false, status: 0, code: "", message: "Missing record ID." };
+  ensureSupabaseConfig();
+  const url = `${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(rowId)}`;
+  return sendStructuredRequest(url, {
+    method: "DELETE",
+    headers: authHeaders(token)
+  }, token, `delete ${table} row ${rowId}`);
+}
+
+export async function sbDelete(table, token, rowId) {
+  if (!rowId) return false;
+  return (await sbDeleteRow(table, token, rowId)).ok;
 }
 
 export async function sbDeleteAll(table, token) {

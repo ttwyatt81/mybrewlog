@@ -12,6 +12,8 @@ export default function RoastProfilesView({
   toggleArchiveRoastProfile,
   editRoastProfile,
   deleteRoastProfile,
+  saveError,
+  setSaveError,
 }) {
   if (selectedProfile) {
     const profileRoasts = (greenBeans || []).flatMap((greenBean) => (
@@ -69,6 +71,13 @@ export default function RoastProfilesView({
         <h1 className="mbl-title">Roast Profiles</h1>
         <div className="mbl-label">Saved roast profiles</div>
       </div>
+
+      {saveError && (
+        <div className="mbl-alert" role="alert" style={{ marginBottom: "16px" }}>
+          <strong>{saveError}</strong>
+          <button className="mbl-link" onClick={() => setSaveError("")} aria-label="Dismiss error">✕</button>
+        </div>
+      )}
 
       <div className="mbl-row mbl-actions-row">
         <button className="mbl-btn mbl-btn--primary" onClick={startNewRoastProfile}>+ New Profile</button>

@@ -1,5 +1,6 @@
-import { sbGet, sbInsert, sbUpdate, sbDelete } from "../../lib/supabase";
-import { greenBeanPayload, greenBeanRoastPayload } from "./model";
+import { sbGet, sbInsert, sbUpdate, sbDeleteRow } from "../../lib/supabase.js";
+import { DELETION_KINDS, getDeletionTable } from "../deletion/deletion.js";
+import { greenBeanPayload, greenBeanRoastPayload } from "./model.js";
 
 export async function loadGreenBeans(token) {
   return sbGet("green_beans", token, "select=*&order=created_at.desc");
@@ -26,11 +27,11 @@ export async function saveGreenBeanRoast(token, roast) {
 }
 
 export async function deleteGreenBean(token, id) {
-  if (!token) return false;
-  return sbDelete("green_beans", token, id);
+  if (!token) return { ok: false, skipped: true };
+  return sbDeleteRow(getDeletionTable(DELETION_KINDS.GREEN_BEAN), token, id);
 }
 
 export async function deleteGreenBeanRoast(token, id) {
-  if (!token) return false;
-  return sbDelete("roasts", token, id);
+  if (!token) return { ok: false, skipped: true };
+  return sbDeleteRow(getDeletionTable(DELETION_KINDS.ROAST), token, id);
 }

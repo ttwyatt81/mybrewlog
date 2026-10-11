@@ -29,11 +29,11 @@ export function useRoastProfiles(initialProfiles = []) {
   }, []);
 
   const remove = useCallback(async (token, id) => {
-    const deleted = await deleteRoastProfile(token, id);
-    if (deleted) {
+    const result = await deleteRoastProfile(token, id);
+    if (result.ok) {
       setRoastProfiles((current) => current.filter((profile) => profile.id !== id));
     }
-    return deleted;
+    return result;
   }, []);
 
   return { roastProfiles, setRoastProfiles, load, save, remove };

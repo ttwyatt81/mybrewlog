@@ -1,4 +1,4 @@
-import { sbDelete, sbGet, sbInsert, sbUpdate } from "../../lib/supabase";
+import { sbDeleteRow, sbGet, sbInsert, sbUpdate } from "../../lib/supabase";
 import { roastProfilePayload } from "./model";
 
 export async function loadRoastProfiles(token) {
@@ -14,6 +14,6 @@ export async function saveRoastProfile(token, profile) {
 }
 
 export async function deleteRoastProfile(token, id) {
-  if (!token) return false;
-  return sbDelete("roast_profiles", token, id);
+  if (!token) return { ok: false, skipped: true };
+  return sbDeleteRow("roast_profiles", token, id);
 }
