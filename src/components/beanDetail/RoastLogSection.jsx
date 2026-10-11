@@ -179,7 +179,7 @@ export default function RoastLogSection({
                   {hasRoastedBean ? "Roasted Bean Created" : "+ Roasted Beans"}
                 </button>
                 <button className="mbl-link" onClick={() => onEditRoast?.(roast)} aria-label={`Edit roast ${roast.id}`}>Edit</button>
-                <button className="mbl-link" onClick={() => onDeleteRoast?.(roast.id)} aria-label={`Delete roast ${roast.id}`}>Delete</button>
+                <button className="mbl-link" onClick={() => onDeleteRoast?.(roast)} aria-label={`Delete roast ${roast.id}`}>Delete</button>
               </div>
               </>
                 );

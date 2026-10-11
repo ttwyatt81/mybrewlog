@@ -73,16 +73,16 @@ export function useGreenBeans(initialBeans = []) {
   }, []);
 
   const remove = useCallback(async (token, id) => {
-    const deleted = await deleteGreenBean(token, id);
-    if (deleted) {
+    const result = await deleteGreenBean(token, id);
+    if (result?.ok) {
       setBeans((current) => current.filter((bean) => bean.id !== id));
     }
-    return deleted;
+    return result;
   }, []);
 
   const removeRoast = useCallback(async (token, roastId, greenBeanId) => {
-    const deleted = await deleteGreenBeanRoast(token, roastId);
-    if (deleted && greenBeanId) {
+    const result = await deleteGreenBeanRoast(token, roastId);
+    if (result?.ok && greenBeanId) {
       setBeans((current) => sortGreenBeansByRecentActivity(
         current.map((bean) => {
           if (bean.id !== greenBeanId) return bean;
@@ -90,7 +90,7 @@ export function useGreenBeans(initialBeans = []) {
         })
       ));
     }
-    return deleted;
+    return result;
   }, []);
 
   return { beans, setBeans, load, save, remove, saveRoast, removeRoast };

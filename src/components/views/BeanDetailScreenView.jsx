@@ -1,4 +1,5 @@
 import Tag from "../ui/Tag";
+import { DELETION_KINDS } from "../../features/deletion/deletion.js";
 import RoastLogSection from "../beanDetail/RoastLogSection";
 import BrewLogSection from "../beanDetail/BrewLogSection";
 
@@ -34,6 +35,8 @@ export default function BeanDetailScreenView({
   greenBeans = [],
   roastedBeans = [],
   onGoToSourceRoast,
+  saveError = "",
+  setSaveError,
 }) {
   const linkedRoast = !isGreenBeanSheet && liveBean.sourceRoastId
     ? greenBeans.flatMap((greenBean) => greenBean.roasts || []).find((roast) => roast.id === liveBean.sourceRoastId)
@@ -41,12 +44,20 @@ export default function BeanDetailScreenView({
   const editDeleteActions = (
     <div className="mbl-card-actions">
       <button className="mbl-link" onClick={() => { setEditBean({ ...liveBean }); setView("beanForm"); }} aria-label={`Edit ${liveBean.name}`}>Edit</button>
-      <button className="mbl-link" onClick={() => deleteBean(liveBean.id)} aria-label={`Delete ${liveBean.name}`}>Delete</button>
+      <button className="mbl-link" onClick={() => deleteBean(liveBean, isGreenBeanSheet ? DELETION_KINDS.GREEN_BEAN : DELETION_KINDS.ROASTED_BEAN)} aria-label={`Delete ${liveBean.name}`}>Delete</button>
     </div>
   );
 
   return (
     <div className="mbl-bean-detail">
+      {saveError && (
+        <div className="mbl-alert" role="alert" style={{ marginBottom: "16px" }}>
+          <div style={{ minWidth: 0 }}>
+            <strong>{saveError}</strong>
+          </div>
+          <button className="mbl-link" onClick={() => setSaveError?.("")} aria-label="Dismiss error">✕</button>
+        </div>
+      )}
       <div className="mbl-view-heading">
         <div className="mbl-detail-heading">
           <h1 className="mbl-title">{liveBean.name}</h1>

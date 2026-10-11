@@ -29,11 +29,11 @@ export function useBeans(initialBeans = []) {
   }, []);
 
   const remove = useCallback(async (token, id) => {
-    const deleted = await deleteBean(token, id);
-    if (deleted) {
+    const result = await deleteBean(token, id);
+    if (result?.ok) {
       setBeans((current) => current.filter((bean) => bean.id !== id));
     }
-    return deleted;
+    return result;
   }, []);
 
   return { beans, setBeans, load, save, remove };
