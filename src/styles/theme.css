@@ -49,7 +49,7 @@ html, body { margin: 0; background: var(--mbl-cream); }
 .mbl-legacy :focus-visible { outline-color: #e2bc7f; }
 
 /* Per-section accent; the fill is darkened where needed for 4.5:1 text contrast. */
-.mbl-app { --mbl-section: var(--mbl-terracotta); --mbl-section-fill: color-mix(in srgb, var(--mbl-terracotta) 88%, var(--mbl-ink)); }
+.mbl-app, .mbl-auth-page { --mbl-section: var(--mbl-terracotta); --mbl-section-fill: color-mix(in srgb, var(--mbl-terracotta) 88%, var(--mbl-ink)); }
 .mbl-app[data-section="greenBeans"] { --mbl-section: #747640; --mbl-section-fill: #6e7040; }
 .mbl-app[data-section="roastProfiles"] { --mbl-section: var(--mbl-mineral); --mbl-section-fill: var(--mbl-mineral); }
 .mbl-app[data-section="recipes"] { --mbl-section: var(--mbl-violet); --mbl-section-fill: var(--mbl-violet); }
